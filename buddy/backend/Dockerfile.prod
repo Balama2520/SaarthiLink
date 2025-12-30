@@ -1,0 +1,24 @@
+# Backend - Production Dockerfile
+FROM python:3.10-slim as builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+
+COPY . .
+
+EXPOSE 2520
+
+# Production optimized worker count
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "2520", "--workers", "4"]

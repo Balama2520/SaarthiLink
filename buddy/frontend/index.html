@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>BUDDY AI – Neural Interface System</title>
+
+  <!-- SEO & Verification -->
+  <meta name="description" content="Buddy AI - Production-Grade Neural Interface and Intelligent Assistant.">
+  <meta name="google-site-verification" content="google1813f9af1d0c0f59" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://buddy-ai-assistant.netlify.app/">
+  <meta property="og:title" content="BUDDY AI – Neural Interface">
+  <meta property="og:description" content="A Next-Generation AI Assistant with Kinetic UI and Voice Synthesis.">
+  <meta property="og:image" content="https://buddy-ai-assistant.netlify.app/og-preview.png">
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+
+  <!-- Schema.org Structured Data (Merchant Center / Rich Results) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@type": "SoftwareApplication",
+    "name": "Buddy AI",
+    "operatingSystem": "Web",
+    "applicationCategory": "Neural Interface / AI Assistant",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app">
+    <!-- Layered Background Effects -->
+    <div class="bg-gradient"></div>
+    <div class="grid-bg"></div>
+    <div class="starfield"></div>
+    <div class="scan-line"></div>
+
+    <!-- Sidebar Toggle -->
+    <button class="sidebar-toggle" id="btnToggleSidebar">
+      <span class="btn-icon">☰</span>
+    </button>
+
+    <!-- Sidebar (History) -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <button class="btn-new-chat" id="btnNewChat">
+          <span>+</span> NEW CONVERSATION
+        </button>
+      </div>
+      <div class="session-list" id="sessionList">
+        <!-- Sessions will be injected here -->
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-info">
+            <div class="username" id="displayUsername">User</div>
+            <div class="user-status">NEURAL LINK ACTIVE</div>
+          </div>
+        </div>
+        <button class="btn-logout" id="btnLogout">TERMINATE SESSION (LOGOUT)</button>
+      </div>
+    </div>
+
+    <!-- Auth Overlay -->
+    <div class="auth-overlay active" id="authOverlay">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-title-row">
+            <div class="auth-title">BUDDY AI</div>
+            <div id="authStatus" class="auth-status" title="Neural Link Status">
+              <span class="status-dot"></span>
+              <span class="status-label">OFFLINE</span>
+            </div>
+          </div>
+          <div class="auth-subtitle">Neural Interface Access Required</div>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">LOGIN</button>
+          <button class="auth-tab" data-tab="register">REGISTER</button>
+        </div>
+
+        <form class="auth-form" id="authForm">
+          <div class="auth-field">
+            <label class="auth-label">Identity (Username)</label>
+            <input type="text" class="auth-input" id="authUsername" placeholder="Enter username..." required>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label">Secure Key (Password)</label>
+            <input type="password" class="auth-input" id="authPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">ESTABLISH LINK</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Corner Brackets -->
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <!-- Top HUD Bar -->
+    <div class="top-bar">
+      <div class="top-item brand">
+        <div class="status-dot"></div>
+        <div class="brand-text">
+          <span class="hud-title">BUDDY AI</span>
+          <span class="hud-sub">NEURAL ASSISTANT • V1.0</span>
+        </div>
+      </div>
+      <div class="top-item voice-indicator" id="btnVoiceSwitch" title="Switch Neural Voice">
+        <div class="control-label">VOICE LINK</div>
+        <div class="voice-status-indicator">
+          <span class="voice-switch-icon">🔊</span>
+          <span class="value" id="voiceStatusText">ON</span>
+        </div>
+      </div>
+      <div class="top-item status-display">
+        <span class="label">SYSTEM STATUS</span>
+        <span class="value" id="statusText">READY</span>
+      </div>
+      <div class="top-item clock">
+        <span class="label">LOCAL TIME</span>
+        <span class="value" id="timeText">00:00:00</span>
+      </div>
+    </div>
+
+    <!-- Central Orb + Rings -->
+    <div class="orb-container" id="orbWrapper">
+      <canvas id="auraCanvas" class="aura-canvas"></canvas>
+      <div class="orb">
+        <!-- Core sphere -->
+        <div class="orb-core"></div>
+
+        <div class="orb-glow"></div>
+
+        <!-- Rotating rings -->
+        <div class="orb-ring ring-outer"></div>
+        <div class="orb-ring ring-middle"></div>
+        <div class="orb-ring ring-inner"></div>
+
+        <!-- Voice visualization bars -->
+        <div class="voice-bars" id="voiceBars"></div>
+
+        <!-- Floating radial labels -->
+        <div class="orb-label orb-label-top">VOICE LINK</div>
+        <div class="orb-label orb-label-left">VISION</div>
+        <div class="orb-label orb-label-right">MEMORY</div>
+        <div class="orb-label orb-label-bottom">RESPONSE ENGINE</div>
+      </div>
+    </div>
+
+    <!-- Side Diagnostic Chips -->
+    <div class="side-panel side-left">
+      <div class="chip">
+        <div class="chip-title">USER PROFILE</div>
+        <div class="chip-body">
+          <div class="chip-label">IDENTITY</div>
+          <div class="chip-value">USER • ONLINE</div>
+        </div>
+      </div>
+      <div class="chip">
+        <div class="chip-title">ACTIVE CHANNELS</div>
+        <div class="chip-body">
+          <div class="chip-pill chip-pill-green">TEXT</div>
+          <div class="chip-pill chip-pill-cyan">VOICE</div>
+          <div class="chip-pill chip-pill-amber">DOCS</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-panel side-right">
+      <div class="chip">
+        <div class="chip-title">BACKEND LINK</div>
+        <div class="chip-body">
+          <div class="chip-label">TARGET</div>
+          <div class="chip-value" id="chipApiUrl">http://127.0.0.1:2520</div>
+        </div>
+      </div>
+      <div class="chip">
+        <div class="chip-title">ENGINE STATUS</div>
+        <div class="chip-body">
+          <div class="chip-pill chip-pill-cyan">GPT-STYLE</div>
+          <div class="chip-pill chip-pill-magenta">REALTIME</div>
+        </div>
+      </div>
+      <div class="chip" id="chipTelemetry">
+        <div class="chip-title">NEURAL TELEMETRY</div>
+        <div class="chip-body">
+          <div class="chip-item">
+            <div class="chip-label">NEURAL LOAD</div>
+            <div class="chip-value" id="telemetryCpu">0%</div>
+          </div>
+          <div class="chip-item">
+            <div class="chip-label">MEMORY UPLINK</div>
+            <div class="chip-value" id="telemetryMem">0 MB</div>
+          </div>
+        </div>
+      </div>
+      <div class="chip">
+        <div class="chip-title">REAL-TIME METRICS</div>
+        <div class="chip-body">
+          <div class="chip-item">
+            <div class="chip-label">LATENCY</div>
+            <div class="chip-value" id="telemetryLatency">0ms</div>
+          </div>
+          <div class="chip-item">
+            <div class="chip-label">UPTIME</div>
+            <div class="chip-value" id="telemetryUptime">0:00:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel">
+      <div class="chat-header">
+        <span class="chat-title">INTERACTION LOG</span>
+        <span class="chat-subtitle">AGENT ↔ BUDDY</span>
+      </div>
+      <div class="chat-body" id="messages"></div>
+      <div id="typingIndicator" class="typing hidden">
+        <div class="dot-typing"></div>
+        <div class="dot-typing"></div>
+        <div class="dot-typing"></div>
+      </div>
+      <div id="thoughtProcessor" class="thought-processor hidden">
+        <div class="thought-header">NEURAL PROCESSING...</div>
+        <div id="thoughtContent" class="thought-content"></div>
+      </div>
+      <div id="scrollAnchor"></div>
+    </div>
+
+    <!-- Control Dock -->
+    <div class="controls-dock">
+      <button id="btnMic" class="btn-circle" title="Voice Input">
+        <span class="btn-icon">🎙️</span>
+        <span class="btn-label">VOICE</span>
+      </button>
+      <button id="btnText" class="btn-circle" title="Text Input">
+        <span class="btn-icon">⌨️</span>
+        <span class="btn-label">TEXT</span>
+      </button>
+      <button id="btnUpload" class="btn-circle" title="Upload Document">
+        <span class="btn-icon">📄</span>
+        <span class="btn-label">DOC</span>
+      </button>
+      <button id="btnClear" class="btn-circle" title="Clear Log">
+        <span class="btn-icon">🧹</span>
+        <span class="btn-label">CLEAR</span>
+      </button>
+      <button id="btnSettings" class="btn-circle" title="Settings">
+        <span class="btn-icon">⚙️</span>
+        <span class="btn-label">SYS</span>
+      </button>
+    </div>
+
+    <!-- Text Input Overlay -->
+    <div class="overlay hidden" id="textOverlay">
+      <div class="overlay-card">
+        <div class="overlay-header">
+          <span class="overlay-title">MANUAL COMMAND INPUT</span>
+          <span class="overlay-subtitle">Type your instruction below.</span>
+        </div>
+        <input id="textInput" type="text" placeholder="Ask anything... Buddy will respond." />
+        <div class="overlay-buttons">
+          <button id="btnSend" class="btn-primary">TRANSMIT</button>
+          <button id="btnCancel" class="btn-secondary">ABORT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Diagnostic Overlay (Restored) -->
+    <div class="overlay hidden" id="diagnosticOverlay">
+      <div class="overlay-card diag-card">
+        <div class="overlay-header">
+          <span class="overlay-title diag-title">SYSTEM DIAGNOSTIC</span>
+        </div>
+        <div class="diag-body" id="diagMessage"></div>
+        <div class="overlay-buttons">
+          <button class="btn-primary" id="btnDiagClose"
+            onclick="document.getElementById('diagnosticOverlay').classList.remove('active')">ACKNOWLEDGE &
+            RETRY</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden File Input -->
+    <input type="file" id="fileInput" class="hidden" style="display: none;" />
+
+    <!-- Settings Panel -->
+    <div class="settings-panel hidden" id="settingsPanel">
+      <div class="settings-header">
+        <span class="settings-title">SYSTEM CONFIGURATION</span>
+        <span class="settings-subtitle">Neural network control surface</span>
+      </div>
+      <label class="settings-field">
+        <span class="settings-label">BACKEND API URL</span>
+        <input id="apiUrlInput" type="text" placeholder="http://127.0.0.1:2520" />
+      </label>
+      <label class="settings-field">
+        <span class="settings-label">ASSISTANT VOICE</span>
+        <select id="voiceSelect" class="settings-select">
+          <option value="">Auto-select best female voice</option>
+        </select>
+      </label>
+      <div class="settings-field">
+        <label>NEURAL PERSONALITY</label>
+        <select id="personalitySelect">
+          <option value="default">BUDDY (BALANCED)</option>
+          <option value="secure">SECURITY CORE (STERN)</option>
+          <option value="analyze">ANALYTIC ENGINE (TECHNICAL)</option>
+          <option value="experimental">EXPERIMENTAL (CREATIVE)</option>
+        </select>
+      </div>
+      <div class="settings-field">
+        <label>NEURAL MODEL</label>
+        <select id="modelSelect">
+          <option value="gemma3:1b">GEMMA 3 1B (FAST)</option>
+          <option value="llama3:latest">LLAMA 3 (SMART)</option>
+          <option value="mistral:latest">MISTRAL (CREATIVE)</option>
+        </select>
+      </div>
+      <div class="settings-actions">
+        <button id="btnSaveSettings" class="btn-primary">SAVE SETTINGS</button>
+        <!-- Purge button template idea -->
+        <!-- <button id="btnPurge" class="btn-secondary">PURGE DATA</button> -->
+      </div>
+      <div class="settings-footnote">
+        Backend expects: <code>/chat</code>, <code>/chat-with-file</code>, <code>/upload-file</code>
+      </div>
+    </div>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script>
+      /* Service Worker Cleanup */
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          for (let registration of registrations) {
+            registration.unregister();
+            console.log('Service Worker Unregistered');
+          }
+        });
+      }
+    </script>
+</body>
+
+</html>

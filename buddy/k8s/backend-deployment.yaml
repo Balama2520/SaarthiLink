@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buddy-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: buddy-backend
+  template:
+    metadata:
+      labels:
+        app: buddy-backend
+    spec:
+      containers:
+      - name: backend
+        image: buddy-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 2520
+        env:
+        - name: OLLAMA_URL
+          value: "http://buddy-ollama:11434/api/chat"
+        - name: DATABASE_URL
+          value: "sqlite:///./buddy.db" # Use Postgres in real Prod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: buddy-backend
+spec:
+  selector:
+    app: buddy-backend
+  ports:
+    - protocol: TCP
+      port: 2520
+      targetPort: 2520
