@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+      - buddy-db:/app/buddy.db
+    ports:
+      - "2520:2520"
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:///./buddy.db
+      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
+      - SECRET_KEY=${SECRET_KEY:-buddy-dev-secret-change-in-production}
+      - ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080,https://buddy-ai-assistant.netlify.app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  buddy-db:
+    driver: local
+
+networks:
+  default:
+    name: buddy-network

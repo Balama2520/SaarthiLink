@@ -1,0 +1,6 @@
+[build]
+  publish = "frontend"
+  command = ""
+
+[dev]
+  framework = "#static"
