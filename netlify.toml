@@ -1,0 +1,11 @@
+[build]
+  publish = "frontend"
+  command = ""
+
+[dev]
+  framework = "#static"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

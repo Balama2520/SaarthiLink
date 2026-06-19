@@ -1,0 +1,39 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Data & runtime
+/data/
+logs/
+history/
+*.db
+*.sqlite
+*.sqlite3
+
+# Models & LLMs
+/models/
+ollama/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Frontend build
+dist/
+build/
+
+# Test artifacts
+coverage/
+.vitest/

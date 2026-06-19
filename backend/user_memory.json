@@ -1,0 +1,95 @@
+{
+    "users": {},
+    "preferences": {},
+    "sessions": {},
+    "history": {
+        "1": [
+            {
+                "session_id": "58cc3fe6-2b5b-4d65-99c7-d371a49512cd",
+                "role": "user",
+                "content": "hi'",
+                "timestamp": "2026-01-31T07:01:43.603716+00:00"
+            },
+            {
+                "session_id": "58cc3fe6-2b5b-4d65-99c7-d371a49512cd",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
+                "timestamp": "2026-01-31T07:01:47.124572+00:00"
+            }
+        ],
+        "2": [
+            {
+                "session_id": "102b50d2-5155-45d5-b2be-f9c7b0b316f6",
+                "role": "user",
+                "content": "Hello Saarthi, give a brief test reply.",
+                "timestamp": "2026-05-16T07:39:48.906719+00:00"
+            },
+            {
+                "session_id": "102b50d2-5155-45d5-b2be-f9c7b0b316f6",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
+                "timestamp": "2026-05-16T07:40:10.653917+00:00"
+            },
+            {
+                "session_id": "b8d40e52-3b73-41b3-9e23-6704b57ee78e",
+                "role": "user",
+                "content": "Hello Saarthi, give a brief test reply.",
+                "timestamp": "2026-05-16T07:45:05.219931+00:00"
+            },
+            {
+                "session_id": "b8d40e52-3b73-41b3-9e23-6704b57ee78e",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
+                "timestamp": "2026-05-16T07:45:26.764174+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "user",
+                "content": "Hello Saarthi, give a brief test reply.",
+                "timestamp": "2026-06-05T06:23:20.688154+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
+                "timestamp": "2026-06-05T06:23:43.023988+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "user",
+                "content": "Hi Saarthi, are you online?",
+                "timestamp": "2026-06-05T06:41:44.959067+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
+                "timestamp": "2026-06-05T06:42:08.512735+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "user",
+                "content": "hello",
+                "timestamp": "2026-06-05T06:53:13.383901+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
+                "timestamp": "2026-06-05T06:53:35.998724+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "user",
+                "content": "hi",
+                "timestamp": "2026-06-05T06:56:48.200946+00:00"
+            },
+            {
+                "session_id": "65cb6f82-753f-4b66-bcc0-3a4fa8014b99",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
+                "timestamp": "2026-06-05T06:57:11.512039+00:00"
+            }
+        ]
+    }
+}
