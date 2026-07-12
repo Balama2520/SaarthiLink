@@ -1,4 +1,4 @@
- **AI-Powered Career Copilot for Students**
+ **AI-Powered Career Platform for Students**
 
 Developed by **Bala Maneesh Ayanala**. Saarthi AI is a career copilot designed specifically for Indian students, freshers, and job seekers. It transforms the generic chatbot experience into a focused tool for career advancement.
 
