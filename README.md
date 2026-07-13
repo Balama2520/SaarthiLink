@@ -44,5 +44,4 @@ Saarthi AI helps you navigate your career journey through personalised modules:
     npm run dev
     ```
 
-## 🛡️ License
-MIT License - open for modification and distribution.
+
