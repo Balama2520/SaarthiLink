@@ -1,47 +1,73 @@
- **AI-Powered Career Platform for Students**
+# React + TypeScript + Vite
 
-Developed by **Bala Maneesh Ayanala**. Saarthi AI is a career copilot designed specifically for Indian students, freshers, and job seekers. It transforms the generic chatbot experience into a focused tool for career advancement.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🚀 Vision
+Currently, two official plugins are available:
 
-Saarthi AI helps you navigate your career journey through personalised modules:
-- **Resume Analysis**: Upload your resume to get an ATS Score, identify skill gaps, and receive actionable suggestions.
-- **Roadmap Generator**: Generate 30-day and 90-day learning roadmaps, including recommended projects and courses for your target role.
-- **Job Matching**: AI-driven matching of your resume to suitable internships and jobs.
-- **Interview Preparation**: Practice with tailored technical questions, behavioural questions, and mock interviews.
-- **Learning Assistant**: Get structured notes, roadmaps, and practice materials for technologies like React, ML, and AWS.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## 🛠️ Architecture
+## React Compiler
 
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, ShadCN
-- **Backend**: FastAPI (Python)
-- **Database**: PostgreSQL (planned) / SQLite (MVP)
-- **Vector DB**: ChromaDB (Semantic Search with `all-MiniLM-L6-v2`)
-- **AI Layer**: Ollama (Local), Gemini, OpenAI
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## ⚡ Quick Start (MVP Local Setup)
+## Expanding the ESLint configuration
 
-- Python 3.10+
-- [Ollama](https://ollama.ai/) (Running locally)
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-### Installation
-1.  **Clone the repo**
-    ```bash
-    git clone https://github.com/yourusername/saarthi-ai.git
-    cd saarthi-ai
-    ```
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-2.  **Launch (Manual)**
-    ```bash
-    # Backend
-    cd backend
-    pip install -r requirements.txt
-    uvicorn app. main: app --host 0.0.0.0 --port 2520
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-    # Frontend
-    cd ../frontend
-    npm install
-    npm run dev
-    ```
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
 
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
