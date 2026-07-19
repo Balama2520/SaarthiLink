@@ -6,6 +6,7 @@ from app.repositories.chat_repository import ChatRepository
 from app.repositories.memory_repository import MemoryRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.repositories.workspace_file_repository import WorkspaceFileRepository
+from app.repositories.research_repository import ResearchRepository
 
 def get_goal_repository(db: Session = Depends(get_db)) -> GoalRepository:
     return GoalRepository(db)
@@ -21,3 +22,6 @@ def get_workspace_repository(db: Session = Depends(get_db)) -> WorkspaceReposito
 
 def get_workspace_file_repository(db: Session = Depends(get_db)) -> WorkspaceFileRepository:
     return WorkspaceFileRepository(db)
+
+def get_research_repository(db: Session = Depends(get_db)) -> ResearchRepository:
+    return ResearchRepository(db)
