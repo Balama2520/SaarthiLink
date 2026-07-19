@@ -1,8 +1,7 @@
 import os
 import uuid
 import logging
-import numpy as np
-from typing import Optional, List
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def save_file(content: bytes, filename: str) -> str:
-    """Save raw bytes to UPLOAD_DIR and return a unique file_id."""
+    """Save raw bytes to UPLOAD_DIR and index into RAG database."""
     fid = str(uuid.uuid4())
     ext = os.path.splitext(filename)[1]
     path = os.path.join(UPLOAD_DIR, f"{fid}{ext}")
@@ -19,12 +18,19 @@ def save_file(content: bytes, filename: str) -> str:
     with open(path, "wb") as f:
         f.write(content)
     
-    logger.info(f"File saved: {filename} -> {fid}")
+    # Process text and index via RAG
+    try:
+        from app.rag import index_text_content
+
+        text_content = content.decode("utf-8", errors="ignore")
+        index_text_content(fid, filename, text_content)
+    except Exception as e:
+        logger.error(f"Failed to process text for file {filename}: {e}")
+        
     return fid
 
 def get_file_text(file_id: str) -> Optional[str]:
-    """Retrieve text content from a saved file (supports text/md for now)."""
-    # Find the file in UPLOAD_DIR
+    """Retrieve text content from a saved file."""
     for f in os.listdir(UPLOAD_DIR):
         if f.startswith(file_id):
             path = os.path.join(UPLOAD_DIR, f)
@@ -37,36 +43,11 @@ def get_file_text(file_id: str) -> Optional[str]:
     return None
 
 def find_relevant_context(file_id: str, query: str, max_chars: int = 4000) -> str:
-    """Enhanced RAG: Chunking and Keyword Relevance via Numpy."""
+    """Retrieves relevant chunk segments from unified RAG service, falls back to head text."""
+    chunks = find_relevant_chunks(file_id, query)
+    if chunks:
+        return "\n[...]\n".join(chunks)
+        
+    # Fallback
     content = get_file_text(file_id)
-    if not content:
-        return "No content found in file."
-    
-    # Split into overlaps chunks
-    chunk_size = 1200
-    overlap = 200
-    chunks = []
-    for i in range(0, len(content), chunk_size - overlap):
-        chunks.append(content[i : i + chunk_size])
-        
-    if not chunks: return ""
-
-    # Simple Keyword Overlap Ranking
-    query_words = set(query.lower().split())
-    relevance_scores = []
-    
-    for chunk in chunks:
-        chunk_words = set(chunk.lower().split())
-        score = len(query_words.intersection(chunk_words))
-        relevance_scores.append(score)
-    
-    # Use numpy to get top indices
-    relevance_scores = np.array(relevance_scores)
-    top_indices = np.argsort(relevance_scores)[-3:] # Top 3 chunks
-    
-    relevant_chunks = [chunks[i] for i in top_indices if relevance_scores[i] > 0]
-    
-    if not relevant_chunks:
-        return content[:max_chars] # Fallback to head
-        
-    return "\n[...]\n".join(relevant_chunks)
+    return content[:max_chars] if content else "No content found."

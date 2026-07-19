@@ -1,26 +1,42 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 
-from app.database import get_db
-from app.models import User, UserCreate, Token, TokenData, UserLogin
+from app.database.connection import get_db
+from app.models.models import User, UserCreate, Token, TokenData
 from app.config import get_settings
+
+
+class GuestUser:
+    def __init__(self):
+        self.id = -1
+        self.username = "Guest"
+        self.full_name = None
+        self.email = None
+        self.target_role = None
 
 settings = get_settings()
 
-# --- Security Logic ---
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# Security Config
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(password: str) -> str:
+    # bcrypt has a maximum length of 72 bytes
+    if len(password.encode("utf-8")) > 72:
+        password = password[:72]
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -33,12 +49,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if not token:
+        return GuestUser()
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
@@ -53,7 +73,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
-# --- Routes ---
+# Router setup
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=Token)
@@ -74,9 +94,30 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+async def login(request: Request, db: Session = Depends(get_db)):
+    form_data = await request.form()
+    json_data = None
+    try:
+        json_data = await request.json()
+    except Exception:
+        json_data = None
+
+    username = None
+    password = None
+
+    if json_data and isinstance(json_data, dict):
+        username = json_data.get("username")
+        password = json_data.get("password")
+
+    if not username or not password:
+        username = form_data.get("username")
+        password = form_data.get("password")
+
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="Username and password are required")
+
+    user = db.query(User).filter(User.username == username).first()
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     
     access_token = create_access_token(data={"sub": user.username})

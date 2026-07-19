@@ -1,0 +1,9 @@
+﻿John Doe
+Email: john@example.com
+Education: B.Tech in Computer Science
+Experience:
+- Software Engineer at Acme Inc (2021-2024)
+- Worked on backend APIs using Python, FastAPI, Docker, PostgreSQL
+Projects:
+- Recommendation engine using Python and scikit-learn
+Skills: Python, FastAPI, Docker, PostgreSQL, SQL, Git

@@ -13,10 +13,8 @@ import logging
 
 from app.config import get_settings
 from app.database import engine
-from app import models, auth
-# Import application routers
-from app.routes.sessions import router as sessions_router
-from app.routes.chat import router as chat_router
+from app import models
+from app.api import api_router
 
 # Initialize Settings
 settings = get_settings()
@@ -27,10 +25,9 @@ models.Base.metadata.create_all(bind=engine)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-
     title=settings.APP_NAME,
     version=settings.VERSION,
-    description="Production-grade AI Neural Interface"
+    description="AI-Powered Career Copilot for Students"
 )
 
 # --- Middleware ---
@@ -120,9 +117,7 @@ async def health():
         "target_ollama": settings.OLLAMA_URL
     }
 
-app.include_router(auth.router, prefix=settings.API_PREFIX)
-app.include_router(sessions_router, prefix=settings.API_PREFIX)
-app.include_router(chat_router, prefix=settings.API_PREFIX)
+app.include_router(api_router, prefix=settings.API_PREFIX)
 app.include_router(health_router, prefix=settings.API_PREFIX)
 
 # Serve frontend static files

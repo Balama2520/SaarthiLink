@@ -15,6 +15,42 @@
                 "role": "assistant",
                 "content": "\u26a0\ufe0f Neural Link Fault: All connection attempts failed",
                 "timestamp": "2026-01-31T07:01:47.124572+00:00"
+            },
+            {
+                "session_id": "d7b9a1bf-0bb9-4646-a779-7171ba5b8dbb",
+                "role": "user",
+                "content": "Hello Saarthi, give a brief test reply.",
+                "timestamp": "2026-06-25T06:46:22.437195+00:00"
+            },
+            {
+                "session_id": "d7b9a1bf-0bb9-4646-a779-7171ba5b8dbb",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f AI Offline: Ollama is unavailable, and GEMINI_API_KEY is not configured in the environment.",
+                "timestamp": "2026-06-25T06:46:34.114526+00:00"
+            },
+            {
+                "session_id": "47ff710e-ab5a-4291-9080-39a51f74246a",
+                "role": "user",
+                "content": "Hello Saarthi, give a brief test reply.",
+                "timestamp": "2026-06-25T06:47:04.061088+00:00"
+            },
+            {
+                "session_id": "47ff710e-ab5a-4291-9080-39a51f74246a",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f AI Offline: Ollama is unavailable, and GEMINI_API_KEY is not configured in the environment.",
+                "timestamp": "2026-06-25T06:47:16.812871+00:00"
+            },
+            {
+                "session_id": "69fa04f1-41aa-460b-99e4-8f6cffa74412",
+                "role": "user",
+                "content": "Hello Saarthi, give a brief test reply.",
+                "timestamp": "2026-06-28T06:27:06.540369+00:00"
+            },
+            {
+                "session_id": "69fa04f1-41aa-460b-99e4-8f6cffa74412",
+                "role": "assistant",
+                "content": "\u26a0\ufe0f AI Offline: Ollama is unavailable, and GEMINI_API_KEY is not configured in the environment.",
+                "timestamp": "2026-06-28T06:27:18.484951+00:00"
             }
         ],
         "2": [

@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+saarthi.db
+buddy.db
+chroma_db
+uploads/

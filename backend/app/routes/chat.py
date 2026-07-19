@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from typing import Optional
 import json
@@ -11,6 +11,7 @@ from app.auth import get_current_user
 from app.models import ChatSession, ChatMessage, ChatRequest, ChatWithFileRequest
 from app.config import get_settings
 from app.services import ai_service, memory_service, file_service, memory_json_service, voice_service
+from app.agents.graph import determine_agent
 
 router = APIRouter(tags=["chat"])
 settings = get_settings()
@@ -43,7 +44,13 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user
     # Optional: We could inject long-term memories here if needed as system hints
     # but for now we rely on the custom persona from JSON memory tracked in ai_service.
     
-    # 4. Stream from AI Service
+    # 4. Agent Router (LangGraph)
+    # If the user hasn't explicitly selected an agent, autonomous LangGraph determines it.
+    actual_personality = request.personality
+    if request.personality == "default":
+        actual_personality = await determine_agent(request.message)
+
+    # 5. Stream from AI Service
     async def stream_generator():
         full_response = ""
         try:
@@ -51,7 +58,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user
             async for text_chunk in ai_service.generate_response_stream_async(
                 history, 
                 request.model, 
-                request.personality,
+                actual_personality,
                 image_data=request.image_data,
                 user_id=str(current_user.id)
             ):
@@ -114,5 +121,48 @@ async def chat_with_file(request: ChatWithFileRequest, db: Session = Depends(get
         except Exception as e:
             logger.error(f"RAG Stream error: {e}")
             yield f"⚠️ RAG Uplink Fault: {str(e)}".encode()
+
+    return StreamingResponse(stream_generator(), media_type="text/plain")
+
+
+@router.post("/local")
+async def chat_local(request: Request):
+    """Handle a local-only chat request from guests. Expects JSON:
+    { message, model?, personality?, local_profile?, local_history? }
+    This endpoint will NOT persist messages to the DB; it only streams AI responses using provided local context.
+    """
+    payload = await request.json()
+    message = payload.get("message")
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    model = payload.get("model", settings.DEFAULT_MODEL if hasattr(settings, "DEFAULT_MODEL") else "phi3")
+    personality = payload.get("personality", "default")
+    local_profile = payload.get("local_profile")
+    local_history = payload.get("local_history") or []
+
+    # Build a conversational history combining local_profile and local_history
+    history = []
+    if local_profile:
+        try:
+            profile_text = json.dumps(local_profile)
+        except Exception:
+            profile_text = str(local_profile)
+        history.append({"role": "system", "content": f"User profile and local data: {profile_text}"})
+
+    # Append any supplied local history (should be list of {role, content})
+    for h in local_history:
+        if isinstance(h, dict) and h.get("role") and h.get("content"):
+            history.append(h)
+
+    # Finally add the user's current message
+    history.append({"role": "user", "content": message})
+
+    async def stream_generator():
+        try:
+            async for chunk in ai_service.generate_response_stream_async(history, model, personality, user_id="guest_local"):
+                yield chunk.encode()
+        except Exception as e:
+            yield f"⚠️ Local chat error: {str(e)}".encode()
 
     return StreamingResponse(stream_generator(), media_type="text/plain")

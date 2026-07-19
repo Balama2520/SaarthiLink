@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: saarthi
+      POSTGRES_PASSWORD: saarthipassword
+      POSTGRES_DB: saarthidb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saarthi -d saarthidb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "2520:2520"
+    environment:
+      - DATABASE_URL=postgresql://saarthi:saarthipassword@postgres:5432/saarthidb
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=saarthi-super-secret-jwt-key
+      - CORS_ORIGINS=http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/chroma_db:/app/chroma_db
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:2520
+
+volumes:
+  postgres_data:
