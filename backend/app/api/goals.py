@@ -6,13 +6,10 @@ from app.database.connection import get_db
 from app.auth.auth import get_current_user
 from app.models.models import User
 from app.schemas.goal import GoalCreate, GoalUpdate, GoalResponse
-from app.repositories.goal_repository import GoalRepository
 from app.services.goal_service import GoalService
+from app.core.dependencies import get_goal_service
 
 router = APIRouter(prefix="/goals", tags=["goals"])
-
-def get_goal_service(db: Session = Depends(get_db)) -> GoalService:
-    return GoalService(GoalRepository(db))
 
 @router.post("/", response_model=GoalResponse, status_code=status.HTTP_201_CREATED)
 def create_goal(
