@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 
-from app.auth.auth import get_current_user
+from app.core.dependencies.auth import get_current_user
 from app.models.models import User
 from app.services.career_service import CareerService
 from app.core.dependencies.services import get_career_service

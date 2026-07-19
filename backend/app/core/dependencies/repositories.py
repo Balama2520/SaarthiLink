@@ -12,6 +12,13 @@ from app.repositories.resume_repository import ResumeRepository
 from app.repositories.jobs_repository import JobsRepository
 from app.repositories.interview_repository import InterviewRepository
 from app.repositories.career_repository import CareerRepository
+from app.repositories.user_repository import UserRepository
+from app.repositories.project_repository import ProjectRepository
+from app.repositories.admin_repository import AdminRepository
+from app.repositories.note_repository import NoteRepository
+from app.repositories.gradhub_repository import GradhubRepository
+from app.repositories.higher_studies_repository import HigherStudiesRepository
+from app.repositories.experiment_repository import ExperimentRepository
 
 def get_goal_repository(db: Session = Depends(get_db)) -> GoalRepository:
     return GoalRepository(db)
@@ -45,3 +52,24 @@ def get_interview_repository(db: Session = Depends(get_db)) -> InterviewReposito
 
 def get_career_repository(db: Session = Depends(get_db)) -> CareerRepository:
     return CareerRepository(db)
+
+def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
+    return UserRepository(db)
+
+def get_project_repository(db: Session = Depends(get_db)) -> ProjectRepository:
+    return ProjectRepository(db)
+
+def get_admin_repository(db: Session = Depends(get_db)) -> AdminRepository:
+    return AdminRepository(db)
+
+def get_note_repository(db: Session = Depends(get_db)) -> NoteRepository:
+    return NoteRepository(db)
+
+def get_gradhub_repository(db: Session = Depends(get_db)) -> GradhubRepository:
+    return GradhubRepository(db)
+
+def get_higher_studies_repository(db: Session = Depends(get_db)) -> HigherStudiesRepository:
+    return HigherStudiesRepository(db)
+
+def get_experiment_repository(db: Session = Depends(get_db)) -> ExperimentRepository:
+    return ExperimentRepository(db)

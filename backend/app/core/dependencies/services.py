@@ -4,7 +4,10 @@ from app.core.dependencies.repositories import (
     get_workspace_repository, get_workspace_file_repository,
     get_research_repository, get_roadmap_repository,
     get_resume_repository, get_jobs_repository,
-    get_interview_repository, get_career_repository
+    get_interview_repository, get_career_repository,
+    get_user_repository, get_project_repository,
+    get_admin_repository, get_note_repository, get_gradhub_repository,
+    get_higher_studies_repository, get_experiment_repository
 )
 from app.repositories.goal_repository import GoalRepository
 from app.repositories.chat_repository import ChatRepository
@@ -17,6 +20,13 @@ from app.repositories.resume_repository import ResumeRepository
 from app.repositories.jobs_repository import JobsRepository
 from app.repositories.interview_repository import InterviewRepository
 from app.repositories.career_repository import CareerRepository
+from app.repositories.user_repository import UserRepository
+from app.repositories.project_repository import ProjectRepository
+from app.repositories.admin_repository import AdminRepository
+from app.repositories.note_repository import NoteRepository
+from app.repositories.gradhub_repository import GradhubRepository
+from app.repositories.higher_studies_repository import HigherStudiesRepository
+from app.repositories.experiment_repository import ExperimentRepository
 
 from app.services.goal_service import GoalService
 from app.services.chat_service import ChatService
@@ -29,6 +39,13 @@ from app.services.resume_service import ResumeService
 from app.services.jobs_service import JobsService
 from app.services.interview_service import InterviewService
 from app.services.career_service import CareerService
+from app.services.auth_service import AuthService
+from app.services.project_service import ProjectService
+from app.services.admin_service import AdminService
+from app.services.note_service import NoteService
+from app.services.gradhub_service import GradhubService
+from app.services.higher_studies_service import HigherStudiesService
+from app.services.experiment_service import ExperimentService
 
 def get_goal_service(repo: GoalRepository = Depends(get_goal_repository)) -> GoalService:
     return GoalService(repo)
@@ -80,6 +97,29 @@ def get_career_service(
     repo: CareerRepository = Depends(get_career_repository)
 ) -> CareerService:
     return CareerService(repo)
+
+def get_auth_service(
+    repo: UserRepository = Depends(get_user_repository)
+) -> AuthService:
+    return AuthService(repo)
+
+def get_project_service(repo: ProjectRepository = Depends(get_project_repository)) -> ProjectService:
+    return ProjectService(repo)
+
+def get_admin_service(repo: AdminRepository = Depends(get_admin_repository)) -> AdminService:
+    return AdminService(repo)
+
+def get_note_service(repo: NoteRepository = Depends(get_note_repository)) -> NoteService:
+    return NoteService(repo)
+
+def get_gradhub_service(repo: GradhubRepository = Depends(get_gradhub_repository)) -> GradhubService:
+    return GradhubService(repo)
+
+def get_higher_studies_service(repo: HigherStudiesRepository = Depends(get_higher_studies_repository)) -> HigherStudiesService:
+    return HigherStudiesService(repo)
+
+def get_experiment_service(repo: ExperimentRepository = Depends(get_experiment_repository)) -> ExperimentService:
+    return ExperimentService(repo)
 
 def save_message_background(session_id: str, role: str, content: str):
     from app.core.dependencies.database import get_db_context

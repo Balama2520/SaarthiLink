@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.auth.auth import get_current_user
+from app.core.dependencies.auth import get_current_user
 from app.models.models import User
 from app.services.interview_service import InterviewService
 from app.core.dependencies.services import get_interview_service

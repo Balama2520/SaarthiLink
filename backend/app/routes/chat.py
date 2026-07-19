@@ -4,7 +4,7 @@ import json
 import logging
 from fastapi.responses import StreamingResponse
 
-from app.auth.auth import get_current_user
+from app.core.dependencies.auth import get_current_user
 from app.schemas.chat import ChatRequest, ChatWithFileRequest
 from app.core.config import get_settings
 from app.services import ai_service, file_service, memory_json_service, voice_service

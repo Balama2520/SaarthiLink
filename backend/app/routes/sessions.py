@@ -3,7 +3,7 @@ from typing import List
 from pydantic import BaseModel
 
 from app.schemas.chat import ChatSessionSchema, ChatMessageSchema
-from app.auth.auth import get_current_user
+from app.core.dependencies.auth import get_current_user
 from app.models.models import User
 from app.services.chat_service import ChatService
 from app.core.dependencies.services import get_chat_service

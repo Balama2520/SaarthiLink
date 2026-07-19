@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from PyPDF2 import PdfReader
 from pydantic import BaseModel
 
-from app.auth.auth import get_current_user
+from app.core.dependencies.auth import get_current_user
 from app.models.models import User
 from app.services.research_service import ResearchService
 from app.core.dependencies.services import get_research_service

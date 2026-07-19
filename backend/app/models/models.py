@@ -37,6 +37,7 @@ class User(Base):
     publications = relationship("PublicationTracker", back_populates="owner", cascade="all, delete-orphan")
     higher_edu_plans = relationship("HigherEducationPlan", back_populates="owner", cascade="all, delete-orphan")
     goals = relationship("Goal", back_populates="owner", cascade="all, delete-orphan")
+    notes = relationship("Note", back_populates="owner", cascade="all, delete-orphan")
 
 
 class AIWorkspace(Base):
@@ -319,5 +320,16 @@ class Goal(Base):
 
     owner = relationship("User", back_populates="goals")
 
+class Note(Base):
+    __tablename__ = "notes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=True)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    tags = Column(String(500), default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    owner = relationship("User", back_populates="notes")
 
 

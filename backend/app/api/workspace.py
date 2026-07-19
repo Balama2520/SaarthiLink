@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from fastapi.responses import StreamingResponse
 
-from app.auth.auth import get_current_user
+from app.core.dependencies.auth import get_current_user
 from app.models.models import User
 from app.core.dependencies.services import get_workspace_service, get_workspace_file_service
 from app.services.workspace_service import WorkspaceService

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import io
 import PyPDF2
 
-from app.auth.auth import get_current_user
+from app.core.dependencies.auth import get_current_user
 from app.models.models import User
 from app.services.resume_service import ResumeService
 from app.core.dependencies.services import get_resume_service

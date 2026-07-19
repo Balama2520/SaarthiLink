@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.models import Resume, Document, JobApplication
-from app.api.notes import Note
+from app.models.models import Resume, Document, JobApplication, Note
 
 class WorkspaceFileRepository:
     def __init__(self, db: Session):
