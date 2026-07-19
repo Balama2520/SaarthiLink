@@ -2,7 +2,6 @@ import uuid
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Index, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from app.database import Base
 
@@ -321,79 +320,4 @@ class Goal(Base):
     owner = relationship("User", back_populates="goals")
 
 
-# --- Pydantic Data Schemas ---
 
-class UserBase(BaseModel):
-    username: str
-
-class UserCreate(UserBase):
-    password: str
-
-class UserLogin(UserBase):
-    password: str
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
-
-class ChatMessageSchema(BaseModel):
-    role: str
-    content: str
-    timestamp: datetime
-    model_config = ConfigDict(from_attributes=True)
-
-class ChatSessionSchema(BaseModel):
-    id: str
-    title: str
-    created_at: datetime
-    messages: List[ChatMessageSchema] = []
-    model_config = ConfigDict(from_attributes=True)
-
-class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=10000)
-    session_id: Optional[str] = "default"
-    model: Optional[str] = "phi3"
-    personality: Optional[str] = "default"
-    image_data: Optional[str] = None
-
-class ChatWithFileRequest(BaseModel):
-    message: str
-    file_id: str
-    session_id: Optional[str] = "default"
-    model: Optional[str] = "phi3"
-
-class HealthResponse(BaseModel):
-    status: str
-    time: str
-    target_ollama: str
-
-
-class GoalBase(BaseModel):
-    title: str
-    description: Optional[str] = None
-    category: Optional[str] = "General"
-    status: Optional[str] = "pending"
-    priority: Optional[str] = "medium"
-    progress: Optional[int] = 0
-    due_date: Optional[str] = None
-
-class GoalCreate(GoalBase):
-    pass
-
-class GoalUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    category: Optional[str] = None
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    progress: Optional[int] = None
-    due_date: Optional[str] = None
-
-class GoalResponse(GoalBase):
-    id: str
-    user_id: int
-    created_at: datetime
-    model_config = ConfigDict(from_attributes=True)

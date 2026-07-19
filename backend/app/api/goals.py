@@ -4,7 +4,8 @@ from typing import List
 
 from app.database.connection import get_db
 from app.auth.auth import get_current_user
-from app.models.models import User, Goal, GoalCreate, GoalUpdate, GoalResponse
+from app.models.models import User, Goal
+from app.schemas.goal import GoalCreate, GoalUpdate, GoalResponse
 
 router = APIRouter(prefix="/goals", tags=["goals"])
 

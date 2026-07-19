@@ -5,7 +5,8 @@ import uuid
 from datetime import datetime
 
 from app.database import get_db
-from app.models import ChatSession, ChatMessage, ChatSessionSchema, ChatMessageSchema
+from app.models import ChatSession, ChatMessage
+from app.schemas.chat import ChatSessionSchema, ChatMessageSchema
 from app.auth import get_current_user
 from pydantic import BaseModel
 

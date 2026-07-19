@@ -7,7 +7,8 @@ from jose import JWTError, jwt
 import bcrypt
 
 from app.database.connection import get_db
-from app.models.models import User, UserCreate, Token, TokenData
+from app.models.models import User
+from app.schemas.auth import UserCreate, Token, TokenData
 from app.config import get_settings
 
 
