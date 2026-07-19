@@ -9,7 +9,7 @@ import bcrypt
 from app.database.connection import get_db
 from app.models.models import User
 from app.schemas.auth import UserCreate, Token, TokenData
-from app.config import get_settings
+from app.core.config import get_settings
 
 
 class GuestUser:

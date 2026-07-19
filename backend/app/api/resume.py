@@ -10,7 +10,7 @@ from app.database.connection import get_db
 from app.auth.auth import get_current_user
 from app.models.models import User, Resume
 from app.ai.llm import generate_response_stream_async
-from app.config import get_settings
+from app.core.config import get_settings
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 logger = logging.getLogger(__name__)

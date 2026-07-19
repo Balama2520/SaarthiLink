@@ -11,7 +11,7 @@ import asyncio
 import httpx
 import logging
 
-from app.config import get_settings
+from app.core.config import get_settings
 from app.database import engine
 from app import models
 from app.api import api_router

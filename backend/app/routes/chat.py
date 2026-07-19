@@ -10,7 +10,7 @@ from app.database import get_db, SessionLocal
 from app.auth import get_current_user
 from app.models import ChatSession, ChatMessage
 from app.schemas.chat import ChatRequest, ChatWithFileRequest
-from app.config import get_settings
+from app.core.config import get_settings
 from app.services import ai_service, memory_service, file_service, memory_json_service, voice_service
 from app.agents.graph import determine_agent
 

@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from typing import List, AsyncGenerator, Optional
-from app.config import get_settings
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
