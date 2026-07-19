@@ -1,17 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
-from sqlalchemy.orm import Session
 from typing import Optional
 import json
 import logging
-from datetime import datetime, timezone
 from fastapi.responses import StreamingResponse
 
-from app.database import get_db, SessionLocal
-from app.auth import get_current_user
-from app.models import ChatSession, ChatMessage
+from app.auth.auth import get_current_user
 from app.schemas.chat import ChatRequest, ChatWithFileRequest
 from app.core.config import get_settings
-from app.services import ai_service, memory_service, file_service, memory_json_service, voice_service
+from app.services import ai_service, file_service, memory_json_service, voice_service
+from app.services.chat_service import ChatService
+from app.services.memory_service import MemoryService
+from app.core.dependencies.services import get_chat_service, get_memory_service, save_message_background
 from app.agents.graph import determine_agent
 
 router = APIRouter(tags=["chat"])
@@ -25,32 +24,25 @@ async def voice_to_text(file: UploadFile = File(...), current_user = Depends(get
     return {"text": text}
 
 @router.post("/chat")
-async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+async def chat(
+    request: ChatRequest,
+    current_user = Depends(get_current_user),
+    chat_svc: ChatService = Depends(get_chat_service),
+    mem_svc: MemoryService = Depends(get_memory_service)
+):
     # 1. Verify Session Ownership
-    session = db.query(ChatSession).filter(
-        ChatSession.id == request.session_id, 
-        ChatSession.user_id == current_user.id
-    ).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found or access denied")
-
-    from app.repositories.memory_repository import MemoryRepository
-    from app.services.memory_service import MemoryService
-    mem_service = MemoryService(MemoryRepository(db))
+    chat_svc.get_session(request.session_id, current_user.id)
 
     # 2. Save User Message to SQLite and JSON Memory
-    mem_service.add_message(request.session_id, "user", request.message)
+    mem_svc.add_message(request.session_id, "user", request.message)
     memory_json_service.memory_json_service.add_to_history(
         str(current_user.id), request.session_id, "user", request.message
     )
 
-    # 3. Get Context (Short-term from DB, Long-term from JSON)
-    history = mem_service.get_history(request.session_id, limit=10)
-    # Optional: We could inject long-term memories here if needed as system hints
-    # but for now we rely on the custom persona from JSON memory tracked in ai_service.
+    # 3. Get Context
+    history = mem_svc.get_history(request.session_id, limit=10)
     
     # 4. Agent Router (LangGraph)
-    # If the user hasn't explicitly selected an agent, autonomous LangGraph determines it.
     actual_personality = request.personality
     if request.personality == "default":
         actual_personality = await determine_agent(request.message)
@@ -59,7 +51,6 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user
     async def stream_generator():
         full_response = ""
         try:
-            # We use a dedicated session for the background persistence task
             async for text_chunk in ai_service.generate_response_stream_async(
                 history, 
                 request.model, 
@@ -71,12 +62,10 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user
                 yield text_chunk.encode()
             
             if full_response:
-                with SessionLocal() as persistence_db:
-                    mem_service_persist = MemoryService(MemoryRepository(persistence_db))
-                    mem_service_persist.add_message(request.session_id, "assistant", full_response)
-                    memory_json_service.memory_json_service.add_to_history(
-                        str(current_user.id), request.session_id, "assistant", full_response
-                    )
+                save_message_background(request.session_id, "assistant", full_response)
+                memory_json_service.memory_json_service.add_to_history(
+                    str(current_user.id), request.session_id, "assistant", full_response
+                )
         except Exception as e:
             logger.error(f"Stream error: {e}")
             yield f"⚠️ Neural Link Interrupted: {str(e)}".encode()
@@ -95,11 +84,14 @@ async def upload_file(file: UploadFile = File(...), current_user = Depends(get_c
     }
 
 @router.post("/chat-with-file")
-async def chat_with_file(request: ChatWithFileRequest, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+async def chat_with_file(
+    request: ChatWithFileRequest,
+    current_user = Depends(get_current_user),
+    chat_svc: ChatService = Depends(get_chat_service),
+    mem_svc: MemoryService = Depends(get_memory_service)
+):
     # 1. Verify Session
-    session = db.query(ChatSession).filter(ChatSession.id == request.session_id, ChatSession.user_id == current_user.id).first()
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
+    chat_svc.get_session(request.session_id, current_user.id)
 
     # 2. Get Context via RAG
     context = file_service.find_relevant_context(request.file_id, request.message)
@@ -107,8 +99,7 @@ async def chat_with_file(request: ChatWithFileRequest, db: Session = Depends(get
     # 3. Build Prompt
     augmented_prompt = f"Context from uploaded file:\n{context}\n\nUser Question: {request.message}"
     
-    mem_service = MemoryService(MemoryRepository(db))
-    mem_service.add_message(request.session_id, "user", f"[File Query] {request.message}")
+    mem_svc.add_message(request.session_id, "user", f"[File Query] {request.message}")
     
     # 5. Handle Streaming Response
     async def stream_generator():
@@ -121,9 +112,7 @@ async def chat_with_file(request: ChatWithFileRequest, db: Session = Depends(get
             
             # Save Assistant Message
             if full_response:
-                with SessionLocal() as persistence_db:
-                    mem_service_persist = MemoryService(MemoryRepository(persistence_db))
-                    mem_service_persist.add_message(request.session_id, "assistant", full_response)
+                save_message_background(request.session_id, "assistant", full_response)
         except Exception as e:
             logger.error(f"RAG Stream error: {e}")
             yield f"⚠️ RAG Uplink Fault: {str(e)}".encode()

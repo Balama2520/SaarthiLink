@@ -7,7 +7,7 @@ from app.auth.auth import get_current_user
 from app.models.models import User
 from app.schemas.goal import GoalCreate, GoalUpdate, GoalResponse
 from app.services.goal_service import GoalService
-from app.core.dependencies import get_goal_service
+from app.core.dependencies.services import get_goal_service
 
 router = APIRouter(prefix="/goals", tags=["goals"])
 
