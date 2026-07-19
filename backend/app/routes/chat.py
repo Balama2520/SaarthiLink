@@ -34,14 +34,18 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user
     if not session:
         raise HTTPException(status_code=404, detail="Session not found or access denied")
 
+    from app.repositories.memory_repository import MemoryRepository
+    from app.services.memory_service import MemoryService
+    mem_service = MemoryService(MemoryRepository(db))
+
     # 2. Save User Message to SQLite and JSON Memory
-    memory_service.add_message(db, request.session_id, "user", request.message)
+    mem_service.add_message(request.session_id, "user", request.message)
     memory_json_service.memory_json_service.add_to_history(
         str(current_user.id), request.session_id, "user", request.message
     )
 
     # 3. Get Context (Short-term from DB, Long-term from JSON)
-    history = memory_service.get_history(db, request.session_id, limit=10)
+    history = mem_service.get_history(request.session_id, limit=10)
     # Optional: We could inject long-term memories here if needed as system hints
     # but for now we rely on the custom persona from JSON memory tracked in ai_service.
     
@@ -66,10 +70,10 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user
                 full_response += text_chunk
                 yield text_chunk.encode()
             
-            # Save Assistant Message after stream completes
             if full_response:
                 with SessionLocal() as persistence_db:
-                    memory_service.add_message(persistence_db, request.session_id, "assistant", full_response)
+                    mem_service_persist = MemoryService(MemoryRepository(persistence_db))
+                    mem_service_persist.add_message(request.session_id, "assistant", full_response)
                     memory_json_service.memory_json_service.add_to_history(
                         str(current_user.id), request.session_id, "assistant", full_response
                     )
@@ -103,8 +107,8 @@ async def chat_with_file(request: ChatWithFileRequest, db: Session = Depends(get
     # 3. Build Prompt
     augmented_prompt = f"Context from uploaded file:\n{context}\n\nUser Question: {request.message}"
     
-    # 4. Log User Query
-    memory_service.add_message(db, request.session_id, "user", f"[File Query] {request.message}")
+    mem_service = MemoryService(MemoryRepository(db))
+    mem_service.add_message(request.session_id, "user", f"[File Query] {request.message}")
     
     # 5. Handle Streaming Response
     async def stream_generator():
@@ -118,7 +122,8 @@ async def chat_with_file(request: ChatWithFileRequest, db: Session = Depends(get
             # Save Assistant Message
             if full_response:
                 with SessionLocal() as persistence_db:
-                    memory_service.add_message(persistence_db, request.session_id, "assistant", full_response)
+                    mem_service_persist = MemoryService(MemoryRepository(persistence_db))
+                    mem_service_persist.add_message(request.session_id, "assistant", full_response)
         except Exception as e:
             logger.error(f"RAG Stream error: {e}")
             yield f"⚠️ RAG Uplink Fault: {str(e)}".encode()

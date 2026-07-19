@@ -1,29 +1,25 @@
-from sqlalchemy.orm import Session
-from app.models import ChatMessage
 from datetime import datetime, timezone
+from typing import List, Dict
+from app.repositories.memory_repository import MemoryRepository
+from app.models.models import ChatMessage
 
-def add_message(db: Session, session_id: str, role: str, content: str):
-    new_msg = ChatMessage(
-        session_id=session_id,
-        role=role,
-        content=content,
-        timestamp=datetime.now(timezone.utc)
-    )
-    db.add(new_msg)
-    db.commit()
+class MemoryService:
+    def __init__(self, repo: MemoryRepository):
+        self.repo = repo
 
-def get_history(db: Session, session_id: str, limit: int = 20):
-    messages = db.query(ChatMessage)\
-        .filter(ChatMessage.session_id == session_id)\
-        .order_by(ChatMessage.timestamp.desc())\
-        .limit(limit)\
-        .all()
-    
-    # Return in correct order for context (oldest first)
-    return [{"role": m.role, "content": m.content} for m in reversed(messages)]
+    def add_message(self, session_id: str, role: str, content: str) -> None:
+        new_msg = ChatMessage(
+            session_id=session_id,
+            role=role,
+            content=content,
+            timestamp=datetime.now(timezone.utc)
+        )
+        self.repo.add_message(new_msg)
 
-def delete_session(db: Session, session_id: str):
-    from app.models import ChatSession
-    db.query(ChatSession).filter(ChatSession.id == session_id).delete()
-    db.commit()
+    def get_history(self, session_id: str, limit: int = 20) -> List[Dict[str, str]]:
+        messages = self.repo.get_messages(session_id, limit)
+        return [{"role": m.role, "content": m.content} for m in reversed(messages)]
+
+    def delete_session(self, session_id: str) -> None:
+        self.repo.delete_session(session_id)
 
