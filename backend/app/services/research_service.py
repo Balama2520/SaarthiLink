@@ -31,11 +31,25 @@ class ResearchService:
     def __init__(self, repo: ResearchRepository):
         self.repo = repo
 
-    async def analyze_paper(self, text: str) -> dict:
+    async def analyze_paper(self, file_content: bytes, filename: str) -> dict:
         """
         Run AI analysis on extracted paper text.
         Returns structured JSON: summary, explanation, notes, quiz.
         """
+        import io
+        from PyPDF2 import PdfReader
+
+        try:
+            if filename.endswith(".pdf"):
+                reader = PdfReader(io.BytesIO(file_content))
+                text = "".join(
+                    [page.extract_text() for page in reader.pages if page.extract_text()]
+                )
+            else:
+                text = file_content.decode("utf-8")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not read file: {e}")
+
         prompt = f"""
 You are an AI Research Assistant. Analyze the following research paper text.
 Provide a detailed summary, explanation of key concepts, study notes, and a 3-question quiz.

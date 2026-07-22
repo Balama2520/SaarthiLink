@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from PyPDF2 import PdfReader
+
 from pydantic import BaseModel
 
 from app.core.dependencies.auth import get_current_user
@@ -22,17 +22,11 @@ async def analyze_paper(
 ):
     """Upload a PDF or text file; returns AI-generated summary, notes, and quiz."""
     try:
-        if file.filename.endswith(".pdf"):
-            reader = PdfReader(file.file)
-            text = "".join(
-                [page.extract_text() for page in reader.pages if page.extract_text()]
-            )
-        else:
-            text = (await file.read()).decode("utf-8")
+        content = await file.read()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not read file: {e}")
+        raise HTTPException(status_code=400, detail=f"Could not read file upload: {e}")
 
-    return await research_svc.analyze_paper(text)
+    return await research_svc.analyze_paper(content, file.filename)
 
 
 @router.post("/compass")

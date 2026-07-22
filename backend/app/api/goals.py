@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
+
 from typing import List
 
-from app.database.connection import get_db
+
 from app.core.dependencies.auth import get_current_user
 from app.models.models import User
 from app.schemas.goal import GoalCreate, GoalUpdate, GoalResponse
