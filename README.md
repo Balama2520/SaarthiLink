@@ -1,50 +1,52 @@
-# Saarthi AI
+# Saarthilink — Frontend
 
-> **AI-Powered Career Copilot for Students**
+AI-powered career copilot for students and job-seekers: resume analysis, job matching, mock interviews, learning roadmaps, and progress tracking.
 
-Developed by **Bala Maneesh Ayanala**. Saarthi AI is a career copilot designed specifically for Indian students, freshers, and job seekers. It transforms the generic chatbot experience into a focused tool for career advancement.
+## Stack
 
-## 🚀 Vision
+- **React 19** + **TypeScript** + **Vite**
+- **Tailwind CSS v4** for styling, **shadcn**-style primitives in `src/components/ui`
+- **Zustand** (with `persist`) for global app state (`src/store/useAppStore.ts`)
+- **TanStack Query** for server-state caching and mutations
+- **Framer Motion** for animation
 
-Saarthi AI helps you navigate your career journey through personalized modules:
-- **Resume Analysis**: Upload your resume to get an ATS Score, identify skill gaps, and receive actionable suggestions.
-- **Roadmap Generator**: Generate 30-day and 90-day learning roadmaps, including recommended projects and courses for your target role.
-- **Job Matching**: AI-driven matching of your resume to suitable internships and jobs.
-- **Interview Preparation**: Practice with tailored technical questions, behavioral questions, and mock interviews.
-- **Learning Assistant**: Get structured notes, roadmaps, and practice materials for technologies like React, ML, and AWS.
+## Getting started
 
-## 🛠️ Architecture
+```bash
+npm install
+npm run dev       # start the dev server (proxies /api -> http://localhost:2520)
+npm run build      # type-check + production build
+npm run lint       # ESLint
+```
 
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, ShadCN
-- **Backend**: FastAPI (Python)
-- **Database**: PostgreSQL (planned) / SQLite (MVP)
-- **Vector DB**: ChromaDB (Semantic Search with `all-MiniLM-L6-v2`)
-- **AI Layer**: Ollama (Local), Gemini, OpenAI
+## Project structure
 
-## ⚡ Quick Start (MVP Local Setup)
+```
+src/
+├── pages/          # Route-level screens (Dashboard, JobFinder, InterviewCoach, ...)
+├── components/      # Reusable components; components/ui holds design-system primitives
+├── hooks/           # Data-fetching and UI hooks (React Query wrappers, toast, etc.)
+├── services/        # api.ts — the single fetch layer talking to the backend
+├── store/           # Zustand global state (auth, active tab, persona)
+├── lib/             # auth.ts (token storage), utils.ts (cn helper)
+└── context/         # ToastContext (app-wide toast notifications)
+```
 
-- Python 3.10+
-- [Ollama](https://ollama.ai/) (Running locally)
+## Auth
 
-### Installation
-1.  **Clone the repo**
-    ```bash
-    git clone https://github.com/yourusername/saarthi-ai.git
-    cd saarthi-ai
-    ```
+Token storage is centralized in `src/lib/auth.ts` — this is the **only** place that should
+read or write `access_token` / `username` from browser storage. Every other module
+(`services/api.ts`, `store/useAppStore.ts`, pages that need to check sign-in state) imports
+from here. "Keep me signed in" (in `AuthPage.tsx`) controls whether the token lands in
+`localStorage` (persists across restarts) or `sessionStorage` (cleared when the tab closes).
 
-2.  **Launch (Manual)**
-    ```bash
-    # Backend
-    cd backend
-    pip install -r requirements.txt
-    uvicorn app.main:app --host 0.0.0.0 --port 2520
+If you add a new page or service that needs to know whether the user is signed in, import
+`isAuthenticated()` / `getToken()` / `authHeader()` from `lib/auth.ts` — do not read
+`localStorage` directly.
 
-    # Frontend
-    cd ../frontend
-    npm install
-    npm run dev
-    ```
+## Notes for contributors
 
-## 🛡️ License
-MIT License - open for modification and distribution.
+- Backend is expected at `/api` (see `vite.config.ts` dev proxy and `nginx.conf` for prod).
+- File uploads (resume analyzer) are capped client-side at 10MB and restricted to
+  `.pdf` / `.docx` / `.txt` — see `validateAndSetFile` in `ResumeAnalyzer.tsx`.
+- See `CHANGELOG.md` for the most recent hardening pass and known follow-ups.
