@@ -1,14 +1,43 @@
 from sqlalchemy.orm import Session
-from app.models.models import DailyMission
-from typing import Optional
+from app.models.models import DailyMission, Goal, Resume, UserProfile, UserSkill
+from typing import List, Optional
+
 
 class CareerRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_profile(self, user_id: int) -> Optional[UserProfile]:
+        return self.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+
+    def get_user_skills(self, user_id: int) -> List[UserSkill]:
+        return (
+            self.db.query(UserSkill)
+            .filter(UserSkill.user_id == user_id)
+            .order_by(UserSkill.proficiency.desc(), UserSkill.skill_name.asc())
+            .all()
+        )
+
+    def get_latest_resume(self, user_id: int) -> Optional[Resume]:
+        return (
+            self.db.query(Resume)
+            .filter(Resume.user_id == user_id)
+            .order_by(Resume.created_at.desc())
+            .first()
+        )
+
+    def get_goals(self, user_id: int, limit: int = 5) -> List[Goal]:
+        return (
+            self.db.query(Goal)
+            .filter(Goal.user_id == user_id)
+            .order_by(Goal.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
     def get_mission_by_date(self, user_id: int, date_str: str) -> Optional[DailyMission]:
         return self.db.query(DailyMission).filter(
-            DailyMission.user_id == user_id, 
+            DailyMission.user_id == user_id,
             DailyMission.date == date_str
         ).first()
 

@@ -39,7 +39,8 @@ class WorkspaceService:
 
     def chat_workspace(self, workspace_id: str, user_id: int, message: str, model: str):
         from app.services.file_service import get_file_text
-        from app.ai.llm import generate_response_stream_async
+        from app.ai.gateway import AIGateway
+        from app.ai.prompt_manager import PromptManager
         import logging
         logger = logging.getLogger(__name__)
 
@@ -67,15 +68,8 @@ class WorkspaceService:
             
         grounding_context = "\n\n".join(context_parts)
         
-        system_prompt = f"""You are a grounded career operating system workspace AI. 
-You are grounded ONLY on the sources uploaded/linked to this workspace by the user.
-If the user asks questions, answer using the grounding sources below. If the information is not present in the grounding sources, tell the user clearly, but try your best to suggest logical next steps.
-
-Grounding Sources for Workspace "{ws.name}":
----
-{grounding_context if grounding_context else "No files, resumes, or descriptions have been uploaded to this workspace yet."}
----
-"""
+        grounding_context_text = grounding_context if grounding_context else "No files, resumes, or descriptions have been uploaded to this workspace yet."
+        system_prompt = PromptManager.load("workspace/chat", workspace_name=ws.name, grounding_context=grounding_context_text)
         
         messages = [
             {"role": "system", "content": system_prompt},
@@ -84,7 +78,7 @@ Grounding Sources for Workspace "{ws.name}":
         
         async def stream_generator():
             try:
-                async for chunk in generate_response_stream_async(messages, model, personality="career"):
+                async for chunk in AIGateway().generate_response_stream(messages, model, personality="career"):
                     yield chunk.encode("utf-8")
             except Exception as e:
                 logger.error(f"Workspace chat streaming error: {e}")

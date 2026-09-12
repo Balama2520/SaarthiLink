@@ -3,7 +3,7 @@ import logging
 from fastapi import HTTPException
 from app.repositories.resume_repository import ResumeRepository
 from app.models.models import Resume
-from app.ai.llm import generate_response_stream_async
+from app.ai.gateway import AIGateway
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ Provide your analysis STRICTLY as a valid JSON object matching this structure. D
 }}
 """
         messages = [{"role": "user", "content": prompt}]
-        response_stream = generate_response_stream_async(messages, personality="career")
+        response_stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(response_stream)
 
         try:

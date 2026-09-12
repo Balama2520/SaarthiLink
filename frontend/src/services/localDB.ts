@@ -2,9 +2,11 @@ import localforage from "localforage";
 
 // Initialize the local database
 localforage.config({
-  name: "SaarthiAI",
+  name: "SaarthiAI", // IndexedDB database name — left as-is intentionally;
+                      // renaming it would orphan any data already cached in
+                      // a returning user's browser rather than migrate it.
   storeName: "workspaces", // Should be alphanumeric, with underscores.
-  description: "Local-First storage for Saarthi AI MVP",
+  description: "Local-First storage for SaarthiLink MVP",
 });
 
 export const localDB = {
@@ -41,6 +43,32 @@ export const localDB = {
     } catch (err) {
       console.error("Failed to load resume analysis locally", err);
       return null;
+    }
+  },
+
+  // --- Guest Chat History (AI OS Chat, unauthenticated fallback) ---
+  async saveChatHistory(history: unknown) {
+    try {
+      await localforage.setItem("guest_chat_history", history);
+    } catch (err) {
+      console.error("Failed to save chat history locally", err);
+    }
+  },
+
+  async getChatHistory() {
+    try {
+      return await localforage.getItem("guest_chat_history");
+    } catch (err) {
+      console.error("Failed to load chat history locally", err);
+      return null;
+    }
+  },
+
+  async clearChatHistory() {
+    try {
+      await localforage.removeItem("guest_chat_history");
+    } catch (err) {
+      console.error("Failed to clear chat history locally", err);
     }
   }
 };

@@ -1,15 +1,110 @@
-const API_BASE = "/api";
+import { authHeader, getToken, getRefreshToken, setAuth, getStoredUsername, clearAuth } from "../lib/auth";
+
+// A deployed static frontend cannot rely on Vite's development-only `/api`
+// proxy. Netlify must set this public, HTTPS API origin at build time. The
+// relative fallback keeps same-origin/reverse-proxy deployments and local Vite
+// development working without embedding a localhost production URL.
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE = configuredApiBase
+  ? configuredApiBase.replace(/\/+$/, "")
+  : "/api";
 
 function getHeaders(extraHeaders: Record<string, string> = {}) {
-  const token = localStorage.getItem("access_token");
-  const headers: Record<string, string> = { ...extraHeaders };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  return { ...extraHeaders, ...authHeader() };
+}
+
+const originalFetch = window.fetch;
+
+let refreshPromise: Promise<string | null> | null = null;
+
+async function performTokenRefresh(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    clearAuth();
+    return null;
   }
-  return headers;
+
+  try {
+    const refreshRes = await originalFetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (refreshRes.ok) {
+      const data = await refreshRes.json();
+      const username = getStoredUsername() || "User";
+      setAuth(
+        username,
+        data.access_token,
+        data.refresh_token,
+        sessionStorage.getItem("access_token") ? "session" : "local"
+      );
+      return data.access_token as string;
+    } else {
+      clearAuth();
+      window.location.hash = "#/dashboard";
+      return null;
+    }
+  } catch {
+    clearAuth();
+    window.location.hash = "#/dashboard";
+    return null;
+  }
+}
+
+// Intercept fetch to automatically refresh token on 401 with single in-flight coordination
+const fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  let res = await originalFetch(input, init);
+
+  const urlString = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url || "";
+  const isAuthEndpoint = urlString.includes("/auth/login") || urlString.includes("/auth/refresh") || urlString.includes("/auth/register");
+
+  if (res.status === 401 && !isAuthEndpoint) {
+    if (!refreshPromise) {
+      refreshPromise = performTokenRefresh().finally(() => {
+        refreshPromise = null;
+      });
+    }
+
+    const newAccessToken = await refreshPromise;
+    if (newAccessToken) {
+      const newInit = { ...init };
+      newInit.headers = {
+        ...newInit.headers,
+        ...authHeader(),
+      };
+      res = await originalFetch(input, newInit);
+    }
+  }
+  return res;
+};
+
+// DELETE endpoints commonly return 204 No Content (empty body) on success.
+// Calling res.json() unconditionally on that response throws a JSON-parse
+// error even though the request succeeded — which every caller's try/catch
+// then treats as a failed delete, rolling back an optimistic UI update that
+// was actually correct. This reads the body only when there is one.
+async function parseJsonSafe(res: Response) {
+  if (res.status === 204) return null;
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 export const api = {
+  // Public operational status. This endpoint contains no credentials and is
+  // used to label integrations as configured/unavailable rather than "ready".
+  async getHealth() {
+    const res = await fetch(`${API_BASE}/health`);
+    if (!res.ok) throw new Error("Failed to load service status");
+    return res.json();
+  },
+
   // Authentication
   async register(username: string, password: string) {
     const res = await fetch(`${API_BASE}/auth/register`, {
@@ -41,6 +136,19 @@ export const api = {
     return res.json();
   },
 
+  async logout(refreshToken: string) {
+    try {
+      const res = await originalFetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
   // Sessions
   async getSessions() {
     const res = await fetch(`${API_BASE}/sessions/`, {
@@ -66,7 +174,7 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete session");
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async getSessionMessages(sessionId: string) {
@@ -88,7 +196,7 @@ export const api = {
     onError: (err: unknown) => void
   ) {
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getToken();
       const res = await fetch(`${API_BASE}/chat`, {
         method: "POST",
         headers: {
@@ -184,7 +292,7 @@ export const api = {
       formData.append("target_role", targetRole);
     }
 
-    const res = await fetch(`${API_BASE}/resume/analyze`, {
+    const res = await fetch(`${API_BASE}/resume/upload`, {
       method: "POST",
       headers: getHeaders(),
       body: formData,
@@ -193,6 +301,44 @@ export const api = {
       const data = await res.json();
       throw new Error(data.detail || "Resume analysis failed");
     }
+    return res.json();
+  },
+
+  async syncResumeProfile(resumeId: string, accepted: boolean = true) {
+    const res = await fetch(`${API_BASE}/resume/${resumeId}/sync`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ accepted }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.detail || "Resume profile sync failed");
+    }
+    return res.json();
+  },
+
+  async reanalyzeResume(resumeId: string, targetRole?: string) {
+    const formData = new FormData();
+    if (targetRole) {
+      formData.append("target_role", targetRole);
+    }
+    const res = await fetch(`${API_BASE}/resume/${resumeId}/reanalyze`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: formData,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.detail || "Resume re-analysis failed");
+    }
+    return res.json();
+  },
+
+  async getResumeHistory() {
+    const res = await fetch(`${API_BASE}/resume/history`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load resume history");
     return res.json();
   },
 
@@ -224,6 +370,79 @@ export const api = {
   },
 
   // Jobs
+  async getJobs(skip: number = 0, limit: number = 20) {
+    const res = await fetch(`${API_BASE}/jobs?skip=${skip}&limit=${limit}`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load jobs");
+    return res.json();
+  },
+
+  async searchJobs(q: string = "", location: string = "", skip: number = 0, limit: number = 20) {
+    let url = `${API_BASE}/jobs/search?skip=${skip}&limit=${limit}`;
+    if (q) url += `&q=${encodeURIComponent(q)}`;
+    if (location) url += `&location=${encodeURIComponent(location)}`;
+    const res = await fetch(url, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to search jobs");
+    return res.json();
+  },
+
+  async getRecommendedJobs(skip: number = 0, limit: number = 20) {
+    const res = await fetch(`${API_BASE}/jobs/recommended?skip=${skip}&limit=${limit}`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load recommended jobs");
+    return res.json();
+  },
+
+  // Profile
+  async getProfile() {
+    const res = await fetch(`${API_BASE}/profile`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load profile");
+    return res.json();
+  },
+
+  async updateProfile(updates: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/profile`, {
+      method: "PATCH",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.detail || "Failed to update profile");
+    }
+    return res.json();
+  },
+
+  async getProfileCompleteness() {
+    const res = await fetch(`${API_BASE}/profile/completeness`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load profile completeness");
+    return res.json();
+  },
+
+  async saveJob(jobId: string) {
+    const res = await fetch(`${API_BASE}/jobs/save`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    if (!res.ok) throw new Error("Failed to save job");
+    return res.json();
+  },
+
+  async getSavedJobs() {
+    const res = await fetch(`${API_BASE}/jobs/saved`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load saved jobs");
+    return res.json();
+  },
+
   async matchJob(resumeText: string, jobDescription: string, companyName: string, jobTitle: string) {
     const res = await fetch(`${API_BASE}/jobs/match`, {
       method: "POST",
@@ -299,6 +518,18 @@ export const api = {
     return res.json();
   },
 
+  async runSeedingPipeline(dryRun: boolean = true) {
+    const res = await fetch(`${API_BASE}/admin/sheets/run-pipeline?dry_run=${dryRun}`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      throw new Error(data?.detail || "Failed to run job-pipeline dry run");
+    }
+    return res.json();
+  },
+
   // Notes
   async generateNote(topic: string, depth: string = "detailed") {
     const res = await fetch(`${API_BASE}/notes/generate`, {
@@ -328,7 +559,7 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete note");
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   // --- Workspaces (NotebookLM) ---
@@ -356,7 +587,7 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete workspace");
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async linkToWorkspace(workspaceId: string, itemType: string, itemId: string) {
@@ -393,7 +624,7 @@ export const api = {
     onError: (err: unknown) => void
   ) {
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getToken();
       const res = await fetch(`${API_BASE}/workspace/${workspaceId}/chat`, {
         method: "POST",
         headers: {
@@ -448,7 +679,7 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete course");
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async addCert(name: string, provider: string, targetDate?: string, status?: string) {
@@ -475,7 +706,7 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete certification");
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async addPlacement(company: string, role: string, roundsJson?: string, packageAmt?: string, status?: string) {
@@ -496,13 +727,23 @@ export const api = {
     return res.json();
   },
 
+  async updatePlacement(id: string, updates: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/gradhub/placements/${id}`, {
+      method: "PATCH",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error("Failed to update placement entry");
+    return res.json();
+  },
+
   async deletePlacement(id: string) {
     const res = await fetch(`${API_BASE}/gradhub/placements/${id}`, {
       method: "DELETE",
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete placement entry");
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async githubReview(profileText: string, targetRole: string) {
@@ -622,10 +863,40 @@ export const api = {
     return res.json();
   },
 
-  async get(url: string, params?: Record<string, any>) {
+  async getCareerDashboard() {
+    const res = await fetch(`${API_BASE}/career/dashboard`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load career dashboard");
+    return res.json();
+  },
+
+  async analyzeSkillGaps(targetRole: string) {
+    const res = await fetch(`${API_BASE}/career/skill-gap`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ target_role: targetRole }),
+    });
+    if (!res.ok) throw new Error("Failed to analyze skill gaps");
+    return res.json();
+  },
+
+  async generateLearningPlan(targetRole: string, weeks: number = 4) {
+    const res = await fetch(`${API_BASE}/career/learning-plan`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ target_role: targetRole, weeks }),
+    });
+    if (!res.ok) throw new Error("Failed to generate learning plan");
+    return res.json();
+  },
+
+  async get(url: string, params?: Record<string, string | number | boolean>) {
     let finalUrl = `${API_BASE}${url}`;
     if (params) {
-        const queryParams = new URLSearchParams(params).toString();
+        const queryParams = new URLSearchParams(
+          Object.entries(params).map(([key, value]) => [key, String(value)])
+        ).toString();
         finalUrl += `?${queryParams}`;
     }
     const res = await fetch(finalUrl, {
@@ -636,7 +907,7 @@ export const api = {
     return { data: await res.json() };
   },
 
-  async post(url: string, data?: any) {
+  async post(url: string, data?: unknown) {
     const res = await fetch(`${API_BASE}${url}`, {
       method: "POST",
       headers: getHeaders({ "Content-Type": "application/json" }),
@@ -654,7 +925,7 @@ export const api = {
     if (!res.ok) throw new Error("Failed to load goals");
     return res.json();
   },
-  async createGoal(goal: any) {
+  async createGoal(goal: Record<string, unknown>) {
     const res = await fetch(`${API_BASE}/goals/`, {
       method: "POST",
       headers: getHeaders({ "Content-Type": "application/json" }),
@@ -663,7 +934,7 @@ export const api = {
     if (!res.ok) throw new Error("Failed to create goal");
     return res.json();
   },
-  async updateGoal(goalId: string, goal: any) {
+  async updateGoal(goalId: string, goal: Record<string, unknown>) {
     const res = await fetch(`${API_BASE}/goals/${goalId}`, {
       method: "PUT",
       headers: getHeaders({ "Content-Type": "application/json" }),
@@ -678,6 +949,123 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete goal");
+    return parseJsonSafe(res);
+  },
+  async getGoalTree(goalId: string) {
+    const res = await fetch(`${API_BASE}/goals/${goalId}/tree`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch goal tree");
+    return res.json();
+  },
+  async addMilestone(goalId: string, milestone: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/goals/${goalId}/milestones`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(milestone),
+    });
+    if (!res.ok) throw new Error("Failed to add milestone");
+    return res.json();
+  },
+  async addTask(milestoneId: string, task: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/goals/milestones/${milestoneId}/tasks`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(task),
+    });
+    if (!res.ok) throw new Error("Failed to add task");
+    return res.json();
+  },
+  async generateGoalPlan(goalId: string) {
+    const res = await fetch(`${API_BASE}/goals/${goalId}/plan`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Failed to generate plan");
+    }
+    return res.json();
+  },
+  // Discovery & Intelligence APIs
+  async getDiscoveryOptions() {
+    const res = await fetch(`${API_BASE}/discovery/options`);
+    if (!res.ok) throw new Error("Failed to fetch discovery options");
+    return res.json();
+  },
+  async submitDiscovery(payload: Record<string, unknown>) {
+    const session_id = getSessionId();
+    const res = await fetch(`${API_BASE}/discovery/submit`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json", "X-Session-ID": session_id }),
+      body: JSON.stringify({ session_id, ...payload }),
+    });
+    if (!res.ok) throw new Error("Failed to submit discovery intelligence");
+    return res.json();
+  },
+  async getFeedbackFeatures() {
+    const res = await fetch(`${API_BASE}/feedback/features`);
+    if (!res.ok) throw new Error("Failed to fetch features list");
+    return res.json();
+  },
+  async submitFeatureRating(feature_id: number, rating: string, comment?: string, is_want_next?: boolean) {
+    const session_id = getSessionId();
+    const res = await fetch(`${API_BASE}/feedback/feature`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json", "X-Session-ID": session_id }),
+      body: JSON.stringify({ feature_id, rating, comment, is_want_next }),
+    });
+    if (!res.ok) throw new Error("Failed to record feature rating");
+    return res.json();
+  },
+  async submitProductFeedback(feedback: Record<string, unknown>) {
+    const session_id = getSessionId();
+    const res = await fetch(`${API_BASE}/feedback/product`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json", "X-Session-ID": session_id }),
+      body: JSON.stringify(feedback),
+    });
+    if (!res.ok) throw new Error("Failed to submit product feedback");
+    return res.json();
+  },
+  async submitContactForm(data: Record<string, unknown>) {
+    const session_id = getSessionId();
+    const res = await fetch(`${API_BASE}/contact`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json", "X-Session-ID": session_id }),
+      body: JSON.stringify({ session_id, ...data }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to submit contact form");
+    }
+    return res.json();
+  },
+  async getContactInfo() {
+    const res = await fetch(`${API_BASE}/contact/info`);
+    if (!res.ok) throw new Error("Failed to fetch contact info");
+    return res.json();
+  },
+  async submitOpportunitySignal(opportunity: Record<string, unknown>) {
+    const session_id = getSessionId();
+    const res = await fetch(`${API_BASE}/opportunities`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json", "X-Session-ID": session_id }),
+      body: JSON.stringify({ session_id, ...opportunity }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to submit opportunity signal");
+    }
     return res.json();
   },
 };
+
+function getSessionId(): string {
+  let id = localStorage.getItem("saarthi_session_id");
+  if (!id) {
+    id = "session_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
+    localStorage.setItem("saarthi_session_id", id);
+  }
+  return id;
+}

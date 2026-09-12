@@ -1,0 +1,255 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.0, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\91809\OneDrive\Desktop\Saarthi\backend
+configfile: pytest.ini
+plugins: anyio-4.14.2, langsmith-0.10.6, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 190 items
+
+tests/test_auth.py::test_register_user PASSED                            [  0%]
+tests/test_auth.py::test_login_user PASSED                               [  1%]
+tests/test_auth.py::test_login_user_json PASSED                          [  1%]
+tests/test_career_copilot.py::test_skill_gap_analysis_endpoint PASSED    [  2%]
+tests/test_career_copilot.py::test_learning_plan_endpoint PASSED         [  2%]
+tests/test_career_copilot.py::test_dashboard_summary_endpoint PASSED     [  3%]
+tests/test_decision_engine.py::TestDecisionEngineHeuristics::test_workflow_advance_on_next PASSED [  3%]
+tests/test_decision_engine.py::TestDecisionEngineHeuristics::test_workflow_advance_on_continue PASSED [  4%]
+tests/test_decision_engine.py::TestDecisionEngineHeuristics::test_proactive_suggestion_on_blocker PASSED [  4%]
+tests/test_decision_engine.py::TestDecisionEngineHeuristics::test_use_tool_on_explicit_goal_update PASSED [  5%]
+tests/test_decision_engine.py::TestDecisionEngineHeuristics::test_direct_response_as_default PASSED [  5%]
+tests/test_decision_engine.py::TestDecisionEngineLogging::test_every_decision_is_logged PASSED [  6%]
+tests/test_decision_engine.py::TestDecisionEngineLogging::test_logged_decision_has_valid_json PASSED [  6%]
+tests/test_decision_engine.py::TestDecisionEngineLogging::test_execution_time_is_recorded PASSED [  7%]
+tests/test_decision_engine.py::TestDecisionEngineLogging::test_state_hash_is_stored PASSED [  7%]
+tests/test_discovery_api.py::TestDiscoveryOptions::test_get_discovery_options PASSED [  8%]
+tests/test_discovery_api.py::TestDiscoveryOptions::test_user_types_include_expected_keys PASSED [  8%]
+tests/test_discovery_api.py::TestDiscoverySubmission::test_submit_discovery_full_flow PASSED [  9%]
+tests/test_discovery_api.py::TestDiscoverySubmission::test_submit_discovery_minimal_payload PASSED [ 10%]
+tests/test_discovery_api.py::TestDiscoverySubmission::test_duplicate_session_updates_profile PASSED [ 10%]
+tests/test_discovery_api.py::TestFeedbackAPI::test_list_34_features PASSED [ 11%]
+tests/test_discovery_api.py::TestFeedbackAPI::test_features_have_required_fields PASSED [ 11%]
+tests/test_discovery_api.py::TestFeedbackAPI::test_feature_ids_are_1_to_34 PASSED [ 12%]
+tests/test_discovery_api.py::TestFeedbackAPI::test_submit_feature_rating PASSED [ 12%]
+tests/test_discovery_api.py::TestFeedbackAPI::test_submit_feature_rating_invalid_id PASSED [ 13%]
+tests/test_discovery_api.py::TestFeedbackAPI::test_submit_product_feedback PASSED [ 13%]
+tests/test_discovery_api.py::TestContactAPI::test_submit_contact_form PASSED [ 14%]
+tests/test_discovery_api.py::TestContactAPI::test_get_contact_info PASSED [ 14%]
+tests/test_discovery_api.py::TestContactAPI::test_contact_requires_name PASSED [ 15%]
+tests/test_discovery_api.py::TestContactAPI::test_contact_requires_valid_email PASSED [ 15%]
+tests/test_discovery_api.py::TestContactAPI::test_contact_requires_minimum_message_length PASSED [ 16%]
+tests/test_discovery_api.py::TestOpportunitiesAPI::test_submit_opportunity_with_url PASSED [ 16%]
+tests/test_discovery_api.py::TestOpportunitiesAPI::test_submit_opportunity_with_company_only PASSED [ 17%]
+tests/test_discovery_api.py::TestOpportunitiesAPI::test_submit_opportunity_requires_company_or_url PASSED [ 17%]
+tests/test_goal_engine.py::TestGoalEngineHealth::test_completed_goal_has_full_health PASSED [ 18%]
+tests/test_goal_engine.py::TestGoalEngineHealth::test_archived_goal_has_full_health PASSED [ 18%]
+tests/test_goal_engine.py::TestGoalEngineHealth::test_overdue_goal_reduces_health PASSED [ 19%]
+tests/test_goal_engine.py::TestGoalEngineHealth::test_high_progress_partially_restores_health PASSED [ 20%]
+tests/test_goal_engine.py::TestGoalEngineHealth::test_health_clamped_between_0_and_1 PASSED [ 20%]
+tests/test_goal_engine.py::TestGoalEnginePlanningState::test_no_active_goals_returns_sentinel PASSED [ 21%]
+tests/test_goal_engine.py::TestGoalEnginePlanningState::test_active_goal_returned_in_state PASSED [ 21%]
+tests/test_goal_engine.py::TestGoalEnginePlanningState::test_active_milestone_surfaced PASSED [ 22%]
+tests/test_goal_engine.py::TestGoalEnginePlanningState::test_overdue_tasks_detected PASSED [ 22%]
+tests/test_goal_engine.py::TestGoalEngineMilestoneCompletion::test_completing_milestone_writes_achievement_memory PASSED [ 23%]
+tests/test_goal_engine.py::TestGoalEngineMilestoneCompletion::test_completing_milestone_updates_parent_progress PASSED [ 23%]
+tests/test_hf_provider.py::TestHFProviderConfiguration::test_is_configured_with_space_id PASSED [ 24%]
+tests/test_hf_provider.py::TestHFProviderConfiguration::test_is_not_configured_without_space_id PASSED [ 24%]
+tests/test_hf_provider.py::TestHFProviderConfiguration::test_space_url_slug_conversion PASSED [ 25%]
+tests/test_hf_provider.py::TestHFProviderConfiguration::test_no_space_id_returns_none_url PASSED [ 25%]
+tests/test_hf_provider.py::TestHFProviderGenerate::test_generate_returns_response PASSED [ 26%]
+tests/test_hf_provider.py::TestHFProviderGenerate::test_generate_not_configured_raises PASSED [ 26%]
+tests/test_hf_provider.py::TestHFProviderGenerate::test_generate_auth_error_raises_permission_error PASSED [ 27%]
+tests/test_hf_provider.py::TestHFProviderTimeout::test_timeout_raises_runtime_error_after_retries PASSED [ 27%]
+tests/test_hf_provider.py::TestHFProviderTimeout::test_connect_error_raises_runtime_error_after_retries PASSED [ 28%]
+tests/test_hf_provider.py::TestHFProviderHealthCheck::test_health_config_required_when_not_configured PASSED [ 28%]
+tests/test_hf_provider.py::TestHFProviderHealthCheck::test_health_connected_on_200 PASSED [ 29%]
+tests/test_hf_provider.py::TestHFProviderHealthCheck::test_health_unavailable_on_connection_error PASSED [ 30%]
+tests/test_hf_provider.py::TestHFProviderStream::test_generate_stream_yields_response PASSED [ 30%]
+tests/test_hf_provider.py::TestHFProviderStream::test_generate_stream_propagates_runtime_error PASSED [ 31%]
+tests/test_integration.py::TestAuthFlow::test_register_and_login PASSED  [ 31%]
+tests/test_integration.py::TestProfileFlow::test_get_empty_profile PASSED [ 32%]
+tests/test_integration.py::TestProfileFlow::test_update_profile PASSED   [ 32%]
+tests/test_integration.py::TestProfileFlow::test_profile_completeness PASSED [ 33%]
+tests/test_integration.py::TestResumeFlow::test_resume_upload PASSED     [ 33%]
+tests/test_integration.py::TestResumeFlow::test_resume_version_increment PASSED [ 34%]
+tests/test_integration.py::TestResumeFlow::test_resume_upload_invalid_type PASSED [ 34%]
+tests/test_integration.py::TestResumeFlow::test_resume_upload_too_large PASSED [ 35%]
+tests/test_integration.py::TestResumeFlow::test_resume_history PASSED    [ 35%]
+tests/test_integration.py::TestResumeFlow::test_resume_sync_not_found PASSED [ 36%]
+tests/test_integration.py::TestHealthCheck::test_health_endpoint_returns_ok PASSED [ 36%]
+tests/test_integration.py::TestHealthCheck::test_health_endpoint_reports_api_component_as_ok PASSED [ 37%]
+tests/test_integration.py::TestJobsFlow::test_list_jobs_returns_list PASSED [ 37%]
+tests/test_integration.py::TestJobsFlow::test_search_jobs_returns_list PASSED [ 38%]
+tests/test_integration.py::TestJobsFlow::test_recommended_jobs_requires_auth PASSED [ 38%]
+tests/test_integration.py::TestJobsFlow::test_recommended_jobs_authenticated PASSED [ 39%]
+tests/test_intelligence_service.py::test_intelligence_service_analyze_job_relevance_high_match PASSED [ 40%]
+tests/test_intelligence_service.py::test_intelligence_service_analyze_job_relevance_partial_match PASSED [ 40%]
+tests/test_intelligence_service.py::test_intelligence_service_career_guidance PASSED [ 41%]
+tests/test_intelligence_service.py::test_admin_stats_extended_keys PASSED [ 41%]
+tests/test_intelligence_service.py::test_run_pipeline_admin_endpoint_unconfigured PASSED [ 42%]
+tests/test_main.py::test_root FAILED                                     [ 42%]
+tests/test_main.py::test_health PASSED                                   [ 43%]
+tests/test_memory_engine.py::TestWorkingMemoryEngine::test_retrieve_returns_empty_for_new_user PASSED [ 43%]
+tests/test_memory_engine.py::TestWorkingMemoryEngine::test_retrieve_ranks_by_importance PASSED [ 44%]
+tests/test_memory_engine.py::TestWorkingMemoryEngine::test_retrieve_relevance_boosts_on_keyword_match PASSED [ 44%]
+tests/test_memory_engine.py::TestWorkingMemoryEngine::test_retrieve_respects_limit PASSED [ 45%]
+tests/test_memory_engine.py::TestWorkingMemoryEngine::test_assemble_context_returns_dict PASSED [ 45%]
+tests/test_memory_engine.py::TestWorkingMemoryEngine::test_assemble_context_includes_profile PASSED [ 46%]
+tests/test_memory_engine.py::TestWorkingMemoryEngine::test_assemble_context_includes_ui_context PASSED [ 46%]
+tests/test_outbox_worker.py::TestOutboxWorker::test_pending_event_is_marked_processed PASSED [ 47%]
+tests/test_outbox_worker.py::TestOutboxWorker::test_handler_receives_correct_payload PASSED [ 47%]
+tests/test_outbox_worker.py::TestOutboxWorker::test_failed_handler_marks_event_failed PASSED [ 48%]
+tests/test_outbox_worker.py::TestOutboxWorker::test_events_without_handlers_are_processed_silently PASSED [ 48%]
+tests/test_outbox_worker.py::TestOutboxWorker::test_no_pending_events_is_a_noop PASSED [ 49%]
+tests/test_profile.py::test_profile_unauthorized PASSED                  [ 50%]
+tests/test_profile.py::test_get_profile_authorized PASSED                [ 50%]
+tests/test_profile.py::test_patch_profile PASSED                         [ 51%]
+tests/test_profile.py::test_get_profile_completeness PASSED              [ 51%]
+tests/test_rate_limit.py::test_rate_limiter_under_limit_passes PASSED    [ 52%]
+tests/test_rate_limit.py::test_rate_limiter_over_limit_blocks PASSED     [ 52%]
+tests/test_rate_limit.py::test_rate_limiter_disabled_allow_all PASSED    [ 53%]
+tests/test_rate_limit.py::test_429_response_shape_has_detail_and_request_id PASSED [ 53%]
+tests/test_security.py::TestRefreshFlow::test_refresh_returns_new_valid_access_token PASSED [ 54%]
+tests/test_security.py::TestRefreshFlow::test_invalid_access_token_then_refresh_works PASSED [ 54%]
+tests/test_security.py::TestRefreshFlow::test_invalid_refresh_token_returns_401 PASSED [ 55%]
+tests/test_security.py::TestLogoutInvalidation::test_logout_then_refresh_fails_with_401 PASSED [ 55%]
+tests/test_security.py::TestLogoutInvalidation::test_logout_with_nonexistent_token_is_silent_200 PASSED [ 56%]
+tests/test_security.py::TestUserIsolation::test_user_b_cannot_get_user_a_resume PASSED [ 56%]
+tests/test_security.py::TestUserIsolation::test_user_b_cannot_get_user_a_goals PASSED [ 57%]
+tests/test_security.py::TestUserIsolation::test_user_b_cannot_read_user_a_session_messages PASSED [ 57%]
+tests/test_security.py::TestAdminAuthMatrix::test_guest_to_admin_returns_401 PASSED [ 58%]
+tests/test_security.py::TestAdminAuthMatrix::test_normal_user_to_admin_returns_403 PASSED [ 58%]
+tests/test_security.py::TestAdminAuthMatrix::test_admin_user_to_admin_returns_200 PASSED [ 59%]
+tests/test_security.py::TestRedisUnavailable::test_health_endpoint_still_returns_200_when_redis_down PASSED [ 60%]
+tests/test_security.py::TestRedisUnavailable::test_protected_profile_endpoint_works_without_redis PASSED [ 60%]
+tests/test_sheets_service.py::TestAuthentication::test_not_configured_missing_spreadsheet_id PASSED [ 61%]
+tests/test_sheets_service.py::TestAuthentication::test_not_configured_missing_credential_json PASSED [ 61%]
+tests/test_sheets_service.py::TestAuthentication::test_not_configured_both_missing PASSED [ 62%]
+tests/test_sheets_service.py::TestAuthentication::test_configured_when_both_set PASSED [ 62%]
+tests/test_sheets_service.py::TestAuthentication::test_status_returns_config_required_no_id PASSED [ 63%]
+tests/test_sheets_service.py::TestAuthentication::test_status_returns_config_required_no_cred PASSED [ 63%]
+tests/test_sheets_service.py::TestAuthentication::test_status_configured_truncates_spreadsheet_id PASSED [ 64%]
+tests/test_sheets_service.py::TestAuthentication::test_get_client_raises_service_error_when_unconfigured PASSED [ 64%]
+tests/test_sheets_service.py::TestAuthentication::test_get_client_raises_auth_error_on_invalid_credentials PASSED [ 65%]
+tests/test_sheets_service.py::TestAuthentication::test_auth_error_message_sanitised_no_private_key_exposed PASSED [ 65%]
+tests/test_sheets_service.py::TestAuthentication::test_credentials_not_hardcoded_in_source PASSED [ 66%]
+tests/test_sheets_service.py::TestTabStructure::test_all_14_tabs_present PASSED [ 66%]
+tests/test_sheets_service.py::TestTabStructure::test_exact_tab_key_to_name_mapping PASSED [ 67%]
+tests/test_sheets_service.py::TestReadMethods::test_read_tab_unknown_key_raises PASSED [ 67%]
+tests/test_sheets_service.py::TestReadMethods::test_read_sources_calls_correct_worksheet PASSED [ 68%]
+tests/test_sheets_service.py::TestReadMethods::test_read_seed_config_calls_correct_worksheet PASSED [ 68%]
+tests/test_sheets_service.py::TestReadMethods::test_read_jobs_staging_calls_correct_worksheet PASSED [ 69%]
+tests/test_sheets_service.py::TestReadMethods::test_read_tab_returns_list_of_dicts PASSED [ 70%]
+tests/test_sheets_service.py::TestReadMethods::test_read_tab_raises_on_worksheet_failure PASSED [ 70%]
+tests/test_sheets_service.py::TestReadMethods::test_dashboard_returns_dict_from_metric_value_rows PASSED [ 71%]
+tests/test_sheets_service.py::TestReadMethods::test_sync_logs_limit_is_respected PASSED [ 71%]
+tests/test_sheets_service.py::TestWriteMethods::test_append_seed_run_calls_correct_worksheet PASSED [ 72%]
+tests/test_sheets_service.py::TestWriteMethods::test_append_sync_log_calls_correct_worksheet PASSED [ 72%]
+tests/test_sheets_service.py::TestWriteMethods::test_append_source_error_calls_correct_worksheet PASSED [ 73%]
+tests/test_sheets_service.py::TestWriteMethods::test_dashboard_never_writes PASSED [ 73%]
+tests/test_sheets_service.py::TestWriteMethods::test_write_to_dashboard_tab_raises_write_protected PASSED [ 74%]
+tests/test_sheets_service.py::TestWriteMethods::test_write_to_api_config_tab_raises_write_protected PASSED [ 74%]
+tests/test_sheets_service.py::TestWriteMethods::test_write_to_allowed_tabs_does_not_raise PASSED [ 75%]
+tests/test_sheets_service.py::TestJobPipeline::test_normalize_job_extracts_fields PASSED [ 75%]
+tests/test_sheets_service.py::TestJobPipeline::test_dedup_hash_same_for_same_inputs PASSED [ 76%]
+tests/test_sheets_service.py::TestJobPipeline::test_dedup_hash_different_for_different_inputs PASSED [ 76%]
+tests/test_sheets_service.py::TestJobPipeline::test_include_rules_allow_when_keyword_matches PASSED [ 77%]
+tests/test_sheets_service.py::TestJobPipeline::test_include_rules_block_when_no_match PASSED [ 77%]
+tests/test_sheets_service.py::TestJobPipeline::test_exclude_rules_block_when_keyword_matches PASSED [ 78%]
+tests/test_sheets_service.py::TestJobPipeline::test_exclude_rules_pass_when_no_match PASSED [ 78%]
+tests/test_sheets_service.py::TestJobPipeline::test_validate_job_passes_valid_job PASSED [ 79%]
+tests/test_sheets_service.py::TestJobPipeline::test_validate_job_fails_missing_company PASSED [ 80%]
+tests/test_sheets_service.py::TestJobPipeline::test_validate_job_fails_missing_title PASSED [ 80%]
+tests/test_sheets_service.py::TestJobPipeline::test_validate_job_fails_invalid_url PASSED [ 81%]
+tests/test_sheets_service.py::TestJobPipeline::test_pipeline_deduplicates_jobs PASSED [ 81%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_200_maps_to_synced PASSED [ 82%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_201_maps_to_synced PASSED [ 82%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_400_maps_to_failed_validation_no_retry PASSED [ 83%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_401_raises_auth_failure_aborts_pipeline PASSED [ 83%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_403_same_as_401 PASSED [ 84%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_409_maps_to_duplicate_continues PASSED [ 84%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_429_retries_up_to_max PASSED [ 85%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_500_retries_up_to_max PASSED [ 85%]
+tests/test_sheets_service.py::TestHTTPStatusHandling::test_503_treated_as_5xx_retried PASSED [ 86%]
+tests/test_sheets_service.py::TestDryRunProtection::test_dry_run_never_calls_httpx PASSED [ 86%]
+tests/test_sheets_service.py::TestDryRunProtection::test_dry_run_status_is_dry_run_skipped PASSED [ 87%]
+tests/test_sheets_service.py::TestDryRunProtection::test_dry_run_synced_count_is_zero PASSED [ 87%]
+tests/test_sheets_service.py::TestDryRunProtection::test_dry_run_log_writes_dry_run_not_synced PASSED [ 88%]
+tests/test_sheets_service.py::TestDryRunProtection::test_live_run_log_does_not_contain_dry_run_yes PASSED [ 88%]
+tests/test_sheets_service.py::TestConnectivityCheck::test_config_required_when_not_configured PASSED [ 89%]
+tests/test_sheets_service.py::TestConnectivityCheck::test_error_on_auth_failure PASSED [ 90%]
+tests/test_sheets_service.py::TestConnectivityCheck::test_configured_response_on_success PASSED [ 90%]
+tests/test_sheets_service.py::TestConnectivityCheck::test_response_never_exposes_credentials PASSED [ 91%]
+tests/test_sheets_service.py::TestSecurity::test_sanitise_error_removes_private_key_reference PASSED [ 91%]
+tests/test_sheets_service.py::TestSecurity::test_sanitise_error_removes_token_reference PASSED [ 92%]
+tests/test_sheets_service.py::TestSecurity::test_sanitise_error_removes_client_email PASSED [ 92%]
+tests/test_sheets_service.py::TestSecurity::test_sanitise_error_passes_safe_messages PASSED [ 93%]
+tests/test_sheets_service.py::TestSecurity::test_spreadsheet_id_never_fully_exposed_in_status PASSED [ 93%]
+tests/test_sheets_service.py::TestSecurity::test_write_protected_tabs_cannot_be_written PASSED [ 94%]
+tests/test_sheets_service.py::TestSecurity::test_status_response_never_contains_cred_json PASSED [ 94%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_start_workflow_creates_record PASSED [ 95%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_start_suspends_existing_active_workflow PASSED [ 95%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_advance_workflow_updates_step PASSED [ 96%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_complete_workflow_updates_status PASSED [ 96%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_complete_workflow_emits_event PASSED [ 97%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_get_active_workflow_returns_active_only PASSED [ 97%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_get_active_workflow_returns_none_for_new_user PASSED [ 98%]
+tests/test_workflow_engine.py::TestWorkflowEngine::test_resume_workflow_reactivates_suspended PASSED [ 98%]
+tests/test_workflow_engine.py::TestEventPublisher::test_publish_creates_outbox_record PASSED [ 99%]
+tests/test_workflow_engine.py::TestEventPublisher::test_published_payload_is_valid_json PASSED [100%]
+
+================================== FAILURES ===================================
+__________________________________ test_root __________________________________
+tests\test_main.py:4: in test_root
+    assert response.json()["message"] == "Saarthi AI Neural Link Online"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'message'
+---------------------------- Captured stderr setup ----------------------------
+[32m06:38:47 INFO    [0m app.main | Event Outbox Worker started.
+[32m06:38:47 INFO    [0m app.engine.outbox_worker | [OutboxWorker] Started (poll_interval=5.0s)
+----------------------------- Captured log setup ------------------------------
+INFO     app.main:main.py:41 Event Outbox Worker started.
+INFO     app.engine.outbox_worker:outbox_worker.py:80 [OutboxWorker] Started (poll_interval=5.0s)
+---------------------------- Captured stderr call -----------------------------
+[32m06:38:47 [22d16e9e] INFO    [0m app.main | Request processed
+------------------------------ Captured log call ------------------------------
+INFO     app.main:main.py:83 Request processed
+-------------------------- Captured stderr teardown ---------------------------
+[32m06:38:49 INFO    [0m app.engine.outbox_worker | [OutboxWorker] Stopped.
+[32m06:38:49 INFO    [0m app.main | Event Outbox Worker stopped.
+---------------------------- Captured log teardown ----------------------------
+INFO     app.engine.outbox_worker:outbox_worker.py:90 [OutboxWorker] Stopped.
+INFO     app.main:main.py:46 Event Outbox Worker stopped.
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+app\database\connection.py:39
+  C:\Users\91809\OneDrive\Desktop\Saarthi\backend\app\database\connection.py:39: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base(metadata=metadata)
+
+.venv\Lib\site-packages\speech_recognition\__init__.py:7
+  C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.venv\Lib\site-packages\speech_recognition\__init__.py:7: DeprecationWarning: aifc was removed in Python 3.13. Please be aware that you are currently NOT using standard 'aifc', but instead a separately installed 'standard-aifc'.
+    import aifc
+
+.venv\Lib\site-packages\pydub\utils.py:170
+  C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.venv\Lib\site-packages\pydub\utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+    warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+
+tests/test_integration.py::TestResumeFlow::test_resume_upload
+  C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.venv\Lib\site-packages\PyPDF2\__init__.py:21: DeprecationWarning: PyPDF2 is deprecated. Please move to the pypdf library instead.
+    warnings.warn(
+
+.venv\Lib\site-packages\_pytest\cacheprovider.py:469
+  C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.venv\Lib\site-packages\_pytest\cacheprovider.py:469: PytestCacheWarning: could not create cache path C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.pytest_cache\v\cache\nodeids: [WinError 183] Cannot create a file when that file already exists: 'C:\\Users\\91809\\OneDrive\\Desktop\\Saarthi\\backend\\.pytest_cache\\v\\cache'
+    config.cache.set("cache/nodeids", sorted(self.cached_nodeids))
+
+.venv\Lib\site-packages\_pytest\cacheprovider.py:423
+  C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.venv\Lib\site-packages\_pytest\cacheprovider.py:423: PytestCacheWarning: could not create cache path C:\Users\91809\OneDrive\Desktop\Saarthi\backend\.pytest_cache\v\cache\lastfailed: [WinError 183] Cannot create a file when that file already exists: 'C:\\Users\\91809\\OneDrive\\Desktop\\Saarthi\\backend\\.pytest_cache\\v\\cache'
+    config.cache.set("cache/lastfailed", self.lastfailed)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_main.py::test_root - KeyError: 'message'
+================= 1 failed, 189 passed, 7 warnings in 48.20s ==================

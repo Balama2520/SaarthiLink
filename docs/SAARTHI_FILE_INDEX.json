@@ -1,0 +1,136 @@
+{
+  "project": "Saarthi AI",
+  "tagline": "Guiding Intelligence • Connected Action",
+  "generated_at": "2026-09-12T13:15:00Z",
+  "repository_root": "c:/Users/91809/OneDrive/Desktop/Saarthi",
+  "backend": [
+    "backend/app/main.py",
+    "backend/app/core/config.py",
+    "backend/app/core/security.py",
+    "backend/app/core/dependencies/auth.py",
+    "backend/app/database/connection.py",
+    "backend/app/models/models.py",
+    "backend/app/api/auth.py",
+    "backend/app/api/jobs.py",
+    "backend/app/api/discovery.py",
+    "backend/app/api/feedback.py",
+    "backend/app/api/opportunities.py",
+    "backend/app/api/contact.py",
+    "backend/app/api/admin.py",
+    "backend/app/api/seeding.py",
+    "backend/app/api/goals.py",
+    "backend/app/api/profile.py"
+  ],
+  "frontend": [
+    "frontend/src/main.tsx",
+    "frontend/src/App.tsx",
+    "frontend/src/services/api.ts",
+    "frontend/src/pages/LandingPage.tsx",
+    "frontend/src/pages/DiscoverPage.tsx",
+    "frontend/src/pages/JobFinder.tsx",
+    "frontend/src/pages/CareerCopilot.tsx",
+    "frontend/src/pages/AdminPanel.tsx",
+    "frontend/src/pages/AboutPage.tsx",
+    "frontend/src/pages/ContactPage.tsx",
+    "frontend/src/pages/PrivacyPage.tsx",
+    "frontend/src/pages/TermsPage.tsx"
+  ],
+  "database": [
+    "backend/app/database/connection.py",
+    "backend/app/models/models.py",
+    "backend/alembic.ini",
+    "backend/alembic/env.py",
+    "backend/alembic/versions/d065b80bd055_add_feedback_events_analytics_columns.py"
+  ],
+  "ai": [
+    "backend/app/ai/gateway.py",
+    "backend/app/ai/router.py",
+    "backend/app/ai/providers/gemini.py",
+    "backend/app/ai/providers/huggingface.py",
+    "backend/app/ai/providers/ollama.py",
+    "backend/app/services/intelligence_service.py"
+  ],
+  "sheets": [
+    "backend/app/services/sheets_service.py",
+    "backend/app/api/seeding.py"
+  ],
+  "auth": [
+    "backend/app/core/security.py",
+    "backend/app/core/dependencies/auth.py",
+    "backend/app/services/auth_service.py",
+    "backend/app/api/auth.py"
+  ],
+  "security": [
+    "backend/app/main.py",
+    "backend/app/core/config.py",
+    "backend/app/core/security.py"
+  ],
+  "tests": [
+    "backend/tests/conftest.py",
+    "backend/tests/test_auth.py",
+    "backend/tests/test_career_copilot.py",
+    "backend/tests/test_decision_engine.py",
+    "backend/tests/test_discovery_api.py",
+    "backend/tests/test_goal_engine.py",
+    "backend/tests/test_hf_provider.py",
+    "backend/tests/test_integration.py",
+    "backend/tests/test_intelligence_service.py",
+    "backend/tests/test_main.py",
+    "backend/tests/test_memory_engine.py",
+    "backend/tests/test_outbox_worker.py",
+    "backend/tests/test_profile.py",
+    "backend/tests/test_rate_limit.py",
+    "backend/tests/test_security.py",
+    "backend/tests/test_sheets_service.py",
+    "backend/tests/test_workflow_engine.py",
+    "backend/e2e_candidate_flow.py"
+  ],
+  "deployment": [
+    "docs/DEPLOYMENT.md",
+    "backend/Dockerfile",
+    "frontend/Dockerfile",
+    "docker-compose.yml",
+    "netlify.toml"
+  ],
+  "documentation": [
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DEPLOYMENT.md",
+    "docs/FINAL_PRODUCTION_AUDIT.md",
+    "docs/FINAL_LAUNCH_READINESS.md",
+    "docs/SAARTHI_RECOVERY_REPORT.md",
+    "docs/SAARTHI_MASTER_CONTEXT.md",
+    "docs/SAARTHI_FILE_INDEX.json",
+    "docs/SAARTHI_CONTEXT_RECOVERY.md"
+  ],
+  "environment_variables": [
+    "DEBUG",
+    "SECRET_KEY",
+    "DATABASE_URL",
+    "ALLOWED_ORIGINS",
+    "GEMINI_API_KEY",
+    "GEMINI_MODEL",
+    "HF_SPACE_ID",
+    "HF_API_TOKEN",
+    "GOOGLE_SHEETS_SPREADSHEET_ID",
+    "GOOGLE_SERVICE_ACCOUNT_JSON",
+    "SAARTHI_CONTACT_EMAIL"
+  ],
+  "critical_files": [
+    "backend/app/main.py",
+    "backend/app/core/config.py",
+    "backend/app/core/security.py",
+    "backend/app/database/connection.py",
+    "backend/app/models/models.py"
+  ],
+  "canonical_implementations": {
+    "auth": "backend/app/core/security.py",
+    "database": "backend/app/database/connection.py",
+    "models": "backend/app/models/models.py",
+    "ai_gateway": "backend/app/ai/gateway.py",
+    "intelligence": "backend/app/services/intelligence_service.py",
+    "sheets": "backend/app/services/sheets_service.py",
+    "discovery": "backend/app/services/discovery_service.py"
+  },
+  "known_discrepancies": []
+}

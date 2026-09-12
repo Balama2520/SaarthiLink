@@ -1,9 +1,0 @@
-[build]
-  publish = "."
-  command = "echo 'No build command needed for static site'"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
-    Access-Control-Allow-Origin = "*"

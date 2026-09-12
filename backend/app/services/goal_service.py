@@ -1,8 +1,25 @@
+import json
+import logging
 from fastapi import HTTPException
 from app.repositories.goal_repository import GoalRepository
 from app.models.models import Goal
-from app.schemas.goal import GoalCreate, GoalUpdate
+from app.schemas.goal import GoalCreate, GoalUpdate, MilestoneCreate, TaskCreate
+from app.schemas.ai_responses import AIPlanResponse
+from app.ai.gateway import AIGateway
+from app.ai.prompt_manager import PromptManager
 from typing import List
+
+logger = logging.getLogger(__name__)
+
+def _strip_markdown_json(text: str) -> str:
+    clean = text.strip()
+    if clean.startswith("```json"):
+        clean = clean[7:]
+    elif clean.startswith("```"):
+        clean = clean[3:]
+    if clean.endswith("```"):
+        clean = clean[:-3]
+    return clean.strip()
 
 class GoalService:
     def __init__(self, repo: GoalRepository):
@@ -17,6 +34,12 @@ class GoalService:
             raise HTTPException(status_code=404, detail="Goal not found")
         return goal
 
+    def get_goal_tree(self, goal_id: str, user_id: int) -> Goal:
+        goal = self.repo.find_tree_by_id_and_user(goal_id, user_id)
+        if not goal:
+            raise HTTPException(status_code=404, detail="Goal not found")
+        return goal
+
     def create_goal(self, goal_in: GoalCreate, user_id: int) -> Goal:
         goal = Goal(
             user_id=user_id,
@@ -26,9 +49,84 @@ class GoalService:
             status=goal_in.status,
             priority=goal_in.priority,
             progress=goal_in.progress,
-            due_date=goal_in.due_date
+            due_date=goal_in.due_date,
+            type="GOAL"
         )
         return self.repo.save(goal)
+
+    def add_milestone(self, goal_id: str, milestone_in: MilestoneCreate, user_id: int) -> Goal:
+        goal = self.get_goal(goal_id, user_id)
+        milestone = Goal(
+            user_id=user_id,
+            parent_id=goal.id,
+            type="MILESTONE",
+            title=milestone_in.title,
+            description=milestone_in.description,
+            status=milestone_in.status,
+            due_date=milestone_in.due_date
+        )
+        return self.repo.save(milestone)
+
+    def add_task(self, milestone_id: str, task_in: TaskCreate, user_id: int) -> Goal:
+        milestone = self.get_goal(milestone_id, user_id)
+        if milestone.type != "MILESTONE":
+            raise HTTPException(status_code=400, detail="Tasks must belong to a Milestone")
+            
+        task = Goal(
+            user_id=user_id,
+            parent_id=milestone.id,
+            type="TASK",
+            title=task_in.title,
+            description=task_in.description,
+            status=task_in.status,
+            due_date=task_in.due_date
+        )
+        return self.repo.save(task)
+
+    async def generate_ai_plan(self, goal_id: str, user_id: int):
+        goal = self.get_goal_tree(goal_id, user_id)
+        
+        prompt_text = PromptManager.load("copilot/planner_prompt")
+        task_instruction = f"Plan this goal: {goal.title}. Description: {goal.description or 'None'}"
+        messages = [{"role": "system", "content": prompt_text}, {"role": "user", "content": task_instruction}]
+        
+        gateway = AIGateway()
+        stream = gateway.generate_response_stream(messages, personality="career")
+        
+        full_text = ""
+        async for chunk in stream:
+            full_text += chunk
+            
+        try:
+            parsed = json.loads(_strip_markdown_json(full_text))
+            validated = AIPlanResponse(**parsed)
+            
+            for m in validated.milestones:
+                milestone = Goal(
+                    user_id=user_id,
+                    parent_id=goal.id,
+                    type="MILESTONE",
+                    title=m.title,
+                    description=m.description,
+                    due_date=m.due_date
+                )
+                self.repo.save(milestone)
+                
+                for t in m.tasks:
+                    task = Goal(
+                        user_id=user_id,
+                        parent_id=milestone.id,
+                        type="TASK",
+                        title=t.title,
+                        description=t.description,
+                        due_date=t.due_date
+                    )
+                    self.repo.save(task)
+                    
+            return {"success": True, "plan": validated.model_dump()}
+        except Exception as e:
+            logger.error(f"Failed to generate/parse AI plan: {e}")
+            raise HTTPException(status_code=500, detail="Failed to generate AI plan")
 
     def update_goal(self, goal_id: str, goal_in: GoalUpdate, user_id: int) -> Goal:
         goal = self.get_goal(goal_id, user_id)
@@ -42,3 +140,4 @@ class GoalService:
     def delete_goal(self, goal_id: str, user_id: int) -> None:
         goal = self.get_goal(goal_id, user_id)
         self.repo.delete(goal)
+

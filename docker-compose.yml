@@ -1,53 +1,61 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: saarthi
-      POSTGRES_PASSWORD: saarthipassword
-      POSTGRES_DB: saarthidb
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U saarthi -d saarthidb"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "2520:2520"
     environment:
-      - DATABASE_URL=postgresql://saarthi:saarthipassword@postgres:5432/saarthidb
+      - DATABASE_URL=postgresql://saarthi:saarthi_pass@db:5432/saarthi_db
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=saarthi-super-secret-jwt-key
-      - CORS_ORIGINS=http://localhost:5173
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:80}
+      - RATE_LIMIT_ENABLED=true
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
       redis:
         condition: service_started
     volumes:
-      - ./backend/uploads:/app/uploads
-      - ./backend/chroma_db:/app/chroma_db
+      - backend_uploads:/app/uploads
+      - backend_chroma:/app/chroma_db
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
     environment:
-      - VITE_API_URL=http://localhost:2520
+      POSTGRES_USER: saarthi
+      POSTGRES_PASSWORD: saarthi_pass
+      POSTGRES_DB: saarthi_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saarthi -d saarthi_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
+  backend_uploads:
+  backend_chroma:

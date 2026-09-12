@@ -1,424 +1,417 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, FileUp, Sparkles, Bot, User, BrainCircuit, Mic, LogIn } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Send, Plus, Trash2, MessageSquare, Sparkles, Loader2,
+  AlertCircle, PanelLeftClose, PanelLeft, Bot, User as UserIcon,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
+import { localDB } from "../services/localDB";
+import { useToast } from "../hooks/useToast";
+import { useAppStore } from "../store/useAppStore";
 
-interface Message {
+interface ChatSession {
+  id: string;
+  title: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ChatMessage {
+  id: string;
   role: "user" | "assistant";
   content: string;
+  pending?: boolean;
+  failed?: boolean;
 }
 
-interface ChatCoachProps {
-  username: string;
+function makeId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-const AGENTS = [
-  { id: "default",   name: "Saarthi Copilot",      desc: "General career planning & guidance",     color: "from-violet-600 to-fuchsia-600", text: "text-violet-400" },
-  { id: "career",    name: "Resume & ATS Coach",    desc: "Keyword optimization & ATS checks",      color: "from-blue-600 to-cyan-500",      text: "text-blue-400" },
-  { id: "interview", name: "Interview Simulator",   desc: "Mock questions & structural answers",    color: "from-emerald-600 to-teal-500",   text: "text-emerald-400" },
-  { id: "learning",  name: "Roadmap Assistant",     desc: "Curate developer learning pathways",     color: "from-amber-600 to-orange-500",   text: "text-amber-400" },
+function titleFromMessage(text: string) {
+  const trimmed = text.trim().replace(/\s+/g, " ");
+  return trimmed.length > 42 ? `${trimmed.slice(0, 42)}…` : trimmed || "New conversation";
+}
+
+const SUGGESTED_PROMPTS = [
+  "What should I focus on this week?",
+  "Review my biggest skill gap for my target role",
+  "Help me prep for an upcoming interview",
+  "What's missing from my profile?",
 ];
 
-const MODELS = [
-  { id: "phi3",        name: "Phi-3 (Lightweight)" },
-  { id: "qwen3",       name: "Qwen-3 (Recomm.)" },
-  { id: "deepseek-r1", name: "DeepSeek-R1 (Reasoning)" },
-  { id: "gemini",      name: "Gemini-1.5-Flash (Cloud)" },
-];
+export default function ChatCoach() {
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const username = useAppStore((s) => s.username);
+  const { toast } = useToast();
 
-export default function ChatCoach({ username }: ChatCoachProps) {
-  const isGuest = !localStorage.getItem("access_token");
-
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: `Namaste ${username}! I am Saarthi, your career copilot. ${
-        isGuest
-          ? "You are in guest mode — sign in to save your conversation history."
-          : "Choose a coach above or ask me anything."
-      }`,
-    },
-  ]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [activeAgent, setActiveAgent] = useState("default");
-  const [activeModel, setActiveModel] = useState("phi3");
-  const [loading, setLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState(isAuthenticated);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [railOpen, setRailOpen] = useState(true);
+  const [sessionsError, setSessionsError] = useState("");
 
-  const chatEndRef     = useRef<HTMLDivElement>(null);
-  const fileInputRef   = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef   = useRef<BlobPart[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom on new messages
+  // ---- Load sessions (authenticated) or local history (guest) ----
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!isAuthenticated) {
+      (async () => {
+        const saved = await localDB.getChatHistory();
+        if (Array.isArray(saved)) setMessages(saved as ChatMessage[]);
+      })();
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingSessions(true);
+        const data = await api.getSessions();
+        if (cancelled) return;
+        setSessions(Array.isArray(data) ? data : []);
+        setSessionsError("");
+      } catch {
+        if (!cancelled) setSessionsError("Couldn't load your conversations.");
+      } finally {
+        if (!cancelled) setLoadingSessions(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  // Persist guest history locally so it survives a refresh
+  useEffect(() => {
+    if (!isAuthenticated && messages.length > 0) {
+      void localDB.saveChatHistory(messages);
+    }
+  }, [isAuthenticated, messages]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Create a backend session for authenticated users
-  useEffect(() => {
-    if (isGuest) return;
-    api.createSession("Saarthi Chat")
-      .then((s) => setSessionId(s.id))
-      .catch(() => setSessionError("Could not create a session. Please refresh."));
-  }, [isGuest]);
+  const selectSession = useCallback(async (sessionId: string) => {
+    setActiveSessionId(sessionId);
+    setLoadingMessages(true);
+    try {
+      const data = await api.getSessionMessages(sessionId);
+      const mapped: ChatMessage[] = (Array.isArray(data) ? data : []).map((m: { role: string; content: string; id?: string }) => ({
+        id: m.id || makeId(),
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content,
+      }));
+      setMessages(mapped);
+    } catch {
+      toast("Couldn't load that conversation.", "error");
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, [toast]);
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
+  const startNewChat = () => {
+    setActiveSessionId(null);
+    setMessages([]);
+    textareaRef.current?.focus();
+  };
 
-    // Guest mode / local chat: use local profile and stream from server without persisting
-    if (isGuest || !sessionId) {
-      const userMessage = input.trim();
-      setInput("");
-      setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-      setLoading(true);
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+  const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const prev = sessions;
+    setSessions((s) => s.filter((sess) => sess.id !== sessionId));
+    if (activeSessionId === sessionId) startNewChat();
+    try {
+      await api.deleteSession(sessionId);
+    } catch {
+      setSessions(prev);
+      toast("Couldn't delete conversation.", "error");
+    }
+  };
 
-      // Ensure we have a simple local profile (name)
-      let profileName = localStorage.getItem("profile_name");
-      if (!profileName) {
-        const name = window.prompt("Welcome — what's your name?");
-        profileName = name && name.trim() ? name.trim() : "Guest";
-        try {
-          localStorage.setItem("profile_name", profileName);
-        } catch (storageError) {
-          console.warn("Unable to persist profile name", storageError);
+  const send = async (raw?: string) => {
+    const text = (raw ?? input).trim();
+    if (!text || sending) return;
+
+    setInput("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+
+    const userMsg: ChatMessage = { id: makeId(), role: "user", content: text };
+    const assistantMsg: ChatMessage = { id: makeId(), role: "assistant", content: "", pending: true };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setSending(true);
+
+    const appendChunk = (chunk: string) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (last && last.id === assistantMsg.id) {
+          next[next.length - 1] = { ...last, content: last.content + chunk };
         }
-      }
+        return next;
+      });
+    };
+    const finish = (failed = false) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const last = next[next.length - 1];
+        if (last && last.id === assistantMsg.id) {
+          next[next.length - 1] = { ...last, pending: false, failed };
+        }
+        return next;
+      });
+      setSending(false);
+    };
 
-      const localProfile = { name: profileName };
-
+    if (isAuthenticated) {
       try {
-        let streamingResponse = "";
-        await api.chatLocal(
-          userMessage,
-          localProfile,
-          [],
-          activeModel,
-          activeAgent,
-          (chunk) => {
-            streamingResponse += chunk;
-            setMessages((prev) => {
-              const updated = [...prev];
-              if (updated.length > 0) {
-                updated[updated.length - 1] = { role: "assistant", content: streamingResponse };
-              }
-              return updated;
-            });
-          },
+        let sessionId = activeSessionId;
+        if (!sessionId) {
+          const created = await api.createSession(titleFromMessage(text));
+          sessionId = created.id;
+          setSessions((prev) => [created, ...prev]);
+          setActiveSessionId(sessionId);
+        }
+        await api.chatStream(
+          text,
+          sessionId as string,
+          "default",
+          "phi3",
+          appendChunk,
+          () => finish(false),
           () => {
-            setLoading(false);
-          },
-          (err) => {
-            setLoading(false);
-            const message = err instanceof Error ? err.message : String(err);
-            setMessages((prev) => {
-              const updated = [...prev];
-              if (updated.length > 0) {
-                updated[updated.length - 1] = {
-                  role: "assistant",
-                  content: `⚠️ Failed to get reply: ${message}`,
-                };
-              }
-              return updated;
-            });
+            appendChunk("Saarthi couldn't reach the AI service just now. Your message is saved — try again in a moment.");
+            finish(true);
           }
         );
-      } catch (err) {
-        setLoading(false);
-        const message = err instanceof Error ? err.message : String(err);
-        setMessages((prev) => {
-          const updated = [...prev];
-          if (updated.length > 0) {
-            updated[updated.length - 1] = {
-              role: "assistant",
-              content: `⚠️ Connection error: ${message}`,
-            };
-          }
-          return updated;
-        });
+      } catch {
+        appendChunk("Something went wrong starting this conversation. Please try again.");
+        finish(true);
       }
       return;
     }
 
-    const userMessage = input.trim();
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setLoading(true);
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    // Guest fallback — no server-side sessions, local history only
+    const localHistory = messages
+      .filter((m) => m.content)
+      .map((m) => ({ role: m.role, content: m.content }));
+    await api.chatLocal(
+      text,
+      null,
+      localHistory,
+      "phi3",
+      "default",
+      appendChunk,
+      () => finish(false),
+      () => {
+        appendChunk("Saarthi couldn't reach the AI service just now. Sign in to save this conversation and try again shortly.");
+        finish(true);
+      }
+    );
+  };
 
-    try {
-      let streamingResponse = "";
-      await api.chatStream(
-        userMessage,
-        sessionId,
-        activeAgent,
-        activeModel,
-        (chunk) => {
-          streamingResponse += chunk;
-          setMessages((prev) => {
-            const updated = [...prev];
-            if (updated.length > 0) {
-              updated[updated.length - 1] = { role: "assistant", content: streamingResponse };
-            }
-            return updated;
-          });
-        },
-        () => {
-          setLoading(false);
-        },
-        (err) => {
-          const message = err instanceof Error ? err.message : String(err);
-          setLoading(false);
-          setMessages((prev) => {
-            const updated = [...prev];
-            if (updated.length > 0) {
-              updated[updated.length - 1] = {
-                role: "assistant",
-                content: `⚠️ Failed to get reply: ${message}`,
-              };
-            }
-            return updated;
-          });
-        }
-      );
-    } catch (err) {
-      setLoading(false);
-      const message = err instanceof Error ? err.message : String(err);
-      setMessages((prev) => {
-        const updated = [...prev];
-        if (updated.length > 0) {
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: `⚠️ Connection error: ${message}`,
-          };
-        }
-        return updated;
-      });
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void send();
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (isGuest) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Please sign in to upload files." },
-      ]);
-      e.target.value = "";
-      return;
-    }
-    setMessages((prev) => [...prev, { role: "user", content: `[Uploaded File: ${file.name}]` }]);
-    setLoading(true);
-    try {
-      await api.uploadFile(file);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: `✅ File "${file.name}" uploaded and indexed! You can now ask questions about it.` },
-      ]);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setMessages((prev) => [...prev, { role: "assistant", content: `❌ File upload failed: ${message}` }]);
-    } finally {
-      setLoading(false);
-      e.target.value = "";
-    }
-  };
-
-  const startRecording = async () => {
-    if (isGuest) { alert("Sign in to use voice input."); return; }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        stream.getTracks().forEach((t) => t.stop());
-        setLoading(true);
-        try {
-          const data = await api.voiceToText(audioBlob);
-          if (data.text) setInput((prev) => prev + (prev ? " " : "") + data.text);
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: `❌ Voice Transcription Failed: ${message}` },
-          ]);
-        } finally { setLoading(false); }
-      };
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch {
-      alert("Microphone access denied or not available.");
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
+  const autoGrow = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-950 h-screen font-sans text-slate-50">
-      {/* ── Header ── */}
-      <header className="px-6 py-4 border-b border-white/5 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <BrainCircuit className="w-5 h-5 text-violet-400" />
-          <h2 className="font-semibold text-white">Saarthi Workspace</h2>
-          {isGuest && (
-            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-semibold">
-              Guest Mode
-            </span>
-          )}
-        </div>
-        {/* Model Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Model:</span>
-          <select
-            value={activeModel}
-            onChange={(e) => setActiveModel(e.target.value)}
-            className="bg-slate-900/80 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-violet-500"
-          >
-            {MODELS.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
+    <div className="flex h-full min-h-0 flex-1">
+      {/* Sessions rail — authenticated users only */}
+      {isAuthenticated && railOpen && (
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card/40 md:flex">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Conversations</p>
+            <button
+              type="button"
+              onClick={() => setRailOpen(false)}
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Collapse conversation list"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="p-3">
+            <button
+              type="button"
+              onClick={startNewChat}
+              className="flex w-full items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              <Plus className="h-4 w-4" /> New chat
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-3 space-y-0.5">
+            {loadingSessions && (
+              <div className="space-y-2 px-2 py-2">
+                {[0, 1, 2].map((i) => <div key={i} className="skeleton h-9 rounded-md" />)}
+              </div>
+            )}
+            {!loadingSessions && sessionsError && (
+              <p className="px-2 py-2 text-xs text-destructive">{sessionsError}</p>
+            )}
+            {!loadingSessions && !sessionsError && sessions.length === 0 && (
+              <p className="px-2 py-4 text-xs text-muted-foreground">No conversations yet. Start one below.</p>
+            )}
+            {sessions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => selectSession(s.id)}
+                className={`group flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                  activeSessionId === s.id
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{s.title || "Conversation"}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => deleteSession(s.id, e)}
+                  className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                  aria-label="Delete conversation"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </span>
+              </button>
             ))}
-          </select>
-        </div>
-      </header>
-
-      {/* ── Session error banner ── */}
-      {sessionError && (
-        <div className="px-6 py-2 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs text-center">
-          {sessionError}
-        </div>
+          </div>
+        </aside>
       )}
 
-      {/* ── Agent Selector ── */}
-      <div className="px-6 py-4 border-b border-white/5 bg-slate-900/90 grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
-        {AGENTS.map((agent) => {
-          const isActive = activeAgent === agent.id;
-          return (
+      {/* Main thread */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-3 border-b border-border px-5 py-3.5">
+          {isAuthenticated && !railOpen && (
             <button
-              key={agent.id}
-              onClick={() => setActiveAgent(agent.id)}
-              className={`p-3 rounded-xl border text-left transition-all duration-300 relative overflow-hidden
-                ${isActive
-                  ? "border-violet-500/30 bg-violet-600/[0.04]"
-                  : "border-white/10 bg-slate-900/80 hover:bg-slate-900/90 hover:border-white/20"
-                }`}
+              type="button"
+              onClick={() => setRailOpen(true)}
+              className="hidden rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
+              aria-label="Show conversation list"
             >
-              <div className={`text-xs font-bold mb-0.5 flex items-center gap-1.5 ${isActive ? agent.text : "text-slate-400"}`}>
-                <Sparkles className="w-3 h-3" />
-                {agent.name}
-              </div>
-              <div className="text-[10px] text-slate-400 leading-tight truncate">{agent.desc}</div>
-              {isActive && (
-                <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r ${agent.color}`} />
-              )}
+              <PanelLeft className="h-4 w-4" />
             </button>
-          );
-        })}
-      </div>
+          )}
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground leading-none">AI OS Chat</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {isAuthenticated ? "Grounded in your profile, resume, skills and goals" : "Guest mode — sign in to save history"}
+            </p>
+          </div>
+        </div>
 
-      {/* ── Messages ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-        {messages.map((msg, index) => {
-          const isAssistant = msg.role === "assistant";
-          return (
-            <div key={index} className={`flex gap-4 max-w-3xl ${isAssistant ? "" : "ml-auto flex-row-reverse"}`}>
-              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0
-                ${isAssistant
-                  ? "bg-violet-600/10 border-violet-500/20 text-violet-400"
-                  : "bg-slate-900/80 border-white/10 text-slate-300"}`}>
-                {isAssistant ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-8">
+          {loadingMessages && (
+            <div className="mx-auto max-w-2xl space-y-4">
+              <div className="skeleton h-16 rounded-xl" />
+              <div className="skeleton h-24 rounded-xl" />
+            </div>
+          )}
+
+          {!loadingMessages && messages.length === 0 && (
+            <div className="mx-auto flex max-w-lg flex-col items-center pt-10 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Bot className="h-6 w-6" />
               </div>
-              <div className={`p-4 rounded-2xl text-sm leading-relaxed border
-                ${isAssistant
-                  ? "bg-slate-900/90 border-white/10 text-slate-200"
-                  : "bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 border-violet-500/10 text-white"}`}>
-                {msg.content ? (
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
-                ) : (
-                  <span className="flex items-center gap-1.5 py-1">
-                    <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </span>
-                )}
+              <h2 className="mt-4 font-display text-lg font-semibold text-foreground">
+                {isAuthenticated ? `Hey ${username.split(" ")[0]}, what's next on your career?` : "Ask Saarthi anything about your career"}
+              </h2>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {isAuthenticated
+                  ? "I can see your profile, skills and goals — ask me anything, no need to repeat context."
+                  : "You're browsing as a guest, so I won't have your profile context. Sign in for personalized answers."}
+              </p>
+              <div className="mt-6 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+                {SUGGESTED_PROMPTS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => void send(p)}
+                    className="rounded-lg border border-border bg-card px-3 py-2.5 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
             </div>
-          );
-        })}
-        <div ref={chatEndRef} />
-      </div>
+          )}
 
-      {/* ── Guest CTA Banner ── */}
-      {isGuest && (
-        <div className="mx-6 mb-4 p-4 rounded-2xl bg-violet-600/10 border border-violet-500/20 flex items-center gap-4">
-          <LogIn className="w-5 h-5 text-violet-400 shrink-0" />
-          <p className="text-sm text-slate-300 flex-1">
-            <span className="text-white font-semibold">Sign in</span> to unlock full AI chat, session history, and personalized coaching.
-          </p>
+          {!loadingMessages && messages.length > 0 && (
+            <div className="mx-auto max-w-2xl space-y-5">
+              <AnimatePresence initial={false}>
+                {messages.map((m) => (
+                  <motion.div
+                    key={m.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}
+                  >
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                      m.role === "user" ? "bg-secondary text-foreground" : "bg-primary/10 text-primary"
+                    }`}>
+                      {m.role === "user" ? <UserIcon className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className={`min-w-0 flex-1 rounded-xl px-4 py-2.5 text-sm leading-relaxed ${
+                      m.role === "user"
+                        ? "bg-primary/10 text-foreground"
+                        : m.failed
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-card border border-border text-foreground"
+                    } ${m.role === "user" ? "max-w-[85%]" : "max-w-[90%]"}`}>
+                      {m.content ? (
+                        <span className="whitespace-pre-wrap">{m.content}</span>
+                      ) : m.pending ? (
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking…
+                        </span>
+                      ) : null}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* ── Input Form ── */}
-      <div className="px-6 py-5 border-t border-white/5 bg-slate-900/40 shrink-0">
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex gap-3 max-w-4xl mx-auto"
-        >
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf,.docx,.txt" />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="p-3 bg-slate-900/80 border border-white/10 hover:border-violet-500/20 rounded-xl text-slate-400 hover:text-white transition-all duration-200 shrink-0"
-            title="Upload Document for PDF Chat"
-          >
-            <FileUp className="w-5 h-5" />
-          </button>
-
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={loading}
-            className="flex-1 bg-slate-900/80 border border-white/10 rounded-xl px-5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-violet-500/50"
-            placeholder={isGuest ? "Ask Saarthi anything (guest mode)..." : "Ask about resumes, roadmaps, interview prep..."}
-          />
-
-          <button
-            type="button"
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`p-3 border rounded-xl transition-all duration-200 shrink-0 ${
-              isRecording
-                ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse"
-                : "bg-slate-900/80 border-white/10 hover:border-violet-500/20 text-slate-400 hover:text-white"
-            }`}
-            title="Voice to Text"
-          >
-            <Mic className="w-5 h-5" />
-          </button>
-
-          <button
-            type="submit"
-            disabled={!input.trim() || loading}
-            className="p-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-xl transition-all duration-200 shadow-lg shadow-violet-600/20 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </form>
-        <p className="text-[10px] text-slate-500 text-center mt-3">
-          Saarthi AI can make mistakes. Double check critical resume & career guidelines.
-        </p>
+        <div className="border-t border-border p-4 md:px-8">
+          <div className="mx-auto flex max-w-2xl items-end gap-2 rounded-xl border border-border bg-card px-3 py-2 focus-within:border-primary/40">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={(e) => { setInput(e.target.value); autoGrow(e.target); }}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your resume, skills, jobs, or next step…"
+              className="max-h-40 flex-1 resize-none bg-transparent py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => void send()}
+              disabled={!input.trim() || sending}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-opacity hover:bg-primary/80 disabled:opacity-40"
+              aria-label="Send message"
+            >
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </button>
+          </div>
+          {!isAuthenticated && (
+            <p className="mx-auto mt-2 flex max-w-2xl items-center gap-1.5 text-xs text-muted-foreground">
+              <AlertCircle className="h-3 w-3" /> Guest chat is stored on this device only.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

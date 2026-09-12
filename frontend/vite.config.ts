@@ -15,6 +15,7 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5173,
     proxy: {
       "/api": {
         target: "http://localhost:2520",
@@ -22,6 +23,9 @@ export default defineConfig({
         // No rewrite needed — backend already serves routes under /api
       },
     },
+  },
+  build: {
+    chunkSizeWarningLimit: 1000,
   },
 })
 

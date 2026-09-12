@@ -21,6 +21,7 @@ class ChatRequest(BaseModel):
     model: Optional[str] = "phi3"
     personality: Optional[str] = "default"
     image_data: Optional[str] = None
+    ui_context: Optional[dict] = None
 
 class ChatWithFileRequest(BaseModel):
     message: str

@@ -1,48 +1,48 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from typing import Optional
+from sqlalchemy.orm import Session
 
-from app.core.dependencies.auth import get_current_user
+from app.core.dependencies.auth import require_authenticated_user
 from app.models.models import User
+from app.database.connection import get_db
+from app.repositories.note_repository import NoteRepository
 from app.services.note_service import NoteService
-from app.core.dependencies.services import get_note_service
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
-# ── Schemas ─────────────────────────────────────────────────────────────────
-class NoteCreate(BaseModel):
-    title: str
-    content: str
-    tags: str = ""
 
-class NoteGenerateRequest(BaseModel):
+def _get_service(db: Session = Depends(get_db)) -> NoteService:
+    return NoteService(NoteRepository(db))
+
+
+class GenerateNoteBody(BaseModel):
     topic: str
-    depth: str = "detailed"  # brief | detailed | comprehensive
+    depth: Optional[str] = "detailed"
 
-# ── Routes ───────────────────────────────────────────────────────────────────
+
 @router.post("/generate")
 async def generate_note(
-    request: NoteGenerateRequest,
-    current_user: User = Depends(get_current_user),
-    note_service: NoteService = Depends(get_note_service)
+    body: GenerateNoteBody,
+    current_user: User = Depends(require_authenticated_user),
+    svc: NoteService = Depends(_get_service),
 ):
-    return await note_service.generate_note(
-        user_id=current_user.id,
-        topic=request.topic,
-        depth=request.depth
-    )
+    return await svc.generate_note(current_user.id, body.topic, body.depth or "detailed")
+
 
 @router.get("/list")
-async def list_notes(
-    current_user: User = Depends(get_current_user),
-    note_service: NoteService = Depends(get_note_service)
+def list_notes(
+    current_user: User = Depends(require_authenticated_user),
+    svc: NoteService = Depends(_get_service),
 ):
-    return note_service.list_notes(current_user.id)
+    return svc.list_notes(current_user.id)
+
 
 @router.delete("/{note_id}")
-async def delete_note(
+def delete_note(
     note_id: int,
-    current_user: User = Depends(get_current_user),
-    note_service: NoteService = Depends(get_note_service)
+    current_user: User = Depends(require_authenticated_user),
+    svc: NoteService = Depends(_get_service),
 ):
-    note_service.delete_note(current_user.id, note_id)
+    svc.delete_note(current_user.id, note_id)
     return {"status": "deleted"}

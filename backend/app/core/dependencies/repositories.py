@@ -2,41 +2,15 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.repositories.goal_repository import GoalRepository
-from app.repositories.chat_repository import ChatRepository
-from app.repositories.memory_repository import MemoryRepository
-from app.repositories.workspace_repository import WorkspaceRepository
-from app.repositories.workspace_file_repository import WorkspaceFileRepository
-from app.repositories.research_repository import ResearchRepository
 from app.repositories.roadmap_repository import RoadmapRepository
 from app.repositories.resume_repository import ResumeRepository
 from app.repositories.jobs_repository import JobsRepository
 from app.repositories.interview_repository import InterviewRepository
 from app.repositories.career_repository import CareerRepository
 from app.repositories.user_repository import UserRepository
-from app.repositories.project_repository import ProjectRepository
-from app.repositories.admin_repository import AdminRepository
-from app.repositories.note_repository import NoteRepository
-from app.repositories.gradhub_repository import GradhubRepository
-from app.repositories.higher_studies_repository import HigherStudiesRepository
-from app.repositories.experiment_repository import ExperimentRepository
 
 def get_goal_repository(db: Session = Depends(get_db)) -> GoalRepository:
     return GoalRepository(db)
-
-def get_chat_repository(db: Session = Depends(get_db)) -> ChatRepository:
-    return ChatRepository(db)
-
-def get_memory_repository(db: Session = Depends(get_db)) -> MemoryRepository:
-    return MemoryRepository(db)
-
-def get_workspace_repository(db: Session = Depends(get_db)) -> WorkspaceRepository:
-    return WorkspaceRepository(db)
-
-def get_workspace_file_repository(db: Session = Depends(get_db)) -> WorkspaceFileRepository:
-    return WorkspaceFileRepository(db)
-
-def get_research_repository(db: Session = Depends(get_db)) -> ResearchRepository:
-    return ResearchRepository(db)
 
 def get_roadmap_repository(db: Session = Depends(get_db)) -> RoadmapRepository:
     return RoadmapRepository(db)
@@ -55,21 +29,3 @@ def get_career_repository(db: Session = Depends(get_db)) -> CareerRepository:
 
 def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
     return UserRepository(db)
-
-def get_project_repository(db: Session = Depends(get_db)) -> ProjectRepository:
-    return ProjectRepository(db)
-
-def get_admin_repository(db: Session = Depends(get_db)) -> AdminRepository:
-    return AdminRepository(db)
-
-def get_note_repository(db: Session = Depends(get_db)) -> NoteRepository:
-    return NoteRepository(db)
-
-def get_gradhub_repository(db: Session = Depends(get_db)) -> GradhubRepository:
-    return GradhubRepository(db)
-
-def get_higher_studies_repository(db: Session = Depends(get_db)) -> HigherStudiesRepository:
-    return HigherStudiesRepository(db)
-
-def get_experiment_repository(db: Session = Depends(get_db)) -> ExperimentRepository:
-    return ExperimentRepository(db)

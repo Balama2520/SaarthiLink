@@ -1,10 +1,11 @@
 import bcrypt
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 from fastapi import HTTPException
 
-from app.models.models import User
+from app.models.models import User, RefreshToken
 from app.repositories.user_repository import UserRepository
 from app.core.config import get_settings
 
@@ -39,6 +40,13 @@ class AuthService:
         encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
 
+    def create_refresh_token_for_user(self, user_id: int) -> str:
+        token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+        refresh_token = RefreshToken(user_id=user_id, token=token, expires_at=expires_at)
+        self.user_repo.create_refresh_token(refresh_token)
+        return token
+
     def register_user(self, username: str, password: str) -> dict:
         db_user = self.user_repo.get_user_by_username(username)
         if db_user:
@@ -51,7 +59,8 @@ class AuthService:
         new_user = self.user_repo.create_user(new_user)
         
         access_token = self.create_access_token(data={"sub": new_user.username})
-        return {"access_token": access_token, "token_type": "bearer"}
+        refresh_token = self.create_refresh_token_for_user(new_user.id)
+        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
     def authenticate_user(self, username: str, password: str) -> dict:
         user = self.user_repo.get_user_by_username(username)
@@ -59,7 +68,30 @@ class AuthService:
             raise HTTPException(status_code=400, detail="Incorrect username or password")
         
         access_token = self.create_access_token(data={"sub": user.username})
-        return {"access_token": access_token, "token_type": "bearer"}
+        refresh_token = self.create_refresh_token_for_user(user.id)
+        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+    def refresh_access_token(self, token: str) -> dict:
+        db_token = self.user_repo.get_refresh_token(token)
+        if not db_token:
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+        
+        # Ensure db_token.expires_at is timezone-aware for comparison (SQLite sometimes returns naive datetimes)
+        expires_at = db_token.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+            
+        if expires_at < datetime.now(timezone.utc):
+            self.user_repo.delete_refresh_token(token)
+            raise HTTPException(status_code=401, detail="Refresh token expired")
+        
+        # generate new access token
+        user = db_token.owner
+        access_token = self.create_access_token(data={"sub": user.username})
+        return {"access_token": access_token, "refresh_token": token, "token_type": "bearer"}
+
+    def logout(self, token: str) -> None:
+        self.user_repo.delete_refresh_token(token)
 
     def get_user_from_token(self, token: str) -> Optional[User]:
         try:

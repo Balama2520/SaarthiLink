@@ -1,7 +1,8 @@
 import json
 from app.repositories.gradhub_repository import GradhubRepository
 from app.models.models import DegreeTracker, CertificationPlanner, PlacementTracker
-from app.ai.llm import generate_response_stream_async
+from app.ai.gateway import AIGateway
+from app.ai.prompt_manager import PromptManager
 from fastapi import HTTPException
 from typing import List, Dict, Any
 
@@ -117,28 +118,9 @@ class GradhubService:
         self.repo.delete_placement(p)
 
     async def github_review(self, profile_text: str, target_role: str) -> dict:
-        prompt = f"""
-        You are an AI Technical Recruiter. Analyze this GitHub profile username or text info:
-        "{profile_text}"
-        Target Role: {target_role}
-    
-        Evaluate:
-        - Repository structure and code quality
-        - Activity and commit history
-        - README quality
-        - Project diversity and relevance to {target_role}
-    
-        Provide your review STRICTLY as a JSON object with this exact schema (no markdown formatting, just the raw JSON string):
-        {{
-            "profile_score": (integer 0-100),
-            "strengths": ["list of strengths"],
-            "weaknesses": ["list of items to improve"],
-            "readme_advice": "Detailed advice to optimize the GitHub pinned repositories and READMEs.",
-            "project_ideas": ["3 targeted project ideas to build employability"]
-        }}
-        """
+        prompt = PromptManager.load("gradhub/github_review", profile_text=profile_text, target_role=target_role)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
         
         try:
@@ -153,27 +135,9 @@ class GradhubService:
             }
 
     async def linkedin_optimize(self, profile_text: str, target_role: str) -> dict:
-        prompt = f"""
-        You are a professional Resume and LinkedIn Profile Writer.
-        Optimize the following LinkedIn description or profile details:
-        "{profile_text}"
-        Target Role: {target_role}
-    
-        Provide suggestions and copy templates for:
-        1. Headline (needs to be catchy, keywords-focused)
-        2. About Summary (STAR format, story-driven)
-        3. Experience Bullet Points (STAR format: Situation, Task, Action, Result)
-    
-        Provide the output STRICTLY as a JSON object with this exact schema (no markdown, just raw JSON):
-        {{
-            "headline_suggestions": ["Option 1", "Option 2"],
-            "about_summary": "Optimized summary text...",
-            "star_bullets": ["STAR Bullet 1", "STAR Bullet 2"],
-            "keyword_boosters": ["5 key industry buzzwords to insert"]
-        }}
-        """
+        prompt = PromptManager.load("gradhub/linkedin_optimize", profile_text=profile_text, target_role=target_role)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
             
         try:

@@ -3,6 +3,16 @@
 .env.*
 !.env.example
 
+# Credentials and certificates — never commit private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*service_account*.json
+*credentials*.json
+*google*.json
+saarthi-service-account*.json
+
 # Python
 __pycache__/
 *.pyc

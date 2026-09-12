@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from typing import Optional
 
 from app.schemas.auth import UserCreate, Token
 from app.services.auth_service import AuthService
@@ -42,3 +43,20 @@ async def login(
 
     return auth_service.authenticate_user(username, password)
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+@router.post("/refresh", response_model=Token)
+def refresh_token(
+    request: RefreshRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    return auth_service.refresh_access_token(request.refresh_token)
+
+@router.post("/logout")
+def logout(
+    request: RefreshRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    auth_service.logout(request.refresh_token)
+    return {"message": "Successfully logged out"}

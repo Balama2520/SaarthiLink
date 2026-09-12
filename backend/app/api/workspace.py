@@ -1,85 +1,108 @@
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
-from typing import Optional, List
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import Optional
+from sqlalchemy.orm import Session
 
-from app.core.dependencies.auth import get_current_user
+from app.core.dependencies.auth import require_authenticated_user
 from app.models.models import User
-from app.core.dependencies.services import get_workspace_service, get_workspace_file_service
+from app.database.connection import get_db
+from app.repositories.workspace_repository import WorkspaceRepository
+from app.repositories.workspace_file_repository import WorkspaceFileRepository
 from app.services.workspace_service import WorkspaceService
-from app.services.workspace_file_service import WorkspaceFileService
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
-# --- Schemas ---
-class WorkspaceCreate(BaseModel):
+
+def _get_service(db: Session = Depends(get_db)) -> WorkspaceService:
+    return WorkspaceService(WorkspaceRepository(db), WorkspaceFileRepository(db))
+
+
+class CreateWorkspaceBody(BaseModel):
     name: str
     description: Optional[str] = ""
 
-class LinkRequest(BaseModel):
-    item_type: str  # "resume", "document", "note", "job"
+
+class LinkItemBody(BaseModel):
+    item_type: str
     item_id: str
 
-class WorkspaceChatRequest(BaseModel):
+
+class WorkspaceChatBody(BaseModel):
     message: str
     model: Optional[str] = "phi3"
 
-# --- Routes ---
 
-@router.post("/", response_model=dict)
-async def create_workspace(
-    request: WorkspaceCreate,
-    current_user: User = Depends(get_current_user),
-    workspace_svc: WorkspaceService = Depends(get_workspace_service)
+@router.post("/")
+def create_workspace(
+    body: CreateWorkspaceBody,
+    current_user: User = Depends(require_authenticated_user),
+    svc: WorkspaceService = Depends(_get_service),
 ):
-    return workspace_svc.create_workspace(current_user.id, request.name, request.description)
+    return svc.create_workspace(current_user.id, body.name, body.description or "")
 
-@router.get("/", response_model=List[dict])
-async def list_workspaces(
-    current_user: User = Depends(get_current_user),
-    workspace_svc: WorkspaceService = Depends(get_workspace_service)
+
+@router.get("/")
+def list_workspaces(
+    current_user: User = Depends(require_authenticated_user),
+    svc: WorkspaceService = Depends(_get_service),
 ):
-    return workspace_svc.get_user_workspaces(current_user.id)
+    return svc.get_user_workspaces(current_user.id)
+
 
 @router.delete("/{workspace_id}")
-async def delete_workspace(
+def delete_workspace(
     workspace_id: str,
-    current_user: User = Depends(get_current_user),
-    workspace_svc: WorkspaceService = Depends(get_workspace_service)
+    current_user: User = Depends(require_authenticated_user),
+    svc: WorkspaceService = Depends(_get_service),
 ):
-    return workspace_svc.delete_workspace(workspace_id, current_user.id)
+    return svc.delete_workspace(workspace_id, current_user.id)
+
 
 @router.post("/{workspace_id}/link")
-async def link_item(
+def link_item(
     workspace_id: str,
-    request: LinkRequest,
-    current_user: User = Depends(get_current_user),
-    file_svc: WorkspaceFileService = Depends(get_workspace_file_service)
+    body: LinkItemBody,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
 ):
-    return file_svc.link_item(workspace_id, request.item_type, request.item_id, current_user.id)
+    file_repo = WorkspaceFileRepository(db)
+    file_repo.link_item(workspace_id, body.item_type, body.item_id, current_user.id)
+    return {"status": "linked"}
 
-@router.get("/{workspace_id}/items", response_model=dict)
-async def list_workspace_items(
-    workspace_id: str,
-    current_user: User = Depends(get_current_user),
-    file_svc: WorkspaceFileService = Depends(get_workspace_file_service)
-):
-    return file_svc.get_workspace_items(workspace_id, current_user.id)
 
-@router.get("/{workspace_id}/unlinked", response_model=dict)
-async def list_unlinked_items(
+@router.get("/{workspace_id}/items")
+def get_workspace_items(
     workspace_id: str,
-    current_user: User = Depends(get_current_user),
-    file_svc: WorkspaceFileService = Depends(get_workspace_file_service)
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
 ):
-    return file_svc.get_unlinked_items(current_user.id)
+    file_repo = WorkspaceFileRepository(db)
+    resumes, docs, notes, jobs = file_repo.get_workspace_items(workspace_id, current_user.id)
+    return {
+        "resumes": [{"id": r.id, "filename": r.filename} for r in resumes],
+        "docs": [{"id": d.id, "filename": d.filename} for d in docs],
+        "notes": [{"id": n.id, "title": n.title} for n in notes],
+        "jobs": [{"id": j.id, "job_title": j.job_title, "company": j.company} for j in jobs],
+    }
+
+
+@router.get("/{workspace_id}/unlinked")
+def get_unlinked_items(
+    workspace_id: str,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    file_repo = WorkspaceFileRepository(db)
+    return file_repo.get_unlinked_items(current_user.id)
+
 
 @router.post("/{workspace_id}/chat")
-async def chat_workspace(
+async def workspace_chat(
     workspace_id: str,
-    request: WorkspaceChatRequest,
-    current_user: User = Depends(get_current_user),
-    workspace_svc: WorkspaceService = Depends(get_workspace_service)
+    body: WorkspaceChatBody,
+    current_user: User = Depends(require_authenticated_user),
+    svc: WorkspaceService = Depends(_get_service),
 ):
-    stream_generator = workspace_svc.chat_workspace(workspace_id, current_user.id, request.message, request.model)
-    return StreamingResponse(stream_generator(), media_type="text/plain")
+    stream_gen = svc.chat_workspace(workspace_id, current_user.id, body.message, body.model or "phi3")
+    return StreamingResponse(stream_gen(), media_type="text/plain")

@@ -3,7 +3,8 @@ import logging
 from datetime import date, timedelta
 from app.repositories.career_repository import CareerRepository
 from app.models.models import DailyMission
-from app.ai.llm import generate_response_stream_async
+from app.ai.gateway import AIGateway
+from app.ai.prompt_manager import PromptManager
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +31,142 @@ class CareerService:
     def __init__(self, repo: CareerRepository):
         self.repo = repo
 
+    def _role_focus(self, target_role: str) -> tuple[list[str], list[str]]:
+        role = (target_role or "career").lower()
+        if "data" in role and "analyst" in role:
+            return [
+                "SQL and data modeling",
+                "Python for analysis",
+                "Visualization and storytelling"
+            ], [
+                "Build one dashboard project",
+                "Practice 10 SQL interview problems",
+                "Summarize insights from a dataset"
+            ]
+        if "software" in role or "engineer" in role or "developer" in role:
+            return [
+                "DSA and problem solving",
+                "System design fundamentals",
+                "Backend and cloud basics"
+            ], [
+                "Ship one backend or full-stack project",
+                "Practice 15 DSA problems",
+                "Document your architecture choices"
+            ]
+        if "product" in role:
+            return [
+                "User research",
+                "Requirements writing",
+                "Analytics and experimentation"
+            ], [
+                "Create one product case study",
+                "Talk through a feature decision",
+                "Review one competitor teardown"
+            ]
+        return [
+            "Core domain knowledge",
+            "Project execution",
+            "Communication and storytelling"
+        ], [
+            "Build a polished portfolio artifact",
+            "Prepare one mock presentation",
+            "Collect feedback from mentors"
+        ]
+
+    async def analyze_skill_gaps(self, user_id: int, target_role: str) -> dict:
+        profile = self.repo.get_profile(user_id)
+        skills = self.repo.get_user_skills(user_id)
+        resume = self.repo.get_latest_resume(user_id)
+        focus_areas, next_actions = self._role_focus(target_role)
+        strengths = [skill.skill_name for skill in skills[:3]] if skills else ["Foundational fundamentals"]
+
+        return {
+            "target_role": target_role,
+            "headline": f"Your next focus areas for {target_role}",
+            "strengths": strengths,
+            "gaps": focus_areas,
+            "next_actions": next_actions,
+            "resume_ready": bool(resume),
+            "profile_stage": profile.career_stage if profile else "unknown"
+        }
+
+    async def generate_learning_plan(self, user_id: int, target_role: str, weeks: int = 4) -> dict:
+        focus_areas, next_actions = self._role_focus(target_role)
+        plan = []
+        for week in range(1, max(1, weeks) + 1):
+            focus = focus_areas[(week - 1) % len(focus_areas)]
+            plan.append({
+                "week": week,
+                "theme": focus,
+                "focus": f"Deepen {focus.lower()} over the week",
+                "actions": [
+                    next_actions[(week - 1) % len(next_actions)],
+                    f"Review one resource related to {target_role}",
+                    "Write a short reflection at the end of the week"
+                ]
+            })
+
+        return {
+            "target_role": target_role,
+            "weeks": weeks,
+            "plan": plan
+        }
+
+    def get_dashboard_summary(self, user_id: int) -> dict:
+        profile = self.repo.get_profile(user_id)
+        goals = self.repo.get_goals(user_id, 3)
+        mission = self.get_mission_status(user_id)
+        
+        target_role = profile.target_role if profile and profile.target_role else "career"
+        career_stage = profile.career_stage if profile and profile.career_stage else "Growing"
+        
+        focus_areas, next_actions = self._role_focus(target_role)
+        
+        headline = f"{career_stage} toward {target_role}" if (profile and profile.target_role) else "Build momentum with a focused weekly plan"
+        
+        dynamic_actions = []
+        if not profile or not profile.target_role:
+            dynamic_actions.append("Add a target role to your profile to get personalized AI insights")
+        else:
+            dynamic_actions.append("Complete one mission task today to build your streak")
+            
+        if goals:
+            dynamic_actions.append(f"Update progress on your top goal: {goals[0].title}")
+        else:
+            dynamic_actions.append("Set your first career goal in the Navigator")
+            
+        # Fill the rest with role-specific actions
+        for action in next_actions:
+            if len(dynamic_actions) < 3:
+                dynamic_actions.append(action)
+
+        from app.services.career_copilot_service import CareerCopilotService
+        copilot_svc = CareerCopilotService(self.repo.db)
+        next_best_action = copilot_svc.compute_next_best_action(user_id)
+        career_health = copilot_svc.compute_career_health(user_id)
+
+        return {
+            "headline": headline,
+            "focus_areas": focus_areas,
+            "next_actions": dynamic_actions,
+            "next_best_action": next_best_action,
+            "career_health": career_health,
+            "mission_progress": mission.get("streak", 0),
+            "goal_count": len(goals)
+        }
+
+    def get_next_best_action(self, user_id: int) -> dict:
+        from app.services.career_copilot_service import CareerCopilotService
+        return CareerCopilotService(self.repo.db).compute_next_best_action(user_id)
+
+    def get_career_health(self, user_id: int) -> dict:
+        from app.services.career_copilot_service import CareerCopilotService
+        return CareerCopilotService(self.repo.db).compute_career_health(user_id)
+
     async def generate_star_bullets(self, project_or_exp: str, description: str) -> list[str]:
-        prompt = f"""
-Transform this experience description into 3 high-impact STAR (Situation, Task, Action, Result) resume bullet points.
-Ensure they begin with strong action verbs and imply quantifiable outcomes.
-
-Project/Role: {project_or_exp}
-Raw description: {description}
-
-Output STRICTLY as a JSON list of strings: ["Bullet 1", "Bullet 2", "Bullet 3"]. Do not output markdown, just the JSON list.
-"""
+        prompt = PromptManager.load("career/star_bullets", project_or_exp=project_or_exp, description=description)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
         try:
@@ -54,22 +179,9 @@ Output STRICTLY as a JSON list of strings: ["Bullet 1", "Bullet 2", "Bullet 3"].
             ]
 
     async def optimize_keywords(self, resume_text: str, job_title: str) -> dict:
-        prompt = f"""
-Analyze the resume text against the target job title: "{job_title}".
-Identify critical missing keywords, technical skills, and terms the ATS would look for.
-
-Resume Text:
-{resume_text[:2000]}
-
-Output STRICTLY as a JSON object with this schema:
-{{
-    "missing_keywords": ["Keyword 1", "Keyword 2"],
-    "critical_skills": ["Skill 1", "Skill 2"],
-    "recommendation": "Brief advice on keyword integration."
-}}
-"""
+        prompt = PromptManager.load("career/keywords", job_title=job_title, resume_text=resume_text[:2000])
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
         try:
@@ -82,24 +194,9 @@ Output STRICTLY as a JSON object with this schema:
             }
 
     async def decode_company(self, company_name: str) -> dict:
-        prompt = f"""
-Build a comprehensive intelligence report for: "{company_name}".
-Include Tech Stack, Key Products, Work Culture, Interview Process stages, Salary ranges for Freshers, Recent hiring trends, Team structure, and Recent News.
-
-Output STRICTLY as a JSON object matching this schema (no markdown formatting, just raw JSON string):
-{{
-    "summary": "Overview of company...",
-    "tech_stack": ["React", "Python", "Kubernetes"],
-    "products": ["Product A", "Product B"],
-    "culture": "Description of work-life balance and values...",
-    "interview_process": ["Round 1: Online Assessment", "Round 2: Technical Interview", "Round 3: Behavioral"],
-    "salary_range": "e.g., INR 12-18 LPA",
-    "hiring_trends": "Recent patterns...",
-    "team_structure": "Engineering organization details..."
-}}
-"""
+        prompt = PromptManager.load("career/decode_company", company_name=company_name)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
         try:
@@ -117,23 +214,9 @@ Output STRICTLY as a JSON object matching this schema (no markdown formatting, j
             }
 
     async def coding_arena(self, problem_title: str, language: str, user_code: str, mode: str) -> dict:
-        prompt = f"""
-You are a LeetCode mock interviewer and coding tutor. Analyze the user's code for "{problem_title}".
-Mode: {mode} (hint = give hint, debug = check bugs, evaluate = run performance analysis)
-Language: {language}
-Code:
-{user_code}
-
-Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSON string):
-{{
-    "feedback": "Detailed response according to the mode...",
-    "complexity": "O(N) time | O(1) space",
-    "has_bugs": true/false,
-    "clean_code_suggestion": "Refactored snippet or advice..."
-}}
-"""
+        prompt = PromptManager.load("career/coding_arena", problem_title=problem_title, mode=mode, language=language, user_code=user_code)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="learning")
+        stream = AIGateway().generate_response_stream(messages, personality="learning")
         full_text = await _collect_stream(stream)
 
         try:
@@ -147,24 +230,9 @@ Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSO
             }
 
     async def build_network_outreach(self, person_type: str, company: str, user_context: str) -> dict:
-        prompt = f"""
-You are an expert in professional networking. Draft networking outreach templates for reaching out to a {person_type} at {company}.
-User context: {user_context}
-
-Generate three templates:
-1. LinkedIn Connection Request (under 300 characters)
-2. Detailed outreach email / follow-up
-3. Referral request message
-
-Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSON):
-{{
-    "connection_request": "Short LinkedIn message...",
-    "outreach_message": "Longer email/inmail message...",
-    "referral_message": "Referral query..."
-}}
-"""
+        prompt = PromptManager.load("career/network_outreach", person_type=person_type, company=company, user_context=user_context)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
         try:
@@ -177,22 +245,9 @@ Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSO
             }
 
     async def get_salary_insight(self, role: str, location: str) -> dict:
-        prompt = f"""
-Provide realistic salary benchmarking, cost of living index, local tax brackets, and negotiation tips for:
-Role: {role}
-Location: {location}
-
-Output STRICTLY as a JSON object with this exact structure:
-{{
-    "market_range": "e.g., INR 10-15 LPA",
-    "fresher_average": "e.g., INR 7 LPA",
-    "tax_estimate": "Detailed breakdown of local tax brackets...",
-    "cost_of_living_ratio": "Comparison index or rating",
-    "negotiation_tactics": ["Point 1", "Point 2"]
-}}
-"""
+        prompt = PromptManager.load("career/salary_insight", role=role, location=location)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
         try:
@@ -210,21 +265,9 @@ Output STRICTLY as a JSON object with this exact structure:
             }
 
     async def get_global_path(self, country: str) -> dict:
-        prompt = f"""
-Provide visa requirements, Masters planning advice, popular scholarships, remote work visa viability, and TOEFL/IELTS test preparation benchmarks for:
-Target Country: {country}
-
-Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSON):
-{{
-    "visa_type": "Popular visa pathways (e.g., H-1B, Post-Study Work)",
-    "masters_prep": "Advice on deadlines and profile strength...",
-    "scholarships": ["Scholarship A", "Scholarship B"],
-    "english_test_prep": "Minimum bands/scores (TOEFL/IELTS)",
-    "remote_job_potential": "Digital Nomad or global remote hiring potential"
-}}
-"""
+        prompt = PromptManager.load("career/global_path", country=country)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
         try:
@@ -239,29 +282,9 @@ Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSO
             }
 
     async def get_opportunities(self) -> list:
-        prompt = """
-Generate a list of 4 highly relevant, upcoming career opportunities for a computer science student or fresh graduate in tech. 
-Include a mix of:
-1. A well-known global Hackathon (e.g., SIH, MLH)
-2. A major Open Source program (e.g., GSoC, Outreachy)
-3. A Fellowship or Mentorship program
-4. A Tech Scholarship or Diversity grant
-
-Make the deadlines realistic (e.g., within the next 3 to 6 months).
-
-Output STRICTLY as a JSON array of objects matching this exact schema (no markdown, just raw JSON array):
-[
-    {
-        "id": "unique-string-id",
-        "title": "Event Name",
-        "category": "Hackathon" | "Open Source" | "Fellowship" | "Scholarship",
-        "deadline": "YYYY-MM-DD",
-        "url": "https://example.com"
-    }
-]
-"""
+        prompt = PromptManager.load("career/opportunities")
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
         try:
@@ -349,7 +372,7 @@ Output STRICTLY as a JSON array of objects matching this exact schema (no markdo
             mission.git_commits_completed = 1
         elif task_type == "linkedin":
             mission.linkedin_posts_completed = 1
-        elif task_type == "job":
+        elif task_type in ("job", "jobs"):
             mission.jobs_applied_completed = min(mission.jobs_applied_completed + 1, 3)
         elif task_type == "course":
             mission.course_completed = 1

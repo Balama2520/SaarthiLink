@@ -1,0 +1,11 @@
+# Saarthi V1 bug register — live audit addendum
+
+| ID | Feature | Severity | Reproduction | Expected / actual | Root cause | Minimal fix | Verification |
+|---|---|---|---|---|---|---|---|
+| AUD-001 | Production frontend/API | P1 | Build and deploy frontend with the supplied Netlify or nginx config. | Browser API requests need a real backend origin. | The earlier client was fixed to read public `VITE_API_BASE_URL`; the actual production origin is still not configured. | Set Netlify's build variable to the real HTTPS FastAPI origin and test the deployment. | Code verified by lint/build; deployment not verified. |
+| AUD-002 | Resume storage | P0 | `GET /api/health` on the running backend. | Resume bytes must persist to Supabase Storage; health reports `storage: unconfigured`. | `SUPABASE_URL` and service-role storage configuration are absent from running service. | Configure private bucket and server-only credentials, then upload/retrieve a PDF and inspect object key. | Not fixed. |
+| AUD-003 | Saved jobs guest state | P2 | Visit Jobs as guest in local UI. | Expected quiet guest restriction; console logged `Failed to load saved jobs`. | `JobFinder.loadSaved` called the private endpoint without a token. | Gate the request on `getToken()`. | Fixed; lint/build pass. Browser retest pending. |
+| AUD-004 | Personas | P2 | Select any persona and reload/check dashboard. | Persona should persist and affect intended visibility/dashboard; only local selector state is evident. | No persona API/model/persistence wiring was located. | Define intended persona data contract and persist it through profile API before claiming support. | Not fixed. |
+| AUD-005 | Repository secret hygiene | P1 | `git ls-files` lists `backend/buddy-key.pem` and `backend/buddy-key-2025.pem`. | Private keys must not be tracked. | Sensitive PEM files are version-controlled. | Revoke/rotate, remove with filesystem-owner permissions, then purge Git history; ignore rule already exists. | Removal attempt was denied by filesystem ACL; contents were not opened. |
+
+The telemetry 404 in `backend/run_full_e2e_test.py` is also a stale test expectation: `/telemetry` is not registered. It is P3 unless telemetry is a release requirement.

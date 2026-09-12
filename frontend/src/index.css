@@ -1,122 +1,127 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource/inter";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/500-italic.css";
+@import "@fontsource/fraunces/600-italic.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'Fraunces', ui-serif, serif;
+
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
 }
 
-/* ─── Dark-first root — app is always dark ─────────────────── */
+/*
+  SaarthiLink brand tokens.
+  Sourced directly from the locked brand package (Founder & CTO approved,
+  22 Aug 2026 — see public/brand/). The mark is a navy link/chariot-wheel
+  glyph with a single warm-gold spark, always shown on a deep navy field
+  (public/brand/lockup-dark.png is the canonical reference). These tokens
+  are sampled from that asset, not invented separately from it:
+    - background family → navy-black, sampled from the lockup's corners
+      (≈ #030b18 – #0a1628), not a warm ink/brown-black.
+    - primary/ring → #E9A23B, sampled directly from the glyph's gold spark.
+      This already matched before this pass and needed no change.
+    - foreground/border/muted → shifted from warm off-white/tan to a cool
+      near-white so hairlines and text sit naturally on the navy, instead
+      of fighting it with a warm cast.
+  "Saarthi" (सारथी) — the charioteer who guides you — is still the concept
+  behind the product name; teal is kept as a semantic growth/progress hue
+  (it doesn't appear in the mark, but doesn't compete with navy+gold either)
+  and gold remains the single guidance/action accent.
+*/
 :root {
-    --background: oklch(0.09 0.005 265);
-    --foreground: oklch(0.97 0 0);
-    --card: oklch(0.13 0.007 265);
-    --card-foreground: oklch(0.97 0 0);
-    --popover: oklch(0.13 0.007 265);
-    --popover-foreground: oklch(0.97 0 0);
-    --primary: oklch(0.65 0.22 264);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.18 0.008 265);
-    --secondary-foreground: oklch(0.97 0 0);
-    --muted: oklch(0.18 0.008 265);
-    --muted-foreground: oklch(0.60 0.01 265);
-    --accent: oklch(0.18 0.008 265);
-    --accent-foreground: oklch(0.97 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 8%);
-    --input: oklch(1 0 0 / 12%);
-    --ring: oklch(0.65 0.22 264);
-    --chart-1: oklch(0.65 0.22 264);
-    --chart-2: oklch(0.58 0.22 200);
-    --chart-3: oklch(0.72 0.18 160);
-    --chart-4: oklch(0.80 0.15 80);
-    --chart-5: oklch(0.70 0.20 30);
-    --radius: 0.75rem;
-    --sidebar: oklch(0.11 0.007 265);
-    --sidebar-foreground: oklch(0.97 0 0);
-    --sidebar-primary: oklch(0.65 0.22 264);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.18 0.008 265);
-    --sidebar-accent-foreground: oklch(0.97 0 0);
-    --sidebar-border: oklch(1 0 0 / 8%);
-    --sidebar-ring: oklch(0.65 0.22 264);
+    --background: #070B14;
+    --foreground: #EEF1F8;
+
+    --card: #0D1424;
+    --card-foreground: #EEF1F8;
+
+    --popover: #101A2E;
+    --popover-foreground: #EEF1F8;
+
+    --primary: #E9A23B;         /* Gold spark — sampled from the logo mark */
+    --primary-foreground: #1A1206;
+
+    --secondary: #0F1728;
+    --secondary-foreground: #EEF1F8;
+
+    --muted: #0B1120;
+    --muted-foreground: #8993AC;
+
+    --accent: #2F6E5E;          /* Deep teal — growth / progress (semantic, not from the mark) */
+    --accent-foreground: #EEF1F8;
+
+    --success: #3D8A6E;
+    --success-foreground: #070B14;
+
+    --destructive: #C1503B;
+    --destructive-foreground: #FBEFE9;
+
+    --border: rgba(226, 232, 245, 0.10);
+    --input: rgba(226, 232, 245, 0.06);
+    --ring: #E9A23B;
+
+    --radius: 0.625rem;
 }
 
-/* Keep .dark class for potential future light-mode toggle */
 .dark {
-    --background: oklch(0.09 0.005 265);
-    --foreground: oklch(0.97 0 0);
-    --card: oklch(0.13 0.007 265);
-    --card-foreground: oklch(0.97 0 0);
-    --popover: oklch(0.13 0.007 265);
-    --popover-foreground: oklch(0.97 0 0);
-    --primary: oklch(0.65 0.22 264);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.18 0.008 265);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.18 0.008 265);
-    --muted-foreground: oklch(0.60 0.01 265);
-    --accent: oklch(0.18 0.008 265);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 8%);
-    --input: oklch(1 0 0 / 12%);
-    --ring: oklch(0.65 0.22 264);
-    --chart-1: oklch(0.65 0.22 264);
-    --chart-2: oklch(0.58 0.22 200);
-    --chart-3: oklch(0.72 0.18 160);
-    --chart-4: oklch(0.80 0.15 80);
-    --chart-5: oklch(0.70 0.20 30);
-    --sidebar: oklch(0.11 0.007 265);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.65 0.22 264);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.18 0.008 265);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 8%);
-    --sidebar-ring: oklch(0.65 0.22 264);
+    --background: #070B14;
+    --foreground: #EEF1F8;
+    --card: #0D1424;
+    --card-foreground: #EEF1F8;
+    --popover: #101A2E;
+    --popover-foreground: #EEF1F8;
+    --primary: #E9A23B;
+    --primary-foreground: #1A1206;
+    --secondary: #0F1728;
+    --secondary-foreground: #EEF1F8;
+    --muted: #0B1120;
+    --muted-foreground: #8993AC;
+    --accent: #2F6E5E;
+    --accent-foreground: #EEF1F8;
+    --success: #3D8A6E;
+    --success-foreground: #070B14;
+    --destructive: #C1503B;
+    --destructive-foreground: #FBEFE9;
+    --border: rgba(226, 232, 245, 0.10);
+    --input: rgba(226, 232, 245, 0.06);
+    --ring: #E9A23B;
 }
 
 @layer base {
@@ -132,85 +137,100 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: var(--background);
     min-height: 100dvh;
     overflow-x: hidden;
   }
 
-  /* Native selects styled for dark theme */
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+  }
+
+  button:focus-visible, a:focus-visible, input:focus-visible,
+  select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
   select, select option {
-    background-color: oklch(0.13 0.007 265) !important;
-    color: oklch(0.90 0 0) !important;
+    background-color: var(--popover) !important;
+    color: var(--foreground) !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 @layer utilities {
-  /* ─── Glassmorphism ──────────────────────────────────────── */
-  .glass-panel {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-xl;
-  }
-  .glass-card {
-    @apply bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10
-           hover:border-violet-500/50 transition-all duration-300 rounded-2xl;
-  }
-  .glass-dark {
-    background: oklch(0.13 0.007 265 / 0.85);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    border: 1px solid oklch(1 0 0 / 0.08);
+  /* Solid, hairline-bordered surface — replaces the previous blurred
+     glassmorphism treatment. Kept under the old .glass-card name so every
+     existing usage of <Card> picks this up without further edits. */
+  .glass-panel, .glass-card, .glass-dark {
+    @apply bg-card border border-border rounded-xl shadow-sm;
   }
 
-  /* ─── Typography ─────────────────────────────────────────── */
+  /* Reserved for the one or two most important words on a screen — not a
+     decorative rainbow gradient. Use sparingly. */
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-fuchsia-400;
-  }
-  .text-gradient-cyan {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-violet-400;
+    color: var(--primary);
   }
 
-  /* ─── Custom Scrollbar ───────────────────────────────────── */
+  .font-display {
+    font-family: var(--font-heading);
+  }
+
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: oklch(0.35 0.05 265) transparent;
+    scrollbar-color: rgba(238, 241, 248, 0.14) transparent;
   }
   .custom-scrollbar::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: oklch(0.30 0.05 265);
+    background: rgba(238, 241, 248, 0.14);
     border-radius: 99px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.45 0.12 265);
+    background: rgba(238, 241, 248, 0.24);
   }
 
-  /* ─── Animations ─────────────────────────────────────────── */
   @keyframes shimmer {
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
+    100% { transform: translateX(100%); }
   }
   .skeleton {
-    background: linear-gradient(
+    @apply relative overflow-hidden bg-muted rounded-md;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0 -translate-x-full;
+    background-image: linear-gradient(
       90deg,
-      oklch(0.18 0.008 265) 25%,
-      oklch(0.22 0.010 265) 50%,
-      oklch(0.18 0.008 265) 75%
+      rgba(238, 241, 248, 0) 0,
+      rgba(238, 241, 248, 0.05) 20%,
+      rgba(238, 241, 248, 0.09) 60%,
+      rgba(238, 241, 248, 0)
     );
-    background-size: 200% 100%;
-    animation: shimmer 1.6s infinite ease-in-out;
-    border-radius: 0.5rem;
+    animation: shimmer 2s infinite;
   }
 
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(16px); }
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   .fade-in-up {
-    animation: fadeInUp 0.4s ease-out forwards;
+    animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   @keyframes fadeIn {
@@ -218,52 +238,24 @@
     to   { opacity: 1; }
   }
   .fade-in {
-    animation: fadeIn 0.35s ease-out forwards;
+    animation: fadeIn 0.3s ease-out forwards;
   }
 
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.94); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-  .scale-in {
-    animation: scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 0 0 oklch(0.65 0.22 264 / 0.4); }
-    50%       { box-shadow: 0 0 20px 8px oklch(0.65 0.22 264 / 0); }
-  }
-  .pulse-glow {
-    animation: pulse-glow 2.5s ease-in-out infinite;
-  }
-
-  /* ─── Stagger delays ─────────────────────────────────────── */
-  .stagger-1 { animation-delay: 0ms; }
-  .stagger-2 { animation-delay: 60ms; }
-  .stagger-3 { animation-delay: 120ms; }
-  .stagger-4 { animation-delay: 180ms; }
-  .stagger-5 { animation-delay: 240ms; }
-  .stagger-6 { animation-delay: 300ms; }
-
-  /* ─── Glow effects ───────────────────────────────────────── */
-  .glow-violet {
-    box-shadow: 0 0 30px -5px oklch(0.65 0.22 264 / 0.4);
-  }
-  .glow-cyan {
-    box-shadow: 0 0 30px -5px oklch(0.72 0.18 200 / 0.4);
-  }
-
-  /* ─── Interactive states ─────────────────────────────────── */
-  .hover-lift {
-    @apply transition-transform duration-200 hover:-translate-y-0.5;
-  }
   .interactive {
-    @apply transition-all duration-200 cursor-pointer select-none;
+    @apply transition-all duration-300 cursor-pointer select-none hover:scale-[1.02] active:scale-95;
   }
 
-  /* ─── Surface layers ─────────────────────────────────────── */
-  .surface-0 { background: oklch(0.09 0.005 265); }
-  .surface-1 { background: oklch(0.11 0.007 265); }
-  .surface-2 { background: oklch(0.13 0.007 265); }
-  .surface-3 { background: oklch(0.17 0.008 265); }
+  /* Signature element: the "path" rail. Saarthilink's whole premise is a
+     guide walking someone through stages of a journey (assess → prepare →
+     apply → offer) — this dotted, node-marked line is the one recurring
+     visual motif the brand is built around, used on the auth screen and
+     reusable anywhere progress along a journey needs to be shown. */
+  .path-rail {
+    position: relative;
+  }
+  .path-rail::before {
+    content: "";
+    position: absolute;
+    background: linear-gradient(180deg, rgba(233, 162, 59, 0.6), rgba(233, 162, 59, 0.05));
+  }
 }

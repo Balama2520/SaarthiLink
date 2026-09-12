@@ -3,7 +3,8 @@ import logging
 from fastapi import HTTPException
 from app.repositories.note_repository import NoteRepository
 from app.models.models import Note
-from app.ai.llm import generate_response_stream_async
+from app.ai.gateway import AIGateway
+from app.ai.prompt_manager import PromptManager
 from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -29,25 +30,10 @@ class NoteService:
         self.repo = repo
 
     async def generate_note(self, user_id: int, topic: str, depth: str) -> dict:
-        prompt = f"""
-        You are a study assistant. Generate well-structured, concise study notes on the topic: "{topic}".
-        Depth level: {depth}
-    
-        Output STRICTLY as a valid JSON object. Do not output markdown fences, just the JSON:
-        {{
-            "title": "Topic Title",
-            "summary": "One paragraph summary",
-            "key_points": ["Point 1", "Point 2", "Point 3"],
-            "details": "Longer explanation of the topic...",
-            "flashcards": [
-                {{"q": "Question?", "a": "Answer."}}
-            ],
-            "tags": "comma,separated,tags"
-        }}
-        """
+        prompt = PromptManager.load("notes/generate_note", topic=topic, depth=depth)
 
         messages = [{"role": "user", "content": prompt}]
-        response_stream = generate_response_stream_async(messages, personality="learning")
+        response_stream = AIGateway().generate_response_stream(messages, personality="learning")
         full_response = await _collect_stream(response_stream)
 
         try:

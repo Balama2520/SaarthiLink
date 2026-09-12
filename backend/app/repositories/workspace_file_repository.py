@@ -47,4 +47,30 @@ class WorkspaceFileRepository:
         docs = self.db.query(Document).filter(Document.workspace_id == None, Document.user_id == user_id).all()
         notes = self.db.query(Note).filter(Note.workspace_id == None, Note.user_id == user_id).all()
         jobs = self.db.query(JobApplication).filter(JobApplication.workspace_id == None, JobApplication.user_id == user_id).all()
-        return resumes, docs, notes, jobs
+        return {
+            "resumes": [{"id": r.id, "filename": r.filename} for r in resumes],
+            "docs": [{"id": d.id, "filename": d.filename} for d in docs],
+            "notes": [{"id": n.id, "title": n.title} for n in notes],
+            "jobs": [{"id": j.id, "job_title": j.job_title, "company": j.company} for j in jobs],
+        }
+
+    def link_item(self, workspace_id: str, item_type: str, item_id: str, user_id: int) -> None:
+        """Assign an existing user-owned item to a workspace."""
+        from fastapi import HTTPException
+        type_map = {
+            "resume": (Resume, "id"),
+            "document": (Document, "id"),
+            "note": (Note, "id"),
+            "job": (JobApplication, "id"),
+        }
+        if item_type not in type_map:
+            raise HTTPException(status_code=400, detail=f"Unknown item_type: {item_type}")
+        model, id_col = type_map[item_type]
+        obj = self.db.query(model).filter(
+            getattr(model, id_col) == item_id,
+            model.user_id == user_id,
+        ).first()
+        if not obj:
+            raise HTTPException(status_code=404, detail="Item not found")
+        obj.workspace_id = workspace_id
+        self.db.commit()

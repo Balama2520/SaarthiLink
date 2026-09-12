@@ -1,6 +1,7 @@
 import json
 from app.repositories.higher_studies_repository import HigherStudiesRepository
-from app.ai.llm import generate_response_stream_async
+from app.ai.gateway import AIGateway
+from app.ai.prompt_manager import PromptManager
 from typing import Dict, Any, Optional
 
 async def _collect_stream(stream) -> str:
@@ -24,18 +25,9 @@ class HigherStudiesService:
         self.repo = repo
 
     async def find_universities(self, query: str, target_degree: str) -> dict:
-        prompt = f"""
-        You are an expert higher education counselor. Provide a list of top 3 universities for the query "{query}" aiming for a "{target_degree}" degree.
-        Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSON string):
-        {{
-            "status": "success",
-            "universities": [
-                {{"name": "University Name", "program": "{target_degree}", "acceptance_rate": "Acceptance Rate %"}}
-            ]
-        }}
-        """
+        prompt = PromptManager.load("higher_studies/find_universities", query=query, target_degree=target_degree)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
         try:
             return json.loads(_strip_markdown_json(full_text))
@@ -50,18 +42,9 @@ class HigherStudiesService:
             }
 
     async def find_professors(self, query: str, target_degree: str) -> dict:
-        prompt = f"""
-        You are an expert academic advisor. Provide a list of 3 professors and labs relevant to the query "{query}" for a "{target_degree}" degree.
-        Output STRICTLY as a JSON object matching this schema (no markdown, just raw JSON string):
-        {{
-            "status": "success",
-            "professors": [
-                {{"name": "Dr. Name", "university": "University Name", "lab": "Lab Name", "openings": true/false}}
-            ]
-        }}
-        """
+        prompt = PromptManager.load("higher_studies/find_professors", query=query, target_degree=target_degree)
         messages = [{"role": "user", "content": prompt}]
-        stream = generate_response_stream_async(messages, personality="career")
+        stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
         try:
             return json.loads(_strip_markdown_json(full_text))

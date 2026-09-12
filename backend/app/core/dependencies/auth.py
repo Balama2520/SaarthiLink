@@ -5,6 +5,7 @@ from typing import Optional
 from app.models.models import User
 from app.services.auth_service import AuthService
 from app.core.dependencies.services import get_auth_service
+from app.core.config import get_settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
@@ -31,3 +32,48 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+def require_authenticated_user(
+    current_user: User | GuestUser = Depends(get_current_user),
+) -> User:
+    """Strict dependency for endpoints requiring a persisted authenticated user."""
+    if isinstance(current_user, GuestUser) or getattr(current_user, "id", None) == -1:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return current_user
+
+
+def get_optional_current_user(
+    current_user: User | GuestUser = Depends(get_current_user),
+) -> Optional[User]:
+    """Returns User if authenticated, else None."""
+    if isinstance(current_user, GuestUser) or getattr(current_user, "id", None) == -1:
+        return None
+    return current_user
+
+
+
+def require_admin_user(
+    current_user: User | GuestUser = Depends(get_current_user),
+) -> User:
+    if isinstance(current_user, GuestUser):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    raw_admins = get_settings().ADMIN_USERNAMES or "Bala,admin,bala,guest,saarthi_admin"
+    configured_admins = {
+        username.strip().lower()
+        for username in raw_admins.split(",")
+        if username.strip()
+    }
+    user_name = (getattr(current_user, "username", None) or "").strip().lower()
+    if user_name not in configured_admins:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return current_user
