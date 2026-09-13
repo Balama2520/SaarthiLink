@@ -146,10 +146,6 @@ export default function App() {
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>Saarthi AI 🧭 Guiding Intelligence • Connected Action</span>
               </div>
-              <div className="hidden lg:flex items-center gap-2 text-[11px] font-mono">
-                <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-emerald-400 font-semibold">Pytest 190/190 PASS</span>
-                <span className="rounded-full bg-blue-500/10 border border-blue-500/30 px-2.5 py-0.5 text-blue-400 font-semibold">E2E 26/26 PASS</span>
-              </div>
             </div>
 
             <div className="flex items-center gap-3">

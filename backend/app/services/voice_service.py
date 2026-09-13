@@ -2,7 +2,6 @@ import os
 import logging
 import speech_recognition as sr
 from io import BytesIO
-from pydub import AudioSegment
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +11,8 @@ class VoiceService:
 
     async def transcribe_audio(self, audio_content: bytes) -> str:
         try:
+            from pydub import AudioSegment
+
             # Convert raw audio (e.g., from frontend mediaRecorder) to WAV
             audio = AudioSegment.from_file(BytesIO(audio_content))
             wav_io = BytesIO()

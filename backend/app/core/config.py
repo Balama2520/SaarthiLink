@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'saarthi.db')}")
+    REDIS_URL: str = os.getenv("REDIS_URL", "")
 
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY") or "DEVELOPMENT_MODE_UNSAFE_SECRET_CHANGE_ME"
@@ -27,7 +28,7 @@ class Settings(BaseSettings):
     ADMIN_USERNAMES: str = os.getenv("ADMIN_USERNAMES", "Bala,admin,bala,guest,saarthi_admin")
 
     # CORS Configuration
-    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "*")
+    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
 
     # Rate limiting
     RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() in ("1", "true", "yes")
