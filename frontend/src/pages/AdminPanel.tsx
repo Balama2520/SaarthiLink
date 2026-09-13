@@ -31,6 +31,29 @@ interface AdminStats {
     secondary_provider?: string;
   };
   recent_users?: Array<{ id: number; username: string }>;
+  recent_contact_requests?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role_type: string;
+    reason: string;
+    message: string;
+    created_at?: string;
+  }>;
+  recent_discovery_profiles?: Array<{
+    id: string;
+    user_type: string;
+    status: string;
+    created_at?: string;
+  }>;
+  recent_opportunity_signals?: Array<{
+    id: string;
+    company: string;
+    role: string;
+    public_job_url?: string;
+    validation_status: string;
+    created_at?: string;
+  }>;
 }
 
 export default function AdminPanel() {
@@ -52,7 +75,7 @@ export default function AdminPanel() {
       setStats(data as AdminStats);
     } catch (err) {
       const message = err instanceof Error ? err.message.toLowerCase() : "";
-      if (message.includes("admin") || message.includes("forbidden") || message.includes("permission")) {
+      if (message.includes("admin") || message.includes("forbidden") || message.includes("permission") || message.includes("auth") || message.includes("unauthorized")) {
         setDenied(true);
       } else {
         setError(true);
@@ -219,27 +242,97 @@ export default function AdminPanel() {
 
             {/* Discovery Signals Tab */}
             {activeTab === "discovery" && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Discovery Profiles</div>
-                  <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_discovery_profiles ?? 0}</div>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground">Discovery Profiles</div>
+                    <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_discovery_profiles ?? 0}</div>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground">Feature Feedback Submissions</div>
+                    <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_feature_feedbacks ?? 0}</div>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground">Contact Requests</div>
+                    <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_contact_requests ?? 0}</div>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground">Opportunity Signals</div>
+                    <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_opportunity_signals ?? 0}</div>
+                  </div>
+                  <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
+                    <div className="text-xs font-semibold text-muted-foreground">Registered Companies</div>
+                    <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_company_profiles ?? 0}</div>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Feature Feedback Submissions</div>
-                  <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_feature_feedbacks ?? 0}</div>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Contact Requests</div>
-                  <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_contact_requests ?? 0}</div>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Opportunity Signals</div>
-                  <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_opportunity_signals ?? 0}</div>
-                </div>
-                <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
-                  <div className="text-xs font-semibold text-muted-foreground">Registered Companies</div>
-                  <div className="text-2xl font-extrabold text-foreground font-display">{stats?.total_company_profiles ?? 0}</div>
-                </div>
+
+                {/* User Contact Requests & Messages List */}
+                {stats?.recent_contact_requests && stats.recent_contact_requests.length > 0 && (
+                  <div className="rounded-2xl border border-border/70 bg-card p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <span>📩 User Messages & Direct Inquiries</span>
+                        <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          {stats.recent_contact_requests.length} Messages
+                        </span>
+                      </h3>
+                    </div>
+                    <div className="space-y-3">
+                      {stats.recent_contact_requests.map((c) => (
+                        <div key={c.id} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2 text-xs">
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-2">
+                            <div className="flex items-center gap-2 font-bold text-foreground">
+                              <span>{c.name}</span>
+                              <span className="text-muted-foreground font-normal">({c.email})</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px]">
+                              <span className="rounded-md bg-primary/10 border border-primary/30 px-2 py-0.5 font-semibold text-primary">
+                                {c.role_type}
+                              </span>
+                              <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-muted-foreground">
+                                {c.reason}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-muted-foreground whitespace-pre-wrap">{c.message}</p>
+                          {c.created_at && (
+                            <div className="text-[10px] text-muted-foreground/70 text-right">
+                              Submitted: {new Date(c.created_at).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* User Discovery Submissions & Opportunity Signals */}
+                {stats?.recent_opportunity_signals && stats.recent_opportunity_signals.length > 0 && (
+                  <div className="rounded-2xl border border-border/70 bg-card p-6 space-y-4">
+                    <h3 className="text-sm font-bold text-foreground">Community Opportunity Signals</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      {stats.recent_opportunity_signals.map((o) => (
+                        <div key={o.id} className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
+                          <div className="flex items-center justify-between font-bold text-foreground">
+                            <span>{o.company}</span>
+                            <span className="text-[10px] text-emerald-400 font-mono">{o.validation_status}</span>
+                          </div>
+                          <div className="text-muted-foreground">{o.role}</div>
+                          {o.public_job_url && (
+                            <a
+                              href={o.public_job_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[11px] text-primary underline truncate block"
+                            >
+                              {o.public_job_url}
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

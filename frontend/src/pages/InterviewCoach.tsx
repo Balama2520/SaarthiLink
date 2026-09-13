@@ -47,35 +47,235 @@ interface InterviewFeedback {
   feedback: string; confidence?: number; speaking_speed?: number; grammar?: number; technical_accuracy?: number;
 }
 
-const QUESTIONS_DECK = {
-  HR: [
-    "Tell me about yourself and your career goals.",
-    "Why do you want to join our organization specifically?",
-    "Where do you see yourself in five years?"
-  ],
-  Technical: [
-    "Explain the concept of virtual DOM and how React optimizes rendering.",
-    "What is the difference between a process and a thread in OS?",
-    "Describe how hash collisions are resolved in hash maps."
-  ],
-  Behavioral: [
-    "Tell me about a time you resolved a major conflict in a group coding project.",
-    "Describe a situation where you had to learn a complex framework under a tight deadline.",
-    "Give an example of a mistake you made in a technical architecture decision."
-  ],
-  Coding: [
-    "How would you optimize a search operation in a sorted array?",
-    "Explain the time and space complexity of merge sort.",
-    "Describe how you would implement an LRU Cache."
-  ],
-  "Stress Round": [
-    "Your project fails to deploy 10 minutes before the product launch. What do you do?",
-    "If we find your skills don't match this role, why should we still hire you?",
-    "Why is your CGPA not as competitive as other applicants?"
-  ]
+const ROLE_QUESTIONS_DECKS: Record<string, Record<string, string[]>> = {
+  "Software Engineer": {
+    HR: [
+      "Tell me about yourself and your software engineering background.",
+      "Why do you want to join our engineering team specifically?",
+      "Where do you see yourself technically in five years?"
+    ],
+    Technical: [
+      "What is the difference between monolithic and microservices architecture?",
+      "What is the difference between a process and a thread in OS?",
+      "Describe how hash collisions are resolved in hash maps."
+    ],
+    Behavioral: [
+      "Tell me about a time you resolved a major conflict in a technical project.",
+      "Describe a situation where you had to adopt a new technology under a tight deadline.",
+      "Give an example of a mistake you made in a technical architecture decision."
+    ],
+    Coding: [
+      "How would you optimize a search operation in a sorted array?",
+      "Explain the time and space complexity of merge sort.",
+      "Describe how you would implement an LRU Cache."
+    ],
+    "Stress Round": [
+      "Your production release crashes 10 minutes before a launch. What is your triage process?",
+      "If we find your skills don't match this role, why should we still hire you?",
+      "Why should we choose you over candidates with more experience in this stack?"
+    ]
+  },
+  "Frontend Developer": {
+    HR: [
+      "What inspired you to specialize in Frontend Development?",
+      "How do you stay updated with rapidly evolving web technologies?",
+      "Where do you see your UI engineering career in 3 years?"
+    ],
+    Technical: [
+      "Explain the Virtual DOM and how React optimizes rendering via reconciliation.",
+      "What are CSS specificity, flexbox, and grid, and when would you use each?",
+      "Explain Event Delegation, Event Bubbling, and Capturing in JavaScript."
+    ],
+    Behavioral: [
+      "Describe a time when UX design requirements were difficult to implement technically.",
+      "How do you handle feedback from designers or product managers on your frontend UI?",
+      "Tell me about a difficult performance bug you fixed in a web app."
+    ],
+    Coding: [
+      "How would you implement a custom debounce and throttle function in JavaScript?",
+      "Write a function to deep clone an object handling circular references.",
+      "How do you implement virtual scrolling for a list with 100,000 items?"
+    ],
+    "Stress Round": [
+      "Your web application page load time increases from 1s to 8s in production. How do you debug it?",
+      "The client demands a complete design overhaul 2 days before launch. How do you respond?",
+      "Why should we hire you over a developer who knows 5 modern frontend frameworks?"
+    ]
+  },
+  "Backend Developer": {
+    HR: [
+      "Why did you choose to focus on backend systems engineering?",
+      "What kind of team environment allows you to build your best backend systems?",
+      "What are your long-term goals as a backend architect?"
+    ],
+    Technical: [
+      "Explain ACID properties in relational databases and how transactions work.",
+      "How do you handle database connection pooling, indexing, and query optimization?",
+      "What are the key trade-offs between RESTful APIs, gRPC, and GraphQL?"
+    ],
+    Behavioral: [
+      "Tell me about an API outage or backend database lock contention you investigated.",
+      "How do you balance writing clean maintainable backend code with meeting tight deadlines?",
+      "Describe how you handled breaking API changes without disrupting active clients."
+    ],
+    Coding: [
+      "Design a rate limiter algorithm for an API gateway.",
+      "How do you handle concurrent database writes using pessimistic vs optimistic locking?",
+      "Describe how to design a distributed queue system for asynchronous background tasks."
+    ],
+    "Stress Round": [
+      "Database CPU spikes to 100% and connection pool is exhausted during peak traffic. How do you recover?",
+      "A security vulnerability is discovered in an upstream dependency in production. What steps do you take?",
+      "Why should we hire you if your primary language experience differs from our tech stack?"
+    ]
+  },
+  "Full Stack Developer": {
+    HR: [
+      "How do you balance depth vs breadth across frontend and backend technologies?",
+      "What motivated you to become a Full Stack Engineer?",
+      "How do you prioritize technical debt across the entire application stack?"
+    ],
+    Technical: [
+      "Explain end-to-end data flow from client browser click to database write and SSE response.",
+      "How do CORS, CSRF tokens, JWT authentication, and HTTP cookies work together securely?",
+      "How do state management libraries on the frontend interact with caching layers on the backend?"
+    ],
+    Behavioral: [
+      "Describe a full-stack feature you delivered end-to-end under tight constraints.",
+      "How do you coordinate API contracts between frontend requirements and backend schemas?",
+      "Tell me about a time when a frontend bug turned out to be caused by a backend edge case."
+    ],
+    Coding: [
+      "Design an end-to-end file upload feature with drag-and-drop UI and cloud object storage presigned URLs.",
+      "Implement a real-time collaborative feature using WebSockets and client-side optimistic UI updates.",
+      "Write a backend pagination API endpoint and matching frontend infinite scroll consumer."
+    ],
+    "Stress Round": [
+      "Both frontend bundle size and backend response latency double after a major release. How do you triage?",
+      "You are the sole engineer responsible for an entire product. How do you decide what to sacrifice under pressure?",
+      "Why should we hire a Full Stack developer instead of dedicated frontend and backend specialists?"
+    ]
+  },
+  "Machine Learning Engineer": {
+    HR: [
+      "What drew you into Machine Learning and Applied AI engineering?",
+      "How do you bridge the gap between ML research papers and production software?",
+      "Where do you see ML engineering heading in the next 5 years?"
+    ],
+    Technical: [
+      "Explain the bias-variance tradeoff and how regularization (L1/L2) mitigates overfitting.",
+      "How do Transformer architectures (Self-Attention) differ from traditional Recurrent Neural Networks (RNNs)?",
+      "Explain data drift, concept drift, and how you monitor ML model degradation in production."
+    ],
+    Behavioral: [
+      "Tell me about an ML model that performed well in offline metrics but failed in production deployment.",
+      "How do you explain complex model predictions to non-technical business stakeholders?",
+      "Describe a time when data quality issues impacted model training and how you resolved them."
+    ],
+    Coding: [
+      "Implement a basic matrix multiplication or self-attention calculation in NumPy/PyTorch.",
+      "Design a vector search indexing and retrieval pipeline for RAG embeddings using FAISS or ChromaDB.",
+      "Write a Python pipeline for data preprocessing, feature scaling, and train-test splitting."
+    ],
+    "Stress Round": [
+      "Your model's inference latency is 2500ms, but the production SLA requires sub-200ms. How do you optimize it?",
+      "A production ML model displays demographic bias during live evaluation. What immediate actions do you take?",
+      "Why should we hire you if your academic background is in computer science rather than pure statistics/PhD?"
+    ]
+  },
+  "Data Scientist": {
+    HR: [
+      "How do you use data analysis to drive business decisions?",
+      "What type of data science problems excite you the most?",
+      "How do you communicate analytical findings to executive leadership?"
+    ],
+    Technical: [
+      "Explain A/B testing methodology, hypothesis testing, p-values, and statistical power.",
+      "What is the difference between supervised, unsupervised, and reinforcement learning?",
+      "How do you handle imbalanced datasets when training classification models?"
+    ],
+    Behavioral: [
+      "Tell me about an instance where your analytical insights reversed a major business decision.",
+      "Describe a situation where data was incomplete, noisy, or corrupt and how you handled it.",
+      "How do you handle disagreement with product managers on metrics definitions?"
+    ],
+    Coding: [
+      "Write SQL queries involving window functions (ROW_NUMBER, LAG, LEAD) and GROUP BY HAVING.",
+      "How would you build an automated anomaly detection system for time-series metrics?",
+      "Write a Pandas pipeline to clean missing data, encode categorical variables, and compute summary stats."
+    ],
+    "Stress Round": [
+      "Your A/B test results are statistically inconclusive after 4 weeks of running. What is your recommendation?",
+      "The CEO questions your statistical methodology during a company-wide review. How do you defend it?",
+      "Why should we hire a Data Scientist instead of an ML Engineer or Data Analyst for this team?"
+    ]
+  },
+  "Product Manager": {
+    HR: [
+      "What makes a product truly great in your opinion?",
+      "Why do you want to manage products at our company?",
+      "How do you measure your success as a Product Manager?"
+    ],
+    Technical: [
+      "How do you define key product metrics (NORTH STAR, DAU/MAU, CAC, LTV, Retention)?",
+      "Explain how you conduct user discovery, user story mapping, and feature prioritization (RICE / MoSCoW).",
+      "How do you work with technical engineering leads when estimating feature feasibility and architecture trade-offs?"
+    ],
+    Behavioral: [
+      "Describe a time when you had to say 'No' to a major stakeholder or customer request.",
+      "Tell me about a product feature launch that failed to meet adoption goals and what you learned.",
+      "How do you resolve conflicting priorities between engineering tech debt and business sales requests?"
+    ],
+    Coding: [
+      "Create a Product Requirements Document (PRD) framework for an AI-powered search feature.",
+      "How would you design the onboarding user funnel to improve day-1 conversion by 20%?",
+      "Prioritize 5 competing feature requests given limited engineering bandwidth and strict quarterly deadlines."
+    ],
+    "Stress Round": [
+      "A key competitor launches your exact roadmap feature 2 weeks before your planned launch. What is your strategy?",
+      "Engineering tells you a committed feature will take 3x longer than planned. How do you adjust scope?",
+      "Why should we hire you if you don't have a background in our specific industry domain?"
+    ]
+  },
+  "UI/UX Designer": {
+    HR: [
+      "What is your design philosophy and user-centered research approach?",
+      "Why are you interested in designing for our product domain?",
+      "Where do you see design tools and design systems evolving?"
+    ],
+    Technical: [
+      "Explain the design thinking process: Empathize, Define, Ideate, Prototype, Test.",
+      "How do you construct an accessible design system (WCAG compliance, color contrast, typography scale)?",
+      "What is the difference between low-fidelity wireframes, high-fidelity mockups, and interactive prototypes?"
+    ],
+    Behavioral: [
+      "Describe a situation where usability testing revealed that users disliked your initial design concept.",
+      "How do you handle pushback from software engineers who say a design is too difficult to implement?",
+      "Tell me about a time you redesigned an existing complex workflow to reduce user friction."
+    ],
+    Coding: [
+      "Walk through your step-by-step UX audit process for an e-commerce checkout flow.",
+      "How do you structure design tokens, component variants, and auto-layout in Figma for seamless dev handoff?",
+      "Design a user journey map for a first-time mobile app user trying to complete onboarding."
+    ],
+    "Stress Round": [
+      "Engineers shipped a version of your design that doesn't match Figma specs at all. How do you resolve it?",
+      "You are given 24 hours to design a complete dashboard flow for a pitch. What do you prioritize?",
+      "Why should we hire a UI/UX Designer instead of relying on frontend engineers to design UI?"
+    ]
+  }
 };
 
-function formatRoundName(roundType: keyof typeof QUESTIONS_DECK): string {
+const DEFAULT_DECKS = ROLE_QUESTIONS_DECKS["Software Engineer"];
+
+function getDeckForRoleAndRound(roleName: string, roundName: string): string[] {
+  const roleDeck = ROLE_QUESTIONS_DECKS[roleName] || DEFAULT_DECKS;
+  return roleDeck[roundName] || roleDeck["Technical"] || DEFAULT_DECKS["Technical"];
+}
+
+const QUESTIONS_DECK = DEFAULT_DECKS;
+
+function formatRoundName(roundType: string): string {
   return roundType.endsWith(" Round") ? roundType : `${roundType} Round`;
 }
 
@@ -85,7 +285,7 @@ export default function InterviewCoach() {
   const { toast } = useToast();
   const [role, setRole] = useState("Software Engineer");
   const [roleOpen, setRoleOpen] = useState(false);
-  const [roundType, setRoundType] = useState<keyof typeof QUESTIONS_DECK>("Technical");
+  const [roundType, setRoundType] = useState<string>("Technical");
   const [simActive, setSimActive] = useState(false);
   const [questionIdx, setQuestionIdx] = useState(0);
   const [questions, setQuestions] = useState<string[]>([]);
@@ -123,7 +323,7 @@ export default function InterviewCoach() {
   }, []);
 
   const startSimulation = () => {
-    const deck = QUESTIONS_DECK[roundType];
+    const deck = getDeckForRoleAndRound(role, roundType);
     setQuestions(deck); setAnswers(Array(deck.length).fill(""));
     setQuestionIdx(0); setSimStartedAt(Date.now());
     setSimActive(true); setFeedback(null); setError(null);

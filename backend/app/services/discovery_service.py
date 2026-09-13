@@ -183,6 +183,23 @@ class DiscoveryService:
             session_id=data.get("session_id"),
             user_id=user_id,
         )
+
+        # Sync to Google Sheets 11_SYNC_LOGS if Google Sheets is configured
+        try:
+            from app.services.sheets_service import GoogleSheetsService
+            sheets = GoogleSheetsService()
+            if sheets.is_configured():
+                sheets.append_sync_log({
+                    "run_id": f"CONTACT_{cr.id[:8]}",
+                    "timestamp": cr.created_at.isoformat() if hasattr(cr, 'created_at') and cr.created_at else "",
+                    "job": f"Contact: {cr.name} ({cr.email})",
+                    "status": f"ROLE: {cr.role_type or 'User'} | REASON: {cr.reason or 'General'}",
+                    "detail": (cr.message or "")[:200],
+                    "dry_run": "NO",
+                })
+        except Exception as exc:
+            logger.warning("Could not sync contact request to Google Sheets: %s", exc)
+
         return {
             "status": "success",
             "contact_id": cr.id,

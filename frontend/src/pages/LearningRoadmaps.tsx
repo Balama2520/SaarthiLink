@@ -4,7 +4,6 @@ import {
   Sparkles, Target, Clock, Zap, RotateCcw, BookOpen, Code, Globe
 } from "lucide-react";
 import { api } from "../services/api";
-import { isAuthenticated } from "../lib/auth";
 
 interface Milestone {
   day_range: string;
@@ -131,7 +130,6 @@ function MilestoneCard({
 }
 
 export default function LearningRoadmaps() {
-  const isGuest = !isAuthenticated();
   const [targetRole, setTargetRole] = useState("");
   const [duration, setDuration] = useState<30 | 90>(30);
   const [loading, setLoading] = useState(false);
@@ -141,7 +139,6 @@ export default function LearningRoadmaps() {
   const handleGenerate = async (role?: string) => {
     const finalRole = role ?? targetRole;
     if (!finalRole.trim()) return;
-    if (isGuest) { setError("Please sign in to generate roadmaps."); return; }
     setLoading(true);
     setError(null);
     setRoadmap(null);

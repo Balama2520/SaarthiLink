@@ -42,6 +42,25 @@ def get_stats(
     total_opportunity_signals = db.query(OpportunitySignal).count()
     total_company_profiles = db.query(CompanyProfile).count()
 
+    recent_contacts = (
+        db.query(ContactRequest)
+        .order_by(ContactRequest.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    recent_discoveries = (
+        db.query(UserDiscoveryProfile)
+        .order_by(UserDiscoveryProfile.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    recent_opps = (
+        db.query(OpportunitySignal)
+        .order_by(OpportunitySignal.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
     return {
         "total_users": repo.count_users(),
         "total_sessions": repo.count_chat_sessions(),
@@ -58,6 +77,38 @@ def get_stats(
         "recent_users": [
             {"id": u.id, "username": u.username}
             for u in recent
+        ],
+        "recent_contact_requests": [
+            {
+                "id": c.id,
+                "name": c.name,
+                "email": c.email,
+                "role_type": c.role_type or "General User",
+                "reason": c.reason or "Inquiry",
+                "message": c.message,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+            }
+            for c in recent_contacts
+        ],
+        "recent_discovery_profiles": [
+            {
+                "id": d.id,
+                "user_type": d.user_type or "Student / Seeker",
+                "status": d.status,
+                "created_at": d.created_at.isoformat() if d.created_at else None,
+            }
+            for d in recent_discoveries
+        ],
+        "recent_opportunity_signals": [
+            {
+                "id": o.id,
+                "company": o.company or "N/A",
+                "role": o.role or "N/A",
+                "public_job_url": o.public_job_url,
+                "validation_status": o.validation_status,
+                "created_at": o.created_at.isoformat() if o.created_at else None,
+            }
+            for o in recent_opps
         ],
     }
 

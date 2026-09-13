@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase, Flame, CheckSquare,
   ArrowUpRight, Target, ChevronRight,
-  Zap, Clock, Gauge
+  Zap, Clock, Gauge, FileText
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "../services/api";
@@ -190,15 +190,17 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
             
             <div className="flex flex-wrap gap-2">
               {[
-                { label: "Find Jobs", tab: "jobs", icon: Briefcase },
+                { label: "Resume ATS", tab: "resume", icon: FileText },
+                { label: "Match Jobs", tab: "jobs", icon: Briefcase },
                 { label: "Roadmaps", tab: "roadmaps", icon: Target },
+                { label: "Mock Interview", tab: "interview", icon: Zap },
               ].map(({ label, tab, icon: Icon }) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className="group flex items-center gap-2 rounded-lg border border-border/80 bg-card/80 px-3.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/80 hover:border-primary/30 transition-all shadow-sm"
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3.5 w-3.5 text-primary group-hover:scale-110 transition-transform" />
                   {label}
                 </button>
               ))}
@@ -212,23 +214,21 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
               
               <motion.section 
                 initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
-                className="rounded-xl border border-border bg-card p-6"
+                className="rounded-2xl border border-border/80 bg-card/80 p-6 shadow-xl backdrop-blur-sm relative overflow-hidden"
               >
                 <div className="flex items-center justify-between mb-5">
                     <div>
-                      <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                        <Flame className="h-4 w-4 text-orange-500" /> Daily Mission
+                      <h2 className="text-base font-bold text-foreground flex items-center gap-2 font-display">
+                        <Flame className="h-4 w-4 text-amber-500 fill-amber-500/20 animate-pulse" /> Daily Mission
                       </h2>
-                      <p className="text-xs text-muted-foreground mt-0.5">Complete tasks to maintain your streak.</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Complete actions to build your career momentum & streak.</p>
                     </div>
-                    {mission && (
-                      <div className="flex flex-col items-end">
-                        <div className="flex items-center gap-1 text-xl font-bold text-foreground">
-                          {mission.streak} <span className="text-orange-500 text-sm">🔥</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Day Streak</p>
+                    <div className="flex flex-col items-end">
+                      <div className="flex items-center gap-1.5 text-xl font-extrabold text-foreground">
+                        {mission ? mission.streak : 0} <span className="text-amber-500 text-base">🔥</span>
                       </div>
-                    )}
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Day Streak</p>
+                    </div>
                   </div>
 
                   {loadingMission ? (
@@ -236,17 +236,34 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
                       {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 w-full" />)}
                     </div>
                   ) : !isAuthenticated ? (
-                    <div className="space-y-3 py-2">
-                      <p className="text-sm text-muted-foreground">
-                        Daily missions become personal once you sign in. Explore the Career OS, then create an account to track streak, goals, and resume progress.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab("profile")}
-                        className="rounded-lg border border-border bg-muted px-3 py-2 text-sm font-medium text-foreground"
-                      >
-                        Start with Profile
-                      </button>
+                    <div className="space-y-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                          <Zap className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground">Unlock Personalized Streaks & Tracking</h3>
+                          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                            Sign in to save your daily streak, track ATS resume scores, auto-log applications, and sync AI roadmaps.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("profile")}
+                          className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 transition-all"
+                        >
+                          Create Account / Sign In
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("resume")}
+                          className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
+                        >
+                          Upload Resume First
+                        </button>
+                      </div>
                     </div>
                   ) : mission ? (
                     <div className="space-y-4">
@@ -256,15 +273,15 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
                           <span className="text-muted-foreground uppercase tracking-wider">Mission Progress</span>
                           <span className="text-emerald-400">{missionProgress}%</span>
                         </div>
-                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden p-0.5 border border-border/50">
                           <div 
-                            className="h-full rounded-full bg-gradient-to-r from-success to-accent transition-all duration-1000 ease-out"
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-amber-400 transition-all duration-1000 ease-out shadow-sm"
                             style={{ width: `${missionProgress}%` }}
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-2 mt-4">
+                      <div className="space-y-2.5 mt-4">
                         <MissionRow
                           label={`Solve 2 DSA Questions (${Math.min(mission.dsa, 2)}/2)`}
                           subLabel="LeetCode, Codeforces, or HackerRank"
@@ -320,33 +337,33 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
             <div className="lg:col-span-5 space-y-6">
 
               {/* Profile Health */}
-              {isAuthenticated && completeness && (
+              {completeness && (
                 <motion.section
                   initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 }}
-                  className="rounded-xl border border-border bg-card p-6"
+                  className="rounded-2xl border border-border/80 bg-card/80 p-6 shadow-lg backdrop-blur-sm"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Gauge className="w-4 h-4 text-primary" /> Profile Health
+                    <h2 className="text-sm font-bold text-foreground flex items-center gap-2 font-display">
+                      <Gauge className="w-4 h-4 text-primary" /> Profile Readiness
                     </h2>
-                    <span className="text-xl font-bold text-foreground">{completenessPct}%</span>
+                    <span className="text-xl font-extrabold text-foreground">{completenessPct}%</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden mb-4">
+                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden mb-4 border border-border/40">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out"
+                      className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400 transition-all duration-1000 ease-out"
                       style={{ width: `${completenessPct}%` }}
                     />
                   </div>
                   {topSuggestion ? (
                     <button
                       onClick={() => setActiveTab("profile")}
-                      className="w-full flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-left text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
+                      className="w-full flex items-start gap-2 rounded-xl border border-border/80 bg-muted/30 px-3.5 py-3 text-left text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-muted/60 transition-all group"
                     >
-                      <ChevronRight className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
+                      <ChevronRight className="w-4 h-4 mt-0.5 text-primary shrink-0 group-hover:translate-x-0.5 transition-transform" />
                       <span className="leading-snug">{topSuggestion}</span>
                     </button>
                   ) : (
-                    <p className="text-xs text-muted-foreground">Your profile looks solid. Keep it fresh as your skills and goals evolve.</p>
+                    <p className="text-xs text-muted-foreground">Your career profile is fully optimized and ready for job matching.</p>
                   )}
                 </motion.section>
               )}
@@ -354,9 +371,9 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
               {/* Career Intelligence Summary */}
               <motion.section 
                 initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
-                className="rounded-xl border border-border bg-primary/5 p-6 relative overflow-hidden"
+                className="rounded-2xl border border-primary/20 bg-primary/5 p-6 relative overflow-hidden shadow-lg"
               >
-                <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <h2 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2 font-display">
                   <Zap className="w-4 h-4 text-primary" /> Intelligence Brief
                 </h2>
                 
@@ -367,14 +384,14 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
                     <Skeleton className="h-4 w-5/6" />
                   </div>
                 ) : careerSummary ? (
-                  <div className="space-y-6 relative z-10">
+                  <div className="space-y-5 relative z-10">
                     <div>
-                      <h3 className="font-display text-xl font-semibold text-foreground leading-tight mb-2">
-                        {careerSummary.headline || "No roadmap defined yet"}
+                      <h3 className="font-display text-lg font-bold text-foreground leading-snug mb-2">
+                        {careerSummary.headline || "Active Career Roadmap"}
                       </h3>
                       <div className="flex flex-wrap gap-2">
                         {(careerSummary.focus_areas || []).slice(0,3).map((area, idx) => (
-                          <span key={idx} className="px-2.5 py-1 rounded-lg bg-primary/20 border border-primary/30 text-[10px] font-bold text-primary uppercase tracking-wider">
+                          <span key={idx} className="px-2.5 py-1 rounded-md bg-primary/15 border border-primary/25 text-[10px] font-extrabold text-primary uppercase tracking-wider">
                             {area}
                           </span>
                         ))}
@@ -383,11 +400,11 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
                     
                     {careerSummary.next_actions?.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Recommended Actions</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Recommended Actions</p>
                         <ul className="space-y-2">
                           {careerSummary.next_actions.slice(0,2).map((action, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-foreground">
-                              <ChevronRight className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                            <li key={idx} className="flex items-start gap-2 text-xs text-foreground">
+                              <ChevronRight className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
                               <span className="leading-snug">{action}</span>
                             </li>
                           ))}
@@ -397,45 +414,71 @@ export default function Dashboard({ username, setActiveTab }: DashboardProps) {
                     
                     <button 
                       onClick={() => setActiveTab('copilot')}
-                      className="w-full flex items-center justify-center gap-2 py-2 rounded-md bg-muted hover:bg-muted/80 border border-border text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-card hover:bg-muted border border-border text-xs font-semibold text-foreground transition-all shadow-sm"
                     >
-                      View Full Intelligence <ArrowUpRight className="w-4 h-4" />
+                      View Copilot Analysis <ArrowUpRight className="w-3.5 h-3.5 text-primary" />
                     </button>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Initialize your career parameters to get AI insights.</p>
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Initialize your career trajectory to generate AI recommendations, skill gap analysis, and market readiness scores.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('copilot')}
+                      className="w-full py-2.5 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-xs font-bold text-primary transition-all flex items-center justify-center gap-2"
+                    >
+                      <Zap className="w-3.5 h-3.5" /> Run AI Career Diagnostic
+                    </button>
+                  </div>
                 )}
               </motion.section>
 
               {/* Active Goals Mini-Widget */}
               <motion.section 
                 initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
-                className="rounded-xl border border-border bg-card p-6"
+                className="rounded-2xl border border-border/80 bg-card/80 p-6 shadow-lg backdrop-blur-sm"
               >
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-bold text-foreground flex items-center gap-2 font-display">
                     <Target className="w-4 h-4 text-primary" /> Priority Goals
                   </h2>
-                  <button onClick={() => setActiveTab('goals')} className="text-xs font-bold text-primary hover:text-primary">
+                  <button onClick={() => setActiveTab('goals')} className="text-xs font-bold text-primary hover:underline">
                     View All
                   </button>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {goalsList.filter(g => g.status !== 'completed').slice(0, 3).map(goal => (
-                    <div key={goal.id} className="p-3 rounded-xl bg-border border border-border flex justify-between items-center group cursor-pointer" onClick={() => setActiveTab('goals')}>
+                    <div key={goal.id} className="p-3 rounded-xl bg-muted/40 border border-border/60 flex justify-between items-center group cursor-pointer hover:border-primary/30 transition-colors" onClick={() => setActiveTab('goals')}>
                       <div className="truncate pr-4">
-                        <p className="text-sm font-semibold text-foreground truncate">{goal.title}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 font-medium uppercase tracking-wider">{goal.category}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{goal.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 font-semibold uppercase tracking-wider">{goal.category}</p>
                       </div>
-                      <div className="text-xs font-bold text-muted-foreground group-hover:text-primary transition-colors">
-                        {goal.progress}%
+                      <div className="text-xs font-extrabold text-primary">
+                        {goal.progress || 0}%
                       </div>
                     </div>
                   ))}
                   {goalsList.length === 0 && (
-                    <div className="py-8 text-center text-muted-foreground text-sm border border-dashed border-border rounded-lg">
-                      No active goals. Time to set some!
+                    <div className="space-y-3 py-4 text-center">
+                      <p className="text-xs text-muted-foreground">No active goals yet. Choose a starter goal to begin:</p>
+                      <div className="grid grid-cols-1 gap-2 text-left">
+                        <button
+                          onClick={() => setActiveTab('goals')}
+                          className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/60 hover:border-primary/30 transition-all flex items-center justify-between"
+                        >
+                          <span>🎯 Target 3 SDE Applications / Week</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-primary" />
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('goals')}
+                          className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/60 hover:border-primary/30 transition-all flex items-center justify-between"
+                        >
+                          <span>📄 Boost Resume ATS Score to 85%+</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-primary" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

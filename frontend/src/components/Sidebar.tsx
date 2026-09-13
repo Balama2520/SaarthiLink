@@ -138,10 +138,6 @@ export default function Sidebar({
         className="flex-1 overflow-y-auto custom-scrollbar px-3 py-3 space-y-4"
       >
         <div>
-          <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Discovery</p>
-          <div className="space-y-0.5">{renderItems(discoveryItems)}</div>
-        </div>
-        <div>
           <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Career</p>
           <div className="space-y-0.5">{renderItems(careerItems)}</div>
         </div>
@@ -152,6 +148,10 @@ export default function Sidebar({
         <div>
           <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Build</p>
           <div className="space-y-0.5">{renderItems(buildItems)}</div>
+        </div>
+        <div>
+          <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Discovery & Info</p>
+          <div className="space-y-0.5">{renderItems(discoveryItems)}</div>
         </div>
         <div>
           <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">System</p>

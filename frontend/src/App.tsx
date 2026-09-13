@@ -140,39 +140,55 @@ export default function App() {
           </div>
 
           {/* Desktop Top Navbar Header */}
-          <header className="hidden md:flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/60 px-6 backdrop-blur-md">
+          <header className="hidden md:flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-card/60 px-6 backdrop-blur-xl">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Saarthi AI 🧭 Guiding Intelligence • Connected Action</span>
+              <div className="flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1 text-xs font-medium text-primary shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="font-semibold">Saarthi Career Intelligence Engine</span>
+                <span className="text-[10px] text-muted-foreground font-mono">v1.0</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setActiveTab("copilot")}
+                className="hidden lg:flex items-center gap-2 rounded-lg border border-border/80 bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span>Ask Career Copilot...</span>
+                <kbd className="ml-2 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+              </button>
+
               {authenticated ? (
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 rounded-lg border border-border bg-background/80 px-3 py-1.5 text-xs">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary border border-primary/30">
+                  <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-card/80 px-3 py-1.5 text-xs shadow-sm">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-extrabold text-primary border border-primary/30">
                       {username ? username[0].toUpperCase() : "U"}
                     </div>
-                    <span className="font-medium text-foreground">{username}</span>
-                    <span className="text-[10px] text-emerald-400 font-mono">● Signed in</span>
+                    <span className="font-semibold text-foreground">{username}</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-medium">● Online</span>
                   </div>
                   <button
                     onClick={handleLogout}
                     title="Sign out"
-                    className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                    className="flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                     <span>Sign Out</span>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs text-muted-foreground">Guest mode</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" /> Guest Mode
+                  </span>
                   <button
                     onClick={handleShowAuth}
-                    className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/25 transition-all hover:bg-primary/90 hover:scale-[1.02]"
+                    className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-95"
                   >
                     <LogIn className="h-3.5 w-3.5" />
                     <span>Sign In / Register</span>

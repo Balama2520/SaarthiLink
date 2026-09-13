@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.core.dependencies.auth import get_current_user
+from app.core.dependencies.auth import get_optional_current_user
 from app.models.models import User
 from app.services.roadmap_service import RoadmapService
 from app.core.dependencies.services import get_roadmap_service
@@ -29,10 +29,11 @@ class RoadmapResponse(BaseModel):
 @router.post("/generate", response_model=RoadmapResponse)
 async def generate_roadmap(
     request: RoadmapRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_current_user),
     roadmap_svc: RoadmapService = Depends(get_roadmap_service)
 ):
+    user_id = current_user.id if current_user else -1
     return await roadmap_svc.generate_roadmap(
-        current_user.id, request.target_role, request.duration_days
+        user_id, request.target_role, request.duration_days
     )
 
