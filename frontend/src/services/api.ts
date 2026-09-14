@@ -270,20 +270,6 @@ export const api = {
     }
   },
 
-  // Resume Upload / RAG
-  async uploadFile(file: File) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const res = await fetch(`${API_BASE}/upload-file`, {
-      method: "POST",
-      headers: getHeaders(),
-      body: formData,
-    });
-    if (!res.ok) throw new Error("File upload failed");
-    return res.json();
-  },
-
   // Resume Analyzer (Saves file metadata and runs deep parse)
   async analyzeResume(file: File, targetRole?: string) {
     const formData = new FormData();

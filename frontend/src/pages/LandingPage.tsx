@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { api } from "../services/api";
+import { PublicAdSlot } from "../components/PublicAdSlot";
 
 type ComponentStatus = "configured" | "config_required" | "unavailable" | "ok" | "unknown" | "coming_soon";
 
@@ -61,7 +62,7 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
       }, 3500);
     }
     return () => { if (interval) window.clearInterval(interval); };
-  }, [showVideoModal, isVideoPlaying, hasVideoError]);
+  }, [showVideoModal, isVideoPlaying, hasVideoError, videoSteps.length]);
 
   const handleStartVideo = () => {
     setShowVideoModal(true);
@@ -364,7 +365,7 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
               </div>
 
               <button
-                onClick={() => setActiveTab(path.actionTab as any)}
+                onClick={() => setActiveTab(path.actionTab)}
                 className="w-full flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/60 px-5 py-3 font-semibold text-foreground transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
               >
                 <span>{path.actionText}</span>
@@ -456,6 +457,22 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
             Contact Engineering Team
           </button>
         </div>
+      </div>
+
+      {/* Public-page monetization only. Keep ads outside the signed-in workspace. */}
+      <div className="border-t border-border/60 pt-6">
+        <PublicAdSlot
+          adKey="7b97dbba3bc626c83ddf3bed8a4b5c37"
+          width={728}
+          height={90}
+          className="hidden md:block"
+        />
+        <PublicAdSlot
+          adKey="55b808267eab346e578b008fdcc45ef1"
+          width={320}
+          height={50}
+          className="md:hidden"
+        />
       </div>
     </div>
   );

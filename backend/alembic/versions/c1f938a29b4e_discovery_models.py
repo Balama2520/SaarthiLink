@@ -7,7 +7,7 @@ Create Date: 2026-09-11 15:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
+from alembic import context, op
 import sqlalchemy as sa
 
 
@@ -23,7 +23,11 @@ def upgrade() -> None:
     # metadata for a fresh database, including these discovery tables.  Older
     # deployments may instead reach this revision without them.  Make this
     # revision idempotent across both supported histories.
-    if sa.inspect(op.get_bind()).has_table("consent_records"):
+    # Offline SQL generation uses Alembic's mock connection, which cannot be
+    # inspected. The preceding initial migration creates these tables, so the
+    # correct offline representation of this idempotent compatibility revision
+    # is a no-op.
+    if context.is_offline_mode() or sa.inspect(op.get_bind()).has_table("consent_records"):
         return
 
     # 1. consent_records

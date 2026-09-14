@@ -39,8 +39,8 @@ export default function ContactPage() {
         target_email: "saarthi.ai.team@gmail.com",
       });
       setSubmitted(true);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to submit contact request.");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to submit contact request.");
     } finally {
       setSubmitting(false);
     }

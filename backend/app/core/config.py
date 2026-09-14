@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Saarthi AI"
     VERSION: str = "2.1.0"
     DEBUG: bool = False
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
 
     # API Config
     API_PREFIX: str = "/api"
@@ -22,10 +23,14 @@ class Settings(BaseSettings):
     REDIS_URL: str = os.getenv("REDIS_URL", "")
 
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY") or "DEVELOPMENT_MODE_UNSAFE_SECRET_CHANGE_ME"
+    # Secrets are deployment configuration.  There must never be a shared,
+    # source-controlled fallback that could be used to forge production JWTs.
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 1 week
-    ADMIN_USERNAMES: str = os.getenv("ADMIN_USERNAMES", "Bala,admin,bala,guest,saarthi_admin")
+    # Admin access is opt-in.  Generic account names must not become admins
+    # merely because a deployment omitted this setting.
+    ADMIN_USERNAMES: str = os.getenv("ADMIN_USERNAMES", "")
 
     # CORS Configuration
     ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
@@ -48,20 +53,24 @@ class Settings(BaseSettings):
     @field_validator('SECRET_KEY')
     @classmethod
     def validate_secret_key(cls, v):
-        _DEV_KEY = "DEVELOPMENT_MODE_UNSAFE_SECRET_CHANGE_ME"
-        if not v or v == _DEV_KEY:
-            logger.critical(
-                "\n"
-                "═══════════════════════════════════════════════════\n"
-                "⚠️  SECURITY WARNING: Insecure SECRET_KEY in use!  ⚠️\n"
-                "   Set a strong SECRET_KEY in your .env file.      \n"
-                "   All JWTs can be forged in this configuration.   \n"
-                "═══════════════════════════════════════════════════"
-            )
+        if not v:
+            logger.warning("SECRET_KEY is not configured; authentication is unavailable until it is set.")
         return v
 
+    @field_validator("ENVIRONMENT")
+    @classmethod
+    def normalize_environment(cls, v: str) -> str:
+        return v.strip().lower()
+
+    def model_post_init(self, __context) -> None:
+        if self.ENVIRONMENT == "production":
+            if len(self.SECRET_KEY) < 32:
+                raise ValueError("SECRET_KEY must be at least 32 characters in production")
+            if not self.ALLOWED_ORIGINS.strip():
+                raise ValueError("ALLOWED_ORIGINS must list explicit frontend origins in production")
+
     # AI Engine — Ollama (primary) with Gemini fallback
-    OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://51.20.92.188:11434/api/generate")
+    OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
     DEFAULT_MODEL: str = "phi3"
     OLLAMA_TIMEOUT: int = 30  # seconds before timeout and Gemini fallback kicks in
 

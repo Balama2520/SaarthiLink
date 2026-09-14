@@ -67,7 +67,7 @@ def require_admin_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    raw_admins = get_settings().ADMIN_USERNAMES or "Bala,admin,bala,guest,saarthi_admin"
+    raw_admins = get_settings().ADMIN_USERNAMES
     configured_admins = {
         username.strip().lower()
         for username in raw_admins.split(",")

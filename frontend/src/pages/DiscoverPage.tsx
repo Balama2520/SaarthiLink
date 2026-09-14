@@ -49,7 +49,7 @@ export default function DiscoverPage() {
         if (data.features) {
           setFeatures(data.features);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to load discovery options:", err);
       } finally {
         setLoading(false);
@@ -104,8 +104,8 @@ export default function DiscoverPage() {
 
       await api.submitDiscovery(payload);
       setSuccess(true);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to submit discovery feedback.");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to submit discovery feedback.");
     } finally {
       setSubmitting(false);
     }

@@ -173,7 +173,7 @@ export default function AdminPanel() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                       activeTab === tab.id
                         ? "bg-primary text-primary-foreground shadow-md"

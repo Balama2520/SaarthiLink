@@ -24,7 +24,10 @@ class AuthService:
     def get_password_hash(self, password: str) -> str:
         # bcrypt has a maximum length of 72 bytes
         if len(password.encode("utf-8")) > 72:
-            password = password[:72]
+            raise HTTPException(
+                status_code=422,
+                detail="Password must be 72 bytes or fewer",
+            )
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
         return hashed.decode('utf-8')

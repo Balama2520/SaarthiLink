@@ -36,3 +36,13 @@ def test_login_user_json(client):
     assert response.status_code == 200
     data = response.json()
     assert "access_token" in data
+
+
+def test_registration_rejects_passwords_beyond_bcrypt_limit(client):
+    """Passwords must not silently truncate to bcrypt's 72-byte limit."""
+    response = client.post(
+        "/api/auth/register",
+        json={"username": "longpassworduser", "password": "a" * 73},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Password must be 72 bytes or fewer"

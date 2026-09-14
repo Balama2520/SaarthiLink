@@ -1,11 +1,14 @@
 services:
   - type: web
-    name: saarthi-backend
+    name: saarthilink
     env: docker
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
-    healthCheckPath: /api/health
+    healthCheckPath: /api/live
+    autoDeploy: "yes"
     envVars:
+      - key: ENVIRONMENT
+        value: production
       - key: PORT
         value: 10000
       - key: DATABASE_URL
