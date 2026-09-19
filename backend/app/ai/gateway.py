@@ -41,38 +41,29 @@ class AIGateway:
         if image_data and processed_messages and processed_messages[-1]["role"] == "user":
             processed_messages[-1]["images"] = [image_data]
 
-        # Smart routing: prefer Gemini when key is present (Ollama may be offline)
-        # Fall back to Ollama only when no Gemini key is configured.
+        # Prefer the configured Hugging Face Space when available, then try
+        # Gemini and Ollama in order so one stale provider cannot stop recovery.
+        has_hf_space = bool(getattr(settings, "HF_SPACE_ID", ""))
         has_gemini_key = bool(settings.GEMINI_API_KEY)
-        primary_name = "gemini" if has_gemini_key else "ollama"
-        # Provider model names are not interchangeable (for example, "phi3"
-        # is not a Gemini model).  Respect an explicitly requested model only
-        # for the local provider; Gemini always uses its server-side setting.
-        provider_model = (
-            settings.GEMINI_MODEL if primary_name == "gemini" else (model or settings.DEFAULT_MODEL)
-        )
-        fallback_name = "ollama" if has_gemini_key else None
 
-        primary = self.router.get_provider(primary_name)
+        providers = []
+        if has_hf_space:
+            providers.append(("huggingface", model or settings.DEFAULT_MODEL))
+        if has_gemini_key:
+            providers.append(("gemini", settings.GEMINI_MODEL))
+        providers.append(("ollama", model or settings.DEFAULT_MODEL))
+
         metrics_tracker.record_call()
+        for provider_name, provider_model in providers:
+            provider = self.router.get_provider(provider_name)
+            try:
+                async for chunk in provider.generate_stream(processed_messages, provider_model):
+                    yield chunk
+                return
+            except Exception as error:
+                logger.warning("AI provider (%s) failed: %s", provider_name, error)
+                metrics_tracker.record_failure()
 
-        try:
-            async for chunk in primary.generate_stream(processed_messages, provider_model):
-                yield chunk
-            return
-        except Exception as e:
-            logger.warning(f"Primary provider ({primary_name}) failed: {e}")
-            metrics_tracker.record_failure()
-
-            if fallback_name:
-                fallback = self.router.get_provider(fallback_name)
-                logger.warning(f"Falling back to {fallback_name}...")
-                try:
-                    async for chunk in fallback.generate_stream(processed_messages, model or settings.DEFAULT_MODEL):
-                        yield chunk
-                except Exception as fe:
-                    logger.error(f"Fallback provider ({fallback_name}) failed: {fe}")
-                    yield "⚠️ AI temporarily unavailable. Please try again in a moment."
-            else:
-                yield "⚠️ AI temporarily unavailable. Please try again in a moment."
+        logger.error("All configured AI providers failed")
+        yield "AI is temporarily unavailable. Please check the provider configuration and try again."
 

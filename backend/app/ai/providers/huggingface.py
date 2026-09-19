@@ -57,6 +57,10 @@ class HuggingFaceSaarthiBrain(BaseProvider):
         settings = get_settings()
         return getattr(settings, "HF_API_TOKEN", "") or None
 
+    def _get_api_name(self) -> str:
+        settings = get_settings()
+        return (getattr(settings, "HF_API_NAME", "generate") or "generate").lstrip("/")
+
     def is_configured(self) -> bool:
         return self._get_space_base_url() is not None
 
@@ -189,9 +193,60 @@ class HuggingFaceSaarthiBrain(BaseProvider):
         prompt = "\n".join(prompt_parts)
         file_path = kwargs.get("file_path", None)
 
-        try:
-            result = await self.generate(prompt, file_path=file_path)
-            yield result
-        except RuntimeError as e:
-            # Surface the error as a visible message (gateway will log failure)
-            raise
+        base_url = self._get_space_base_url()
+        if not base_url:
+            raise RuntimeError("HuggingFace Space not configured (HF_SPACE_ID missing)")
+
+        headers: dict = {"Content-Type": "application/json"}
+        hf_token = self._get_hf_token()
+        if hf_token:
+            headers["Authorization"] = f"Bearer {hf_token}"
+
+        # Gradio 5+ removed /run/predict in favor of an event-based API.
+        api_name = self._get_api_name()
+        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
+            response = await client.post(
+                f"{base_url}/gradio_api/call/{api_name}",
+                json={"data": [prompt, file_path]},
+                headers=headers,
+            )
+            if response.status_code in (401, 403):
+                raise PermissionError(
+                    f"HF Space returned {response.status_code} — set HF_API_TOKEN for this private Space"
+                )
+            if response.status_code == 404:
+                # Keep support for older Spaces that still expose /run/predict.
+                yield await self.generate(prompt, file_path=file_path)
+                return
+            if response.status_code != 200:
+                raise RuntimeError(
+                    f"HF Space event API returned HTTP {response.status_code}: {response.text[:200]}"
+                )
+
+            event_id = response.json().get("event_id")
+            if not event_id:
+                raise RuntimeError("HF Space event API did not return an event_id")
+
+            async with client.stream(
+                "GET",
+                f"{base_url}/gradio_api/call/{api_name}/{event_id}",
+                headers=headers,
+            ) as event_stream:
+                if event_stream.status_code != 200:
+                    raise RuntimeError(
+                        f"HF Space event stream returned HTTP {event_stream.status_code}"
+                    )
+                async for line in event_stream.aiter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data in ("", "[DONE]"):
+                        continue
+                    try:
+                        values = json.loads(data)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(values, list):
+                        for value in values:
+                            if value is not None:
+                                yield str(value)

@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     SAARTHI_CONTACT_EMAIL: str = os.getenv("SAARTHI_CONTACT_EMAIL", "saarthi.ai.team@gmail.com")
     HF_SPACE_ID: str = os.getenv("HF_SPACE_ID", "")
     HF_API_TOKEN: str = os.getenv("HF_API_TOKEN", "")
+    HF_API_NAME: str = os.getenv("HF_API_NAME", "generate")
     GOOGLE_SHEETS_SPREADSHEET_ID: str = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "")
     GOOGLE_SERVICE_ACCOUNT_JSON: str = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
@@ -76,7 +77,7 @@ class Settings(BaseSettings):
 
     # Gemini API fallback
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     SYSTEM_PROMPT: str = (
         "You are Saarthi AI, an advanced career intelligence system developed by Bala Maneesh Ayanala. "
