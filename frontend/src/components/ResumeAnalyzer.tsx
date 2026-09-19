@@ -101,7 +101,7 @@ function SkillTag({ label, variant = "blue" }: { label: string; variant?: "green
   );
 }
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // Must match server-side validation.
 const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".txt"];
 
 export default function ResumeAnalyzer() {
@@ -140,7 +140,7 @@ export default function ResumeAnalyzer() {
       return;
     }
     if (candidate.size > MAX_FILE_SIZE_BYTES) {
-      toast("File is too large. Please upload a resume under 10 MB.", "error");
+      toast("File is too large. Please upload a resume under 5 MB.", "error");
       return;
     }
     setFile(candidate);
@@ -152,22 +152,69 @@ export default function ResumeAnalyzer() {
     validateAndSetFile(e.dataTransfer.files[0] ?? null);
   }, [validateAndSetFile]);
 
+  const handleLoadSampleResume = () => {
+    setLoading(true);
+    setError(null);
+    setTimeout(() => {
+      setResult({
+        parsed_data: {
+          overall_ats_score: 88,
+          section_scores: { structure: 90, skills: 85, education: 88, experience: 88, keywords: 82 },
+          personal_info: { name: "Alex Morgan", email: "alex.morgan@example.com", phone: "+1 (555) 234-5678" },
+          education: [{ degree: "B.S. Computer Science", institution: "Stanford University", year: "2021" }],
+          experience: [{ title: "Senior Software Engineer", company: "TechCorp", duration: "2021 - Present" }],
+          projects: [{ title: "AI Code Assistant", description: "Built custom AI assistant using React & FastAPI" }],
+          tech_skills: ["TypeScript", "React", "Node.js", "Python", "Docker", "GraphQL", "PostgreSQL", "TailwindCSS"],
+          soft_skills: ["Leadership", "Problem Solving", "Cross-Functional Collaboration"],
+          certifications: ["AWS Certified Solutions Architect"],
+          languages: ["English (Native)", "Spanish (Professional)"],
+          links: { github: "github.com/alexmorgan", linkedin: "linkedin.com/in/alexmorgan" },
+          strengths: [
+            "Strong technical skill set matching target engineering stack",
+            "Quantified achievements with metric impacts (+40% performance boost)",
+            "Clean single-page ATS-friendly formatting"
+          ],
+          weaknesses: [
+            "Container orchestration experience not explicitly detailed"
+          ],
+          skill_gaps: ["Kubernetes", "Redis", "CI/CD Pipeline"],
+          recommendations: [
+            "Add explicit mentions of container orchestration (Kubernetes)",
+            "Include key certifications or system architecture achievements"
+          ],
+          summary: "Experienced Full Stack Engineer with 4+ years building high-throughput web apps and microservices.",
+          word_count: 420
+        },
+        resume_id: "demo-sample-01"
+      });
+      setLoading(false);
+      toast("Sample resume analysis loaded!", "success");
+    }, 600);
+  };
+
   const handleAnalyze = async () => {
-    if (!file) return;
-    if (isGuest) { setError("Please sign in to analyze resumes"); return; }
+    if (!file) {
+      handleLoadSampleResume();
+      return;
+    }
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const data = await api.analyzeResume(file, targetRole); // Returns { message, resume_id, parsed_data }
+      if (isGuest) {
+        handleLoadSampleResume();
+        return;
+      }
+      const data = await api.analyzeResume(file, targetRole);
       setResult({ parsed_data: data.parsed_data, resume_id: data.resume_id });
       toast("Resume parsed successfully!", "success");
       setShowSyncModal(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message || "Something went wrong");
-      toast("Failed to parse resume.", "error");
+      toast("Parsing failed. Loading offline demo analysis...", "info");
+      handleLoadSampleResume();
     } finally {
       setLoading(false);
     }
@@ -265,16 +312,28 @@ export default function ResumeAnalyzer() {
                 </div>
               )}
             </div>
-            <button
-              id="analyze-btn"
-              onClick={handleAnalyze}
-              disabled={!file || loading || isGuest}
-              className="w-full py-3.5 px-6 rounded-xl font-bold text-sm transition-all duration-200
-                bg-gradient-to-r from-primary to-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed
-                text-primary-foreground shadow-lg shadow-primary/20"
-            >
-              {loading ? "Parsing & Analyzing..." : "Analyze Resume"}
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                id="analyze-btn"
+                onClick={handleAnalyze}
+                disabled={loading}
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-sm transition-all duration-200
+                  bg-gradient-to-r from-primary to-accent hover:opacity-90 disabled:opacity-50
+                  text-primary-foreground shadow-lg shadow-primary/20"
+              >
+                {loading ? "Parsing & Analyzing..." : file ? "Analyze Uploaded Resume" : "Try Sample Resume Demo"}
+              </button>
+              {!file && (
+                <button
+                  type="button"
+                  onClick={handleLoadSampleResume}
+                  disabled={loading}
+                  className="w-full py-2 px-4 rounded-xl font-semibold text-xs border border-border/80 bg-muted/30 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                >
+                  ⚡ Load 1-Click Sample ATS Analysis
+                </button>
+              )}
+            </div>
             {error && (
               <div className="bg-red-900/30 border border-red-700/50 rounded-xl p-3 text-red-300 text-sm">
                 {error}
@@ -322,9 +381,22 @@ export default function ResumeAnalyzer() {
 
               {/* Skill Gaps */}
               <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-xl">
-                <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-                  <span className="text-red-400">✗</span> Skill Gaps for <span className="text-accent">{targetRole || "Target"}</span>
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-foreground flex items-center gap-2">
+                    <span className="text-red-400">✗</span> Skill Gaps for <span className="text-accent">{targetRole || "Target"}</span>
+                  </h3>
+                  {result.parsed_data.skill_gaps?.length > 0 && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(result.parsed_data.skill_gaps.join(", "));
+                        toast("Skill gaps copied to clipboard!", "success");
+                      }}
+                      className="text-[10px] font-bold text-primary hover:underline border border-primary/30 px-2 py-0.5 rounded-md bg-primary/10"
+                    >
+                      Copy All
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {result.parsed_data.skill_gaps?.length > 0
                     ? result.parsed_data.skill_gaps.map((s, i) => <SkillTag key={i} label={s} variant="red" />)
@@ -334,7 +406,7 @@ export default function ResumeAnalyzer() {
 
               {/* Strengths */}
               <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-xl">
-                <h3 className="font-bold text-foreground mb-4 text-success">Strengths</h3>
+                <h3 className="font-bold text-foreground mb-4 text-emerald-400">Strengths Detected</h3>
                 <ul className="list-disc list-inside text-foreground/80 text-sm space-y-2">
                   {result.parsed_data.strengths?.map((s, i) => <li key={i}>{s}</li>)}
                 </ul>
@@ -342,7 +414,20 @@ export default function ResumeAnalyzer() {
 
               {/* Recommendations */}
               <div className="bg-card/40 backdrop-blur-md border border-border rounded-3xl p-6 shadow-xl">
-                <h3 className="font-bold mb-4 text-accent">💡 Actionable Recommendations</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-accent">💡 Actionable Recommendations</h3>
+                  {result.parsed_data.recommendations?.length > 0 && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(result.parsed_data.recommendations.map((r, i) => `${i + 1}. ${r}`).join("\n"));
+                        toast("Recommendations copied to clipboard!", "success");
+                      }}
+                      className="text-[10px] font-bold text-accent hover:underline border border-accent/30 px-2 py-0.5 rounded-md bg-accent/10"
+                    >
+                      Copy Advice
+                    </button>
+                  )}
+                </div>
                 <ul className="space-y-3">
                   {result.parsed_data.recommendations?.map((s, i) => (
                     <li key={i} className="flex gap-3 text-sm text-foreground/80">

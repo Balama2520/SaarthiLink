@@ -66,6 +66,9 @@ class ProductFeedbackInput(BaseModel):
     improve_immediately: Optional[str] = None
     solve_next: Optional[str] = None
     would_recommend_if: Optional[str] = None
+    skills_to_learn: Optional[str] = None
+    what_to_add: Optional[str] = None
+    what_to_remove: Optional[str] = None
 
 
 class OpportunitySignalInput(BaseModel):

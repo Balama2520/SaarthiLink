@@ -65,6 +65,9 @@ export default function JobFinder() {
   const [radarJobsList, setRadarJobsList] = useState<RadarJob[]>([]);
   const [recommendedJobsList, setRecommendedJobsList] = useState<RecommendedJob[]>([]);
 
+  // (rest unchanged...)
+
+
   // Saved Jobs states
   const [savedJobs, setSavedJobs] = useState<RadarJob[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -129,7 +132,9 @@ export default function JobFinder() {
       setSavedLoading(true);
       try {
         const jobs = await api.getSavedJobs();
-        const list: RadarJob[] = Array.isArray(jobs) ? jobs : [];
+        const list: RadarJob[] = Array.isArray(jobs)
+          ? jobs.map((saved: { job: RadarJob }) => saved.job).filter(Boolean)
+          : [];
         setSavedJobs(list);
         setSavedIds(new Set(list.map((j) => j.id)));
       } catch (err) {
@@ -153,6 +158,15 @@ export default function JobFinder() {
       toast("Couldn't save this job. Please try again.", "error");
     } finally {
       setSavingJobId(null);
+    }
+  };
+
+  const handleApply = async (jobId: string) => {
+    if (!getToken()) return;
+    try {
+      await api.trackJobApplication(jobId);
+    } catch {
+      toast("We couldn't save this application to your tracker.", "error");
     }
   };
 
@@ -305,7 +319,7 @@ export default function JobFinder() {
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex flex-wrap gap-1 p-1 bg-muted rounded-lg">
           {[
-            { id: "radar", label: "Find Opportunities", icon: Search },
+            { id: "radar", label: "Internal Radar", icon: Search },
             { id: "iq", label: "Check My Match", icon: FileText },
             { id: "decoder", label: "Company Decoder", icon: Building },
             { id: "network", label: "Warm Outreach", icon: Users },
@@ -429,7 +443,7 @@ export default function JobFinder() {
                         <Zap className="w-4 h-4 text-amber-400" />
                       </button>
                       {job.apply_url && (
-                        <a href={job.apply_url} target="_blank" rel="noopener noreferrer" className="py-2 px-4 bg-primary hover:bg-primary/90 text-xs font-bold text-primary-foreground rounded-xl transition flex items-center gap-1.5">
+                        <a href={job.apply_url} target="_blank" rel="noopener noreferrer" onClick={() => { void handleApply(job.id); }} className="py-2 px-4 bg-primary hover:bg-primary/90 text-xs font-bold text-primary-foreground rounded-xl transition flex items-center gap-1.5">
                            Apply <ArrowUpRight className="w-3 h-3" />
                         </a>
                       )}
@@ -499,7 +513,7 @@ export default function JobFinder() {
                         <Zap className="w-4 h-4 text-amber-400" />
                       </button>
                       {job.apply_url && (
-                        <a href={job.apply_url} target="_blank" rel="noopener noreferrer" className="py-2 px-4 bg-primary hover:bg-primary/90 text-xs font-bold text-primary-foreground rounded-xl transition flex items-center gap-1.5">
+                        <a href={job.apply_url} target="_blank" rel="noopener noreferrer" onClick={() => { void handleApply(job.id); }} className="py-2 px-4 bg-primary hover:bg-primary/90 text-xs font-bold text-primary-foreground rounded-xl transition flex items-center gap-1.5">
                           Apply <ArrowUpRight className="w-3 h-3" />
                         </a>
                       )}
@@ -522,7 +536,7 @@ export default function JobFinder() {
                 <h3 className="text-sm font-bold uppercase tracking-widest text-foreground flex items-center gap-2 mb-6">
                   <Sparkles className="w-4 h-4 text-amber-400" /> Match IQ Scanner
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-1.5">Job Title</label>
                     <input type="text" placeholder="Backend Engineer" value={iqTitle} onChange={(e) => setIqTitle(e.target.value)}
@@ -789,7 +803,7 @@ export default function JobFinder() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4">
+            <div className="flex md:grid md:grid-cols-5 gap-4 overflow-x-auto pb-4 custom-scrollbar">
               {([
                 { id: "applied", label: "Applied", color: "text-accent", bg: "bg-accent/5", border: "border-accent/10" },
                 { id: "oa", label: "OA / Test", color: "text-amber-400", bg: "bg-amber-500/5", border: "border-amber-500/10" },

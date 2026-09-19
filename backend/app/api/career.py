@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.core.dependencies.auth import GuestUser, get_current_user
+from app.core.dependencies.auth import GuestUser, get_current_user, require_authenticated_user
 from app.core.dependencies.services import get_career_service
-from app.models.models import User
+from app.models.models import ChatMessage, ChatSession, Note, User
 from app.services.career_service import CareerService
+from app.services.career_copilot_service import CareerCopilotService
+from app.ai.gateway import AIGateway
+from app.database.connection import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/career", tags=["career"])
 
@@ -20,6 +25,16 @@ class LearningPlanRequest(BaseModel):
 
 class MissionTickRequest(BaseModel):
     task_type: str = Field(min_length=1)
+
+
+class CopilotMessageRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=5000)
+    session_id: str | None = None
+
+
+class SaveInsightRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    content: str = Field(min_length=1, max_length=20000)
 
 
 def _is_guest(user: User | GuestUser) -> bool:
@@ -64,6 +79,8 @@ def career_dashboard(
             },
             "mission_progress": 0,
             "goal_count": 0,
+            "stats": {"applications": 0, "interviews": 0, "ats_score": 0, "goals_in_progress": 0},
+            "activity": [],
         }
     return service.get_dashboard_summary(current_user.id)
 
@@ -128,6 +145,36 @@ async def learning_plan(
 ):
     user_id = 0 if _is_guest(current_user) else current_user.id
     return await service.generate_learning_plan(user_id, body.target_role, body.weeks)
+
+
+@router.post("/copilot/stream")
+async def copilot_stream(body: CopilotMessageRequest, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
+    """Stream career guidance grounded in the current user's career data and recent conversation."""
+    context = CareerCopilotService(db)._gather_user_context(current_user.id)
+    session = db.query(ChatSession).filter(ChatSession.id == body.session_id, ChatSession.user_id == current_user.id).first() if body.session_id else None
+    if not session:
+        session = ChatSession(user_id=current_user.id, title="Career Copilot")
+        db.add(session); db.commit(); db.refresh(session)
+    history = db.query(ChatMessage).filter(ChatMessage.session_id == session.id).order_by(ChatMessage.timestamp.desc()).limit(12).all()[::-1]
+    facts = {"target_role": context.get("target_role"), "skills": context.get("skills", [])[:20], "goals": [goal.title for goal in context.get("goals", [])[:5]], "resume_available": bool(context.get("resume"))}
+    messages = [{"role": "system", "content": f"You are Saarthi Career Copilot. Give concrete career advice grounded in: {facts}"}]
+    messages.extend({"role": item.role, "content": item.content} for item in history)
+    messages.append({"role": "user", "content": body.message})
+    db.add(ChatMessage(session_id=session.id, role="user", content=body.message)); db.commit()
+    async def stream():
+        answer = ""
+        async for chunk in AIGateway().generate_response_stream(messages, personality="career"):
+            answer += chunk; yield chunk.encode("utf-8")
+        db.add(ChatMessage(session_id=session.id, role="assistant", content=answer)); db.commit()
+    return StreamingResponse(stream(), media_type="text/plain", headers={"X-Copilot-Session": session.id})
+
+
+@router.post("/copilot/insights")
+def save_copilot_insight(body: SaveInsightRequest, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
+    """Save a selected Copilot answer as a searchable career note."""
+    note = Note(user_id=current_user.id, title=body.title, content=body.content, tags="copilot,career-insight")
+    db.add(note); db.commit(); db.refresh(note)
+    return {"id": note.id, "title": note.title}
 
 
 @router.get("/mission")

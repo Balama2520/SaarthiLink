@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Send, Plus, Trash2, MessageSquare, Sparkles, Loader2,
   AlertCircle, PanelLeftClose, PanelLeft, Bot, User as UserIcon,
+  Download,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
@@ -117,6 +118,18 @@ export default function ChatCoach() {
     setActiveSessionId(null);
     setMessages([]);
     textareaRef.current?.focus();
+  };
+
+  const clearChat = async () => {
+    if (isAuthenticated && activeSessionId) { await api.deleteSession(activeSessionId); setSessions((previous) => previous.filter((item) => item.id !== activeSessionId)); setActiveSessionId(null); }
+    else await localDB.clearChatHistory();
+    setMessages([]);
+  };
+
+  const exportChat = () => {
+    const text = messages.map((message) => `${message.role === "user" ? "You" : "Saarthi"}: ${message.content}`).join("\n\n");
+    const url = URL.createObjectURL(new Blob([text], { type: "text/markdown" }));
+    const link = document.createElement("a"); link.href = url; link.download = "saarthi-chat.md"; link.click(); URL.revokeObjectURL(url);
   };
 
   const deleteSession = async (sessionId: string, e: React.MouseEvent) => {
@@ -311,6 +324,7 @@ export default function ChatCoach() {
               {isAuthenticated ? "Grounded in your profile, resume, skills and goals" : "Guest mode — sign in to save history"}
             </p>
           </div>
+          {messages.length > 0 && <div className="ml-auto flex gap-1"><button type="button" onClick={() => void clearChat()} className="rounded p-1.5 text-muted-foreground hover:bg-muted" aria-label="Clear chat"><Trash2 className="h-4 w-4" /></button><button type="button" onClick={exportChat} className="rounded p-1.5 text-muted-foreground hover:bg-muted" aria-label="Export chat"><Download className="h-4 w-4" /></button></div>}
         </div>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar px-4 py-6 md:px-8">

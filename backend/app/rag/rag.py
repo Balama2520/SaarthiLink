@@ -1,28 +1,39 @@
 import os
 import logging
 import chromadb
-from sentence_transformers import SentenceTransformer
 from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 
-# Basic storage paths
 CHROMA_DIR = "chroma_db"
-os.makedirs(CHROMA_DIR, exist_ok=True)
+embedding_model = None
+collection = None
+_rag_initialized = False
 
-# Initialize models and DB
-try:
-    embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-    chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
-    collection = chroma_client.get_or_create_collection(name="saarthi_docs")
-except Exception as e:
-    logger.error(f"Failed to initialize ChromaDB or SentenceTransformer in RAG: {e}")
-    embedding_model = None
-    collection = None
+
+def _ensure_initialized() -> bool:
+    global embedding_model, collection, _rag_initialized
+    if _rag_initialized:
+        return bool(collection and embedding_model)
+
+    _rag_initialized = True
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        os.makedirs(CHROMA_DIR, exist_ok=True)
+        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
+        collection = chroma_client.get_or_create_collection(name="saarthi_docs")
+    except Exception as exc:
+        logger.error(f"Failed to initialize ChromaDB or SentenceTransformer in RAG: {exc}")
+        embedding_model = None
+        collection = None
+
+    return bool(collection and embedding_model)
 
 def index_text_content(file_id: str, filename: str, text_content: str) -> bool:
     """Chunks and indexes the text content into ChromaDB."""
-    if not collection or not embedding_model:
+    if not _ensure_initialized():
         logger.error("RAG engine not initialized. Cannot index content.")
         return False
         
@@ -54,7 +65,7 @@ def index_text_content(file_id: str, filename: str, text_content: str) -> bool:
 
 def find_relevant_chunks(file_id: str, query: str, limit: int = 3) -> List[str]:
     """Queries ChromaDB for chunks matching the query string within the specified file."""
-    if not collection or not embedding_model:
+    if not _ensure_initialized():
         logger.warning("RAG: ChromaDB/Model not loaded. Cannot run query search.")
         return []
         

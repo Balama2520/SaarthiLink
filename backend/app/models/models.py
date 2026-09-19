@@ -369,6 +369,8 @@ class EventOutbox(Base):
     event_type = Column(String, index=True)
     payload_json = Column(Text)
     status = Column(String, default="pending")
+    retry_count = Column(Integer, nullable=False, default=0)
+    last_error = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 

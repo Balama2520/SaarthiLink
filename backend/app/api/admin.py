@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies.auth import require_admin_user
 from app.core.config import get_settings
 from app.models.models import (
-    User, Job, UserDiscoveryProfile, FeatureFeedback,
+    User, Job, UserDiscoveryProfile, FeatureFeedback, ProductFeedback,
     ContactRequest, OpportunitySignal, CompanyProfile, ChatSession
 )
 from app.database.connection import get_db
@@ -60,6 +60,12 @@ def get_stats(
         .limit(10)
         .all()
     )
+    recent_feedbacks = (
+        db.query(ProductFeedback)
+        .order_by(ProductFeedback.created_at.desc())
+        .limit(10)
+        .all()
+    )
 
     return {
         "total_users": repo.count_users(),
@@ -109,6 +115,17 @@ def get_stats(
                 "created_at": o.created_at.isoformat() if o.created_at else None,
             }
             for o in recent_opps
+        ],
+        "recent_product_feedbacks": [
+            {
+                "id": pf.id,
+                "what_you_like": pf.what_you_like,
+                "what_you_dislike": pf.what_you_dislike,
+                "what_feels_missing": pf.what_feels_missing,
+                "wish_saarthi_could": pf.wish_saarthi_could,
+                "created_at": pf.created_at.isoformat() if pf.created_at else None,
+            }
+            for pf in recent_feedbacks
         ],
     }
 

@@ -71,20 +71,20 @@ class ChatBody(BaseModel):
 
 
 @chat_router.post("/chat")
-async def chat(body: ChatBody, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def chat(body: ChatBody, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
     system_prompt = PromptManager.load(f"system/{body.personality or 'default'}")
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": body.message},
-    ]
+    messages = [{"role": "system", "content": system_prompt}]
 
     # Persist message to session
     if body.session_id and body.session_id != "default":
         session = db.query(ChatSession).filter(ChatSession.id == body.session_id, ChatSession.user_id == current_user.id).first()
-        if session:
-            user_msg = ChatMessage(session_id=session.id, role="user", content=body.message)
-            db.add(user_msg)
-            db.commit()
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        history = db.query(ChatMessage).filter(ChatMessage.session_id == session.id).order_by(ChatMessage.timestamp.desc()).limit(12).all()[::-1]
+        messages.extend({"role": item.role, "content": item.content} for item in history)
+        user_msg = ChatMessage(session_id=session.id, role="user", content=body.message)
+        db.add(user_msg); db.commit()
+    messages.append({"role": "user", "content": body.message})
 
     async def stream_gen():
         accumulated = ""

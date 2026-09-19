@@ -195,7 +195,8 @@ class HuggingFaceSaarthiBrain(BaseProvider):
 
         base_url = self._get_space_base_url()
         if not base_url:
-            raise RuntimeError("HuggingFace Space not configured (HF_SPACE_ID missing)")
+            yield await self.generate(prompt, file_path=file_path)
+            return
 
         headers: dict = {"Content-Type": "application/json"}
         hf_token = self._get_hf_token()

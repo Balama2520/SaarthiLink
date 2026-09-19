@@ -85,8 +85,15 @@ export default function Workspaces() {
       api.getWorkspaceItems(workspaceId).catch(() => []),
       api.getUnlinkedItems(workspaceId).catch(() => []),
     ]);
-    setItems(Array.isArray(linked) ? linked : []);
-    setUnlinked(Array.isArray(unlinkedItems) ? unlinkedItems : []);
+    const flatten = (payload: unknown): WorkspaceItem[] => {
+      if (Array.isArray(payload)) return payload;
+      if (!payload || typeof payload !== "object") return [];
+      return Object.entries(payload as Record<string, Array<Record<string, unknown>>>).flatMap(([itemType, values]) =>
+        Array.isArray(values) ? values.map((item) => ({ id: String(item.id), item_type: itemType === "docs" ? "document" : itemType.slice(0, -1), title: String(item.title ?? item.filename ?? item.job_title ?? "Item") })) : []
+      );
+    };
+    setItems(flatten(linked));
+    setUnlinked(flatten(unlinkedItems));
     setLoadingItems(false);
   }, []);
 

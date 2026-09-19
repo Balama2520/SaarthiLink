@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Wrench, GitBranch, Link2, ListChecks, KeyRound, Code2,
-  DollarSign, Globe2, Rss, Loader2, Sparkles,
+  DollarSign, Globe2, Rss, Loader2, Sparkles, Copy, Download, Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "../services/api";
@@ -179,6 +179,28 @@ export default function CareerToolkit() {
     .filter((f) => f.type !== "select")
     .every((f) => (currentValues[f.id] || "").trim().length > 0 || f.label.includes("optional"));
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyResult = (resData: unknown) => {
+    const textToCopy = typeof resData === "string" ? resData : JSON.stringify(resData, null, 2);
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    toast("Result copied to clipboard!", "success");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadResult = (resData: unknown, toolName: string) => {
+    const textContent = typeof resData === "string" ? resData : JSON.stringify(resData, null, 2);
+    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${toolName.toLowerCase().replace(/\s+/g, "_")}_output.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast("Result file downloaded!", "success");
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-background px-4 py-8 sm:px-6 lg:px-10 text-foreground custom-scrollbar">
       <div className="mx-auto mb-8 max-w-6xl">
@@ -274,7 +296,27 @@ export default function CareerToolkit() {
             <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-12 rounded-lg" />)}</div>
           ) : result !== undefined ? (
             <div className="glass-card p-5">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Result</p>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Result</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyResult(result)}
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copied ? "Copied" : "Copy"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadResult(result, tool.label)}
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
               <JsonResult data={result} />
             </div>
           ) : null}

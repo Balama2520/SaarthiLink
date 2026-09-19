@@ -114,8 +114,10 @@ class CareerService:
 
     def get_dashboard_summary(self, user_id: int) -> dict:
         profile = self.repo.get_profile(user_id)
-        goals = self.repo.get_goals(user_id, 3)
+        all_goals = self.repo.get_goals(user_id, 10_000)
+        goals = all_goals[:3]
         mission = self.get_mission_status(user_id)
+        applications, interviews, latest_resume = self.repo.get_dashboard_records(user_id)
         
         target_role = profile.target_role if profile and profile.target_role else "career"
         career_stage = profile.career_stage if profile and profile.career_stage else "Growing"
@@ -145,6 +147,25 @@ class CareerService:
         next_best_action = copilot_svc.compute_next_best_action(user_id)
         career_health = copilot_svc.compute_career_health(user_id)
 
+        activity = [
+            {
+                "id": f"application-{item.id}",
+                "type": "application",
+                "title": f"{item.status.title()} — {item.job_title} at {item.company}",
+                "created_at": item.created_at.isoformat(),
+            }
+            for item in applications[:5]
+        ] + [
+            {
+                "id": f"interview-{item.id}",
+                "type": "interview",
+                "title": f"Interview practice: {item.role}",
+                "created_at": item.created_at.isoformat(),
+            }
+            for item in interviews[:5]
+        ]
+        activity.sort(key=lambda item: item["created_at"], reverse=True)
+
         return {
             "headline": headline,
             "focus_areas": focus_areas,
@@ -152,7 +173,14 @@ class CareerService:
             "next_best_action": next_best_action,
             "career_health": career_health,
             "mission_progress": mission.get("streak", 0),
-            "goal_count": len(goals)
+            "goal_count": len(goals),
+            "stats": {
+                "applications": len(applications),
+                "interviews": len(interviews),
+                "ats_score": latest_resume.ats_score if latest_resume else 0,
+                "goals_in_progress": sum(goal.status != "completed" for goal in all_goals),
+            },
+            "activity": activity[:5],
         }
 
     def get_next_best_action(self, user_id: int) -> dict:

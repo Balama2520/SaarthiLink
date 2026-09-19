@@ -68,7 +68,9 @@ class AuthService:
     def authenticate_user(self, username: str, password: str) -> dict:
         user = self.user_repo.get_user_by_username(username)
         if not user or not self.verify_password(password, user.hashed_password):
-            raise HTTPException(status_code=400, detail="Incorrect username or password")
+            # An authentication failure is not a malformed request. Returning
+            # 401 lets clients consistently handle expired/invalid credentials.
+            raise HTTPException(status_code=401, detail="Incorrect username or password")
         
         access_token = self.create_access_token(data={"sub": user.username})
         refresh_token = self.create_refresh_token_for_user(user.id)

@@ -280,7 +280,7 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
                     </motion.div>
 
                     {/* Step Progress Pills */}
-                    <div className="grid grid-cols-4 gap-2 pt-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4">
                       {videoSteps.map((s, idx) => (
                         <button
                           key={s.title}
@@ -459,21 +459,8 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
         </div>
       </div>
 
-      {/* Public-page monetization only. Keep ads outside the signed-in workspace. */}
-      <div className="border-t border-border/60 pt-6">
-        <PublicAdSlot
-          adKey="7b97dbba3bc626c83ddf3bed8a4b5c37"
-          width={728}
-          height={90}
-          className="hidden md:block"
-        />
-        <PublicAdSlot
-          adKey="55b808267eab346e578b008fdcc45ef1"
-          width={320}
-          height={50}
-          className="md:hidden"
-        />
-      </div>
+      {/* Public-page monetization */}
+      <PublicAdSlot />
     </div>
   );
 }

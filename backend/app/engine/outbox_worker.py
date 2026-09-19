@@ -69,9 +69,15 @@ class OutboxWorker:
     `app/engine/celery_worker.py` and change the import in `main.py`.
     """
 
-    def __init__(self, db_factory: Callable[[], Session], poll_interval: float = 5.0):
+    def __init__(
+        self,
+        db_factory: Callable[[], Session],
+        poll_interval: float = 5.0,
+        max_retries: int = 3,
+    ):
         self._db_factory = db_factory
         self._poll_interval = poll_interval
+        self._max_retries = max_retries
         self._running = False
 
     async def start(self):
@@ -89,16 +95,27 @@ class OutboxWorker:
         self._running = False
         logger.info("[OutboxWorker] Stopped.")
 
+    async def drain(self):
+        """Make one final best-effort pass during application shutdown."""
+        try:
+            await self._process_batch()
+        except Exception as exc:
+            logger.error("[OutboxWorker] Shutdown drain failed: %s", exc, exc_info=True)
+
     async def _process_batch(self):
         db: Session = self._db_factory()
         try:
-            pending = (
-                db.query(EventOutbox)
-                .filter(EventOutbox.status == "PENDING")
-                .order_by(EventOutbox.created_at)
-                .limit(50)
-                .all()
-            )
+            try:
+                pending = (
+                    db.query(EventOutbox)
+                    .filter(EventOutbox.status == "PENDING")
+                    .order_by(EventOutbox.created_at)
+                    .limit(50)
+                    .all()
+                )
+            except Exception as exc:
+                logger.warning("[OutboxWorker] Could not query EventOutbox: %s", exc)
+                return
 
             if not pending:
                 return
@@ -116,7 +133,19 @@ class OutboxWorker:
                         f"(type={event.event_type}): {exc}",
                         exc_info=True,
                     )
-                    event.status = "FAILED"
+                    event.retry_count = (event.retry_count or 0) + 1
+                    event.last_error = str(exc)[:1000]
+                    event.status = (
+                        "DEAD_LETTER"
+                        if event.retry_count >= self._max_retries
+                        else "PENDING"
+                    )
+                    if event.status == "DEAD_LETTER":
+                        logger.error(
+                            "[OutboxWorker] Event %s moved to dead letter after %s attempts.",
+                            event.id,
+                            event.retry_count,
+                        )
 
             db.commit()
         finally:

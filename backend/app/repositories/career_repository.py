@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.models import DailyMission, Goal, Resume, UserProfile, UserSkill
+from app.models.models import DailyMission, Goal, InterviewSession, JobApplication, Resume, UserProfile, UserSkill
 from typing import List, Optional
 
 
@@ -34,6 +34,22 @@ class CareerRepository:
             .limit(limit)
             .all()
         )
+
+    def get_dashboard_records(self, user_id: int) -> tuple[List[JobApplication], List[InterviewSession], Optional[Resume]]:
+        """Return the user-scoped records that power dashboard metrics and activity."""
+        applications = (
+            self.db.query(JobApplication)
+            .filter(JobApplication.user_id == user_id)
+            .order_by(JobApplication.created_at.desc())
+            .all()
+        )
+        interviews = (
+            self.db.query(InterviewSession)
+            .filter(InterviewSession.user_id == user_id)
+            .order_by(InterviewSession.created_at.desc())
+            .all()
+        )
+        return applications, interviews, self.get_latest_resume(user_id)
 
     def get_mission_by_date(self, user_id: int, date_str: str) -> Optional[DailyMission]:
         return self.db.query(DailyMission).filter(

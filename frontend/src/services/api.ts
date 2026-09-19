@@ -1,13 +1,16 @@
-import { authHeader, getToken, getRefreshToken, setAuth, getStoredUsername, clearAuth } from "../lib/auth";
+import { AUTH_EXPIRED_EVENT, authHeader, getAuthPersistence, getToken, getRefreshToken, setAuth, getStoredUsername, clearAuth } from "../lib/auth";
 
 // A deployed static frontend cannot rely on Vite's development-only `/api`
 // proxy. Netlify must set this public, HTTPS API origin at build time. The
 // relative fallback keeps same-origin/reverse-proxy deployments and local Vite
 // development working without embedding a localhost production URL.
-const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
-const API_BASE = configuredApiBase
-  ? configuredApiBase.replace(/\/+$/, "")
-  : "/api";
+function resolveApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (!envUrl) return "/api";
+  const clean = envUrl.replace(/\/+$/, "");
+  return clean.endsWith("/api") ? clean : `${clean}/api`;
+}
+const API_BASE = resolveApiBase();
 
 function getHeaders(extraHeaders: Record<string, string> = {}) {
   return { ...extraHeaders, ...authHeader() };
@@ -17,10 +20,15 @@ const originalFetch = window.fetch;
 
 let refreshPromise: Promise<string | null> | null = null;
 
+function expireSession(): void {
+  clearAuth();
+  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+}
+
 async function performTokenRefresh(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
-    clearAuth();
+    expireSession();
     return null;
   }
 
@@ -32,22 +40,27 @@ async function performTokenRefresh(): Promise<string | null> {
     });
 
     if (refreshRes.ok) {
-      const data = await refreshRes.json();
-      const username = getStoredUsername() || "User";
-      setAuth(
-        username,
-        data.access_token,
-        data.refresh_token,
-        sessionStorage.getItem("access_token") ? "session" : "local"
-      );
-      return data.access_token as string;
+      const data = await parseJsonSafe(refreshRes);
+      if (data && data.access_token) {
+        const username = getStoredUsername() || "User";
+        setAuth(
+          username,
+          data.access_token,
+          data.refresh_token,
+          getAuthPersistence() ?? "local"
+        );
+        return data.access_token as string;
+      }
+      expireSession();
+      window.location.hash = "#/dashboard";
+      return null;
     } else {
-      clearAuth();
+      expireSession();
       window.location.hash = "#/dashboard";
       return null;
     }
   } catch {
-    clearAuth();
+    expireSession();
     window.location.hash = "#/dashboard";
     return null;
   }
@@ -88,11 +101,11 @@ const fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Resp
 async function parseJsonSafe(res: Response) {
   if (res.status === 204) return null;
   const text = await res.text();
-  if (!text) return null;
+  if (!text || !text.trim()) return null;
   try {
     return JSON.parse(text);
   } catch {
-    return null;
+    return { detail: `HTTP ${res.status}: ${res.statusText || "Unexpected server response"}` };
   }
 }
 
@@ -102,7 +115,7 @@ export const api = {
   async getHealth() {
     const res = await fetch(`${API_BASE}/health`);
     if (!res.ok) throw new Error("Failed to load service status");
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   // Authentication
@@ -113,10 +126,10 @@ export const api = {
       body: JSON.stringify({ username, password }),
     });
     if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.detail || "Registration failed");
+      const errorData = await parseJsonSafe(res);
+      throw new Error(errorData?.detail || `Registration failed (HTTP ${res.status})`);
     }
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async login(username: string, password: string) {
@@ -130,10 +143,10 @@ export const api = {
       body: formData,
     });
     if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.detail || "Login failed");
+      const errorData = await parseJsonSafe(res);
+      throw new Error(errorData?.detail || `Login failed (HTTP ${res.status})`);
     }
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async logout(refreshToken: string) {
@@ -355,6 +368,12 @@ export const api = {
     return res.json();
   },
 
+  async updateRoadmapProgress(roadmapId: string, milestoneIndex: number, taskIndex: number, completed: boolean) {
+    const res = await fetch(`${API_BASE}/roadmap/${roadmapId}/progress`, { method: "PATCH", headers: getHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ milestone_index: milestoneIndex, task_index: taskIndex, completed }) });
+    if (!res.ok) throw new Error("Failed to save roadmap progress");
+    return res.json();
+  },
+
   // Jobs
   async getJobs(skip: number = 0, limit: number = 20) {
     const res = await fetch(`${API_BASE}/jobs?skip=${skip}&limit=${limit}`, {
@@ -429,6 +448,16 @@ export const api = {
     return res.json();
   },
 
+  async trackJobApplication(jobId: string) {
+    const res = await fetch(`${API_BASE}/jobs/apply`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    if (!res.ok) throw new Error("Failed to track application");
+    return res.json();
+  },
+
   async matchJob(resumeText: string, jobDescription: string, companyName: string, jobTitle: string) {
     const res = await fetch(`${API_BASE}/jobs/match`, {
       method: "POST",
@@ -458,6 +487,18 @@ export const api = {
       const data = await res.json();
       throw new Error(data.detail || "Interview evaluation failed");
     }
+    return res.json();
+  },
+
+  async createInterviewSession(role: string, company: string | null, difficulty: string) {
+    const res = await fetch(`${API_BASE}/interview/session`, { method: "POST", headers: getHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ role, company, difficulty }) });
+    if (!res.ok) throw new Error("Failed to create interview session");
+    return res.json();
+  },
+
+  async answerInterviewSession(sessionId: string, answer: string, questionIndex: number) {
+    const res = await fetch(`${API_BASE}/interview/session/${sessionId}/answer`, { method: "POST", headers: getHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ answer, question_index: questionIndex }) });
+    if (!res.ok) throw new Error("Failed to save interview answer");
     return res.json();
   },
 
@@ -857,6 +898,20 @@ export const api = {
     return res.json();
   },
 
+  async streamCopilot(message: string, sessionId: string | null, onChunk: (chunk: string) => void): Promise<string | null> {
+    const res = await fetch(`${API_BASE}/career/copilot/stream`, { method: "POST", headers: getHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ message, session_id: sessionId }) });
+    if (!res.ok || !res.body) throw new Error("Copilot is unavailable");
+    const reader = res.body.getReader(); const decoder = new TextDecoder();
+    while (true) { const { done, value } = await reader.read(); if (done) break; onChunk(decoder.decode(value, { stream: true })); }
+    return res.headers.get("X-Copilot-Session");
+  },
+
+  async saveCopilotInsight(title: string, content: string) {
+    const res = await fetch(`${API_BASE}/career/copilot/insights`, { method: "POST", headers: getHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ title, content }) });
+    if (!res.ok) throw new Error("Could not save insight");
+    return res.json();
+  },
+
   async analyzeSkillGaps(targetRole: string) {
     const res = await fetch(`${API_BASE}/career/skill-gap`, {
       method: "POST",
@@ -880,10 +935,10 @@ export const api = {
   async get(url: string, params?: Record<string, string | number | boolean>) {
     let finalUrl = `${API_BASE}${url}`;
     if (params) {
-        const queryParams = new URLSearchParams(
-          Object.entries(params).map(([key, value]) => [key, String(value)])
-        ).toString();
-        finalUrl += `?${queryParams}`;
+      const queryParams = new URLSearchParams(
+        Object.entries(params).map(([key, value]) => [key, String(value)])
+      ).toString();
+      finalUrl += `?${queryParams}`;
     }
     const res = await fetch(finalUrl, {
       method: "GET",
@@ -968,8 +1023,8 @@ export const api = {
       headers: getHeaders(),
     });
     if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || "Failed to generate plan");
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || "Failed to generate plan");
     }
     return res.json();
   },

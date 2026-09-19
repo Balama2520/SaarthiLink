@@ -1,33 +1,40 @@
+import { AD_CONFIG } from "../config/adConfig";
+
 interface PublicAdSlotProps {
-  adKey: string;
-  width: number;
-  height: number;
+  adScript?: string;
+  width?: number;
+  height?: number;
   className?: string;
 }
 
 /**
- * Renders a publisher-supplied display unit in an opaque sandbox.  The ad
- * provider's script consequently cannot access Saarthi's DOM, storage, or
- * authenticated application state. This component is deliberately reserved
- * for public marketing pages; it must not be mounted in the app workspace.
+ * Clean & Secure Ad Slot Component
+ * Only renders when monetization is enabled in AD_CONFIG or explicit script is passed.
  */
-export function PublicAdSlot({ adKey, width, height, className = "" }: PublicAdSlotProps) {
-  const srcDoc = `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;overflow:hidden"><script>var atOptions={key:'${adKey}',format:'iframe',height:${height},width:${width},params:{}};</script><script src="https://www.highrevenueformat.com/${adKey}/invoke.js"></script></body></html>`;
+export function PublicAdSlot({ adScript, width = 728, height = 90, className = "" }: PublicAdSlotProps) {
+  if (!AD_CONFIG.enabled && !adScript) {
+    return null;
+  }
+
+  const scriptToRun = adScript || AD_CONFIG.primaryBannerScript;
+  if (!scriptToRun) return null;
+
+  const srcDoc = `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center;height:100vh;"><script src="${scriptToRun}"></script></body></html>`;
 
   return (
-    <section className={`mx-auto w-fit ${className}`} aria-label="Advertisement">
+    <section className={`mx-auto w-fit ${className}`} aria-label="Sponsored Content">
       <p className="mb-2 text-center text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/70">
-        Advertisement
+        Sponsored Content
       </p>
       <iframe
-        title="Sponsored content"
+        title="Sponsored Content"
         srcDoc={srcDoc}
         width={width}
         height={height}
         loading="lazy"
-        sandbox="allow-scripts allow-popups"
+        sandbox="allow-scripts allow-same-origin allow-forms"
         referrerPolicy="strict-origin-when-cross-origin"
-        className="block border-0"
+        className="block border-0 rounded-lg overflow-hidden bg-muted/20"
       />
     </section>
   );

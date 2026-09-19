@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Compass, GraduationCap, ListChecks, Sparkles, Target } from "lucide-react";
+import { Compass, GraduationCap, ListChecks, Send, Sparkles, Target } from "lucide-react";
 import { api } from "../services/api";
 import { useProfile } from "../hooks/useProfile";
 import { useAppStore } from "../store/useAppStore";
@@ -26,6 +26,10 @@ export default function CareerCopilot() {
   const { data: profile } = useProfile();
   const profileRole = (profile?.target_role as string | undefined) || "";
   const [role, setRole] = useState("");
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const [copilotSessionId, setCopilotSessionId] = useState<string | null>(null);
   const targetRole = role.trim() || profileRole || "Software Engineer";
 
   const { data: summary } = useQuery({
@@ -103,6 +107,18 @@ export default function CareerCopilot() {
             </button>
           </div>
         </section>
+
+        {isAuthenticated && (
+          <section className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><Sparkles className="h-4 w-4 text-primary" /> Ask your Copilot</h2>
+            <div className="flex gap-2">
+              <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void (async () => { if (!question.trim()) return; setAnswer(""); setCopilotLoading(true); try { const id = await api.streamCopilot(question, copilotSessionId, (chunk) => setAnswer((previous) => previous + chunk)); setCopilotSessionId(id); } finally { setCopilotLoading(false); } })(); }} placeholder="What should I focus on this week?" className="flex-1 rounded-lg border border-border bg-input px-3 py-2 text-sm" />
+              <button type="button" disabled={copilotLoading || !question.trim()} onClick={() => void (async () => { setAnswer(""); setCopilotLoading(true); try { const id = await api.streamCopilot(question, copilotSessionId, (chunk) => setAnswer((previous) => previous + chunk)); setCopilotSessionId(id); } finally { setCopilotLoading(false); } })()} className="rounded-lg bg-primary px-3 text-primary-foreground"><Send className="h-4 w-4" /></button>
+            </div>
+            {(copilotLoading || answer) && <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm whitespace-pre-wrap text-foreground">{answer || "Thinking…"}</div>}
+            {answer && <button type="button" onClick={() => void api.saveCopilotInsight("Career Copilot insight", answer)} className="mt-3 text-xs font-semibold text-primary hover:underline">Save insight to Notes</button>}
+          </section>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="rounded-xl border border-border bg-card p-6">

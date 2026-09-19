@@ -57,7 +57,7 @@ class TestOutboxWorker:
         assert len(received_payloads) == 1
         assert received_payloads[0]["task_id"] == "t-99"
 
-    def test_failed_handler_marks_event_failed(self, db_session):
+    def test_failed_handler_is_requeued_before_dead_letter(self, db_session):
         publisher = EventPublisher(db_session)
         publisher.publish("GoalUpdated", {"goal_id": "g-broken"})
 
@@ -70,7 +70,25 @@ class TestOutboxWorker:
         asyncio.run(worker._process_batch())
 
         event = db_session.query(EventOutbox).first()
-        assert event.status == "FAILED"
+        assert event.status == "PENDING"
+        assert event.retry_count == 1
+        assert "Simulated handler failure" in event.last_error
+
+    def test_repeated_failures_move_event_to_dead_letter(self, db_session):
+        publisher = EventPublisher(db_session)
+        publisher.publish("GoalUpdated", {"goal_id": "g-broken"})
+
+        async def broken_handler(payload):
+            raise RuntimeError("Simulated handler failure")
+
+        subscribe("GoalUpdated", broken_handler)
+        worker = OutboxWorker(db_factory=lambda: db_session, poll_interval=0.1, max_retries=2)
+        asyncio.run(worker._process_batch())
+        asyncio.run(worker._process_batch())
+
+        event = db_session.query(EventOutbox).first()
+        assert event.status == "DEAD_LETTER"
+        assert event.retry_count == 2
 
     def test_events_without_handlers_are_processed_silently(self, db_session):
         publisher = EventPublisher(db_session)

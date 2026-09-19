@@ -123,6 +123,36 @@ class JobsService:
             raise HTTPException(status_code=404, detail="Saved job not found")
         return {"status": "unsaved", "job_id": job_id}
 
+    def track_application(self, user_id: int, job_id: str) -> JobApplication:
+        """Create or promote a user-scoped application record for a real job."""
+        job = self.repo.get_job_by_id(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        application = (
+            self.repo.db.query(JobApplication)
+            .filter(
+                JobApplication.user_id == user_id,
+                JobApplication.job_title == job.title,
+                JobApplication.company == job.company.name,
+            )
+            .first()
+        )
+        if application:
+            application.status = "applied"
+        else:
+            application = JobApplication(
+                user_id=user_id,
+                job_title=job.title,
+                company=job.company.name,
+                description=job.description,
+                status="applied",
+            )
+            self.repo.db.add(application)
+        self.repo.db.commit()
+        self.repo.db.refresh(application)
+        return application
+
     async def match_job(self, user_id: int, resume_text: str, job_description: str, company_name: str, job_title: str) -> dict:
         prompt = PromptManager.load("jobs/match_job", job_title=job_title, company_name=company_name, resume_text=resume_text[:3000], job_description=job_description[:3000])
         messages = [{"role": "user", "content": prompt}]

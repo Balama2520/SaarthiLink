@@ -100,6 +100,21 @@ class JobMatchResponse(BaseModel):
     recommendation: str
 
 
+class TrackApplicationRequest(BaseModel):
+    job_id: str
+
+
+@router.post("/apply")
+async def track_application(
+    request: TrackApplicationRequest,
+    current_user: User = Depends(require_authenticated_user),
+    jobs_svc: JobsService = Depends(get_jobs_service),
+):
+    """Persist an application event before the candidate leaves for the job source."""
+    application = jobs_svc.track_application(current_user.id, request.job_id)
+    return {"id": application.id, "status": application.status}
+
+
 @router.post("/match", response_model=JobMatchResponse)
 async def match_job(
     request: JobMatchRequest,

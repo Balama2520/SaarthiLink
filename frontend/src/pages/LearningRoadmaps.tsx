@@ -4,14 +4,19 @@ import {
   Sparkles, Target, Clock, Zap, RotateCcw, BookOpen, Code, Globe
 } from "lucide-react";
 import { api } from "../services/api";
+import { GearRecommendCard } from "../components/GearRecommendCard";
 
 interface Milestone {
   day_range: string;
   topic: string;
   tasks: string[];
+  course_url: string;
+  estimated_hours: number;
+  completed_task_ids: number[];
 }
 
 interface Roadmap {
+  roadmap_id?: string;
   target_role: string;
   duration_days: number;
   milestones: Milestone[];
@@ -31,14 +36,15 @@ const ROLE_ICONS: Record<string, typeof Code> = {
 };
 
 function MilestoneCard({
-  milestone, index, total
+  milestone, index, total, roadmapId
 }: {
   milestone: Milestone;
   index: number;
   total: number;
+  roadmapId?: string;
 }) {
   const [expanded, setExpanded] = useState(index === 0);
-  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [checked, setChecked] = useState<Set<number>>(new Set(milestone.completed_task_ids ?? []));
   const progress = milestone.tasks.length > 0 ? Math.round((checked.size / milestone.tasks.length) * 100) : 0;
   const isLast = index === total - 1;
 
@@ -52,6 +58,7 @@ function MilestoneCard({
       }
       return next;
     });
+    if (roadmapId) void api.updateRoadmapProgress(roadmapId, index, i, !checked.has(i));
   };
 
   return (
@@ -122,6 +129,7 @@ function MilestoneCard({
                 <span className={checked.has(i) ? "line-through opacity-60" : ""}>{task}</span>
               </button>
             ))}
+            <a href={milestone.course_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex text-xs font-semibold text-primary hover:underline">Course resource · ~{milestone.estimated_hours} hours</a>
           </div>
         )}
       </div>
@@ -308,9 +316,17 @@ export default function LearningRoadmaps() {
                       milestone={m}
                       index={i}
                       total={roadmap.milestones.length}
+                      roadmapId={roadmap.roadmap_id}
                     />
                   ))}
                 </div>
+
+                {/* Contextual gear recommendation */}
+                <GearRecommendCard
+                  variant="coding"
+                  dismissKey="roadmaps-gear"
+                  tip="Having the right laptop and accessories for this journey makes a real difference. These are affiliate links — purchases support Saarthi at no extra cost to you."
+                />
               </div>
             ) : (
               /* Empty state */

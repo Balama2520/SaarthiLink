@@ -12,6 +12,10 @@ class RedisCache:
         self.redis_client = None
         
     async def connect(self):
+        if not settings.REDIS_URL or not settings.REDIS_URL.strip():
+            logger.info("REDIS_URL is not configured. Redis caching disabled (optional layer).")
+            self.redis_client = None
+            return
         try:
             self.redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
             await self.redis_client.ping()

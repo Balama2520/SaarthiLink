@@ -12,6 +12,7 @@ const REFRESH_TOKEN_KEY = "refresh_token";
 const USERNAME_KEY = "username";
 
 export type AuthPersistence = "local" | "session";
+export const AUTH_EXPIRED_EVENT = "saarthi:auth-expired";
 
 function storageFor(persistence: AuthPersistence): Storage {
   return persistence === "session" ? sessionStorage : localStorage;
@@ -32,6 +33,13 @@ export function isAuthenticated(): boolean {
 
 export function getStoredUsername(): string | null {
   return sessionStorage.getItem(USERNAME_KEY) ?? localStorage.getItem(USERNAME_KEY);
+}
+
+/** Returns where the active credentials live, or null for a guest. */
+export function getAuthPersistence(): AuthPersistence | null {
+  if (sessionStorage.getItem(TOKEN_KEY)) return "session";
+  if (localStorage.getItem(TOKEN_KEY)) return "local";
+  return null;
 }
 
 /**
@@ -65,4 +73,3 @@ export function authHeader(): Record<string, string> {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
-

@@ -91,8 +91,8 @@ export default function GraduateHub() {
     if (!courseName.trim()) return;
     setSavingCourse(true);
     try {
-      const created = await api.addDegreeCourse(semester, courseName.trim(), credits, gpa || undefined, courseStatus);
-      setCourses((prev) => [created, ...prev]);
+      await api.addDegreeCourse(semester, courseName.trim(), credits, gpa || undefined, courseStatus);
+      await loadAll();
       resetCourseForm();
       setShowCourseForm(false);
     } catch {
@@ -118,8 +118,8 @@ export default function GraduateHub() {
     if (!certName.trim() || !certProvider.trim()) return;
     setSavingCert(true);
     try {
-      const created = await api.addCert(certName.trim(), certProvider.trim(), certDate || undefined, certStatus);
-      setCerts((prev) => [created, ...prev]);
+      await api.addCert(certName.trim(), certProvider.trim(), certDate || undefined, certStatus);
+      await loadAll();
       resetCertForm();
       setShowCertForm(false);
     } catch {

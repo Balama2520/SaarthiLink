@@ -54,6 +54,14 @@ interface AdminStats {
     validation_status: string;
     created_at?: string;
   }>;
+  recent_product_feedbacks?: Array<{
+    id: string;
+    what_you_like?: string;
+    what_you_dislike?: string;
+    what_feels_missing?: string;
+    wish_saarthi_could?: string;
+    created_at?: string;
+  }>;
 }
 
 export default function AdminPanel() {
@@ -190,7 +198,7 @@ export default function AdminPanel() {
             {/* Overview Tab */}
             {activeTab === "overview" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="rounded-2xl border border-border/70 bg-card p-5 space-y-2">
                     <div className="flex items-center justify-between text-muted-foreground">
                       <span className="text-xs font-semibold uppercase">Total Users</span>
@@ -327,6 +335,49 @@ export default function AdminPanel() {
                             >
                               {o.public_job_url}
                             </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Qualitative User Product Feedback & Feature Wishlist */}
+                {stats?.recent_product_feedbacks && stats.recent_product_feedbacks.length > 0 && (
+                  <div className="rounded-2xl border border-border/70 bg-card p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <span>💡 User Qualitative Suggestions & Feature Wishlist</span>
+                        <span className="rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                          {stats.recent_product_feedbacks.length} Feedback Insights
+                        </span>
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      {stats.recent_product_feedbacks.map((pf) => (
+                        <div key={pf.id} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2">
+                          {pf.what_you_like && (
+                            <div>
+                              <span className="font-bold text-emerald-400">Likes: </span>
+                              <span className="text-muted-foreground">{pf.what_you_like}</span>
+                            </div>
+                          )}
+                          {pf.what_feels_missing && (
+                            <div>
+                              <span className="font-bold text-amber-400">What's Missing: </span>
+                              <span className="text-muted-foreground">{pf.what_feels_missing}</span>
+                            </div>
+                          )}
+                          {pf.wish_saarthi_could && (
+                            <div>
+                              <span className="font-bold text-primary">Wishlist: </span>
+                              <span className="text-muted-foreground">{pf.wish_saarthi_could}</span>
+                            </div>
+                          )}
+                          {pf.created_at && (
+                            <div className="text-[10px] text-muted-foreground/70 text-right font-mono">
+                              {new Date(pf.created_at).toLocaleDateString()}
+                            </div>
                           )}
                         </div>
                       ))}

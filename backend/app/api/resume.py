@@ -14,6 +14,7 @@ from app.database.connection import get_db
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.logging import get_request_id
+from app.rag.rag import index_text_content
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 logger = logging.getLogger(__name__)
@@ -133,6 +134,12 @@ async def upload_resume(
         db.commit()
         db.refresh(db_resume)
 
+        # Keep profile facts and semantic retrieval current as soon as a
+        # successful analysis is available. ProfileSyncService only fills
+        # blank fields, so user-entered profile data is never overwritten.
+        ProfileSyncService().sync_profile(db, current_user.id, parsed_data)
+        index_text_content(db_resume.id, db_resume.filename, raw_text)
+
         # Invalidate AI cache for career copilot
         CareerCopilotService(db).invalidate_cache(current_user.id)
 
@@ -211,6 +218,9 @@ async def reanalyze_resume(
         resume.parsed_json = json.dumps(parsed_data)
         db.commit()
         db.refresh(resume)
+
+        ProfileSyncService().sync_profile(db, current_user.id, parsed_data)
+        index_text_content(resume.id, resume.filename, resume.raw_text)
 
         CareerCopilotService(db).invalidate_cache(current_user.id)
 

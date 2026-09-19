@@ -3,6 +3,7 @@ import { UserCheck, Sparkles, Target, TrendingUp, Mic, MicOff, Play, CheckCircle
 import { api } from "../services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "../hooks/useToast";
+import { getToken } from "../lib/auth";
 
 interface SpeechRecognitionEventLike {
   results: { [index: number]: { [index: number]: { transcript: string } }; length: number };
@@ -286,6 +287,9 @@ export default function InterviewCoach() {
   const [role, setRole] = useState("Software Engineer");
   const [roleOpen, setRoleOpen] = useState(false);
   const [roundType, setRoundType] = useState<string>("Technical");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [company, setCompany] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [simActive, setSimActive] = useState(false);
   const [questionIdx, setQuestionIdx] = useState(0);
   const [questions, setQuestions] = useState<string[]>([]);
@@ -322,9 +326,21 @@ export default function InterviewCoach() {
     };
   }, []);
 
-  const startSimulation = () => {
+  const startSimulation = async () => {
     const deck = getDeckForRoleAndRound(role, roundType);
-    setQuestions(deck); setAnswers(Array(deck.length).fill(""));
+    let generatedQuestions = deck;
+    setLoading(true);
+    try {
+      if (getToken()) {
+        const session = await api.createInterviewSession(role, company || null, difficulty);
+        setSessionId(session.id);
+        generatedQuestions = session.questions;
+      } else setSessionId(null);
+    } catch {
+      setSessionId(null);
+      toast("Using offline practice questions; sign in to save your session.", "error");
+    } finally { setLoading(false); }
+    setQuestions(generatedQuestions); setAnswers(Array(generatedQuestions.length).fill(""));
     setQuestionIdx(0); setSimStartedAt(Date.now());
     setSimActive(true); setFeedback(null); setError(null);
   };
@@ -336,9 +352,10 @@ export default function InterviewCoach() {
     else { recognition.start(); setIsRecording(true); }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isRecording && recognitionRef.current) { recognitionRef.current.stop(); setIsRecording(false); }
     if (questionIdx < questions.length - 1) {
+      if (sessionId) await api.answerInterviewSession(sessionId, answers[questionIdx] ?? "No response", questionIdx);
       setQuestionIdx(p => p + 1);
     } else {
       setSimActive(false); evaluateSimulation();
@@ -350,7 +367,11 @@ export default function InterviewCoach() {
     const transcript = questions.map((q, i) => `Interviewer: ${q}\nCandidate: ${answers[i]}`).join("\n\n");
     const elapsed = simStartedAt ? Date.now() - simStartedAt : 0;
     try {
-      const data = await api.evaluateInterview(transcript, role);
+      let data: InterviewFeedback;
+      if (sessionId) {
+        const persisted = await api.answerInterviewSession(sessionId, answers[questionIdx] ?? "No response", questionIdx);
+        data = persisted.feedback;
+      } else data = await api.evaluateInterview(transcript, role);
       setFeedback({ ...data, confidence: estimateConfidence(answers), speaking_speed: estimateWpm(answers, elapsed) ?? undefined, grammar: estimateClarity(answers), technical_accuracy: data.score });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Evaluation failed. Please try again.");
@@ -361,9 +382,9 @@ export default function InterviewCoach() {
   const progress = questions.length > 0 ? ((questionIdx + 1) / questions.length) * 100 : 0;
 
   return (
-    <div className="flex h-full overflow-hidden bg-background text-foreground">
+    <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden bg-background text-foreground">
       {/* Left config panel */}
-      <div className="w-72 shrink-0 border-r border-border flex flex-col bg-background">
+      <div className={`w-full md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-border flex flex-col bg-background ${simActive ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-5 border-b border-border">
           <div className="flex items-center gap-2.5 mb-5">
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 border border-emerald-500/20`}>
@@ -373,6 +394,11 @@ export default function InterviewCoach() {
               <h1 className="text-sm font-bold text-foreground">Interview Coach</h1>
               <p className="text-[10px] text-muted-foreground">AI-powered simulation</p>
             </div>
+
+            <input value={company} onChange={(event) => setCompany(event.target.value)} disabled={simActive} placeholder="Target company (optional)" className="w-full rounded-xl border border-border bg-border px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground" />
+            <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} disabled={simActive} className="w-full rounded-xl border border-border bg-border px-3 py-2.5 text-sm text-foreground">
+              <option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option><option value="faang">FAANG-level</option>
+            </select>
           </div>
 
           <div className="space-y-4">
@@ -451,12 +477,12 @@ export default function InterviewCoach() {
         <AnimatePresence mode="wait">
           {/* Simulation screen */}
           {simActive && (
-            <motion.div key="sim" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-8 max-w-3xl mx-auto">
+            <motion.div key="sim" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-4 sm:p-8 max-w-3xl mx-auto">
               {/* Progress */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-muted-foreground">{formatRoundName(roundType)} — Question {questionIdx + 1} of {questions.length}</span>
-                  <button onClick={() => { setSimActive(false); setFeedback(null); }} className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors flex items-center gap-1">
+                  <button onClick={() => { setSimActive(false); setFeedback(null); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                     <RotateCcw className="h-3 w-3" /> Reset
                   </button>
                 </div>
@@ -466,18 +492,18 @@ export default function InterviewCoach() {
               </div>
 
               {/* Question card */}
-              <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/8 to-transparent p-6 mb-5">
+              <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/8 to-transparent p-4 sm:p-6 mb-5">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="flex h-7 w-7 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15 text-xs font-bold text-emerald-400">
                     {questionIdx + 1}
                   </span>
                   <span className="text-xs font-semibold text-emerald-400 uppercase tracking-widest">{roundType}</span>
                 </div>
-                <p className="text-lg font-semibold text-foreground leading-relaxed">{questions[questionIdx]}</p>
+                <p className="text-base sm:text-lg font-semibold text-foreground leading-relaxed">{questions[questionIdx]}</p>
               </div>
 
               {/* Answer area */}
-              <div className="rounded-2xl border border-border bg-border p-5 mb-5">
+              <div className="rounded-2xl border border-border bg-border p-4 sm:p-5 mb-5">
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                     <Activity className="h-3.5 w-3.5 text-emerald-400" /> Your Response
@@ -507,20 +533,20 @@ export default function InterviewCoach() {
 
           {/* Results */}
           {!simActive && feedback && (
-            <motion.div key="results" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="p-8 max-w-3xl mx-auto">
-              <div className="flex items-center justify-between mb-6">
+            <motion.div key="results" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="p-4 sm:p-8 max-w-3xl mx-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">Performance Report</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Evaluated for {role} — {formatRoundName(roundType)}</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-foreground">Performance Report</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">Evaluated for {role} — {formatRoundName(roundType)}</p>
                 </div>
                 <button onClick={() => setFeedback(null)}
-                  className="flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  className="self-start sm:self-auto flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
                   <RotateCcw className="h-3.5 w-3.5" /> New Session
                 </button>
               </div>
 
               {/* Score */}
-              <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-transparent p-6 flex items-center gap-6">
+              <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-transparent p-5 sm:p-6 flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 sm:gap-6">
                 <div className="relative h-20 w-20 shrink-0">
                   <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
                     <path className="text-border" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />

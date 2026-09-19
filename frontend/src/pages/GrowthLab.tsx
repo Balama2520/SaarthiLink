@@ -8,6 +8,7 @@ import { api } from "../services/api";
 import { localDB } from "../services/localDB";
 import { useToast } from "../hooks/useToast";
 import { JsonResult } from "../components/ui/JsonResult";
+import { GearRecommendCard } from "../components/GearRecommendCard";
 
 type LabTab = "forge" | "research" | "notes";
 
@@ -298,6 +299,15 @@ export default function GrowthLab() {
             )}
           </motion.div>
         )}
+      </div>
+
+      {/* Contextual gear recommendation */}
+      <div className="mx-auto max-w-5xl px-4 pb-8 md:px-6">
+        <GearRecommendCard
+          variant="study"
+          dismissKey="growthlab-gear"
+          tip="The right study gadgets and accessories can seriously level up how you build and learn."
+        />
       </div>
     </div>
   );

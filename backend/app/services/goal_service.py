@@ -135,7 +135,23 @@ class GoalService:
         for field, value in update_data.items():
             setattr(goal, field, value)
             
-        return self.repo.save(goal)
+        saved = self.repo.save(goal)
+        if saved.parent_id:
+            self._recalculate_parent_progress(saved.parent_id, user_id)
+        return saved
+
+    def _recalculate_parent_progress(self, parent_id: str, user_id: int) -> None:
+        """Derive parent progress from child completion rather than stale manual values."""
+        parent = self.get_goal(parent_id, user_id)
+        children = [child for child in parent.children if child.type in ("TASK", "MILESTONE")]
+        if not children:
+            return
+        completed = sum(child.status.lower() == "completed" for child in children)
+        parent.progress = round(completed * 100 / len(children))
+        parent.status = "completed" if parent.progress == 100 else "in_progress"
+        self.repo.save(parent)
+        if parent.parent_id:
+            self._recalculate_parent_progress(parent.parent_id, user_id)
 
     def delete_goal(self, goal_id: str, user_id: int) -> None:
         goal = self.get_goal(goal_id, user_id)
