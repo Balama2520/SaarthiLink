@@ -1,6 +1,5 @@
 import os
 import logging
-import chromadb
 from typing import Optional, List
 
 logger = logging.getLogger(__name__)
@@ -18,6 +17,7 @@ def _ensure_initialized() -> bool:
 
     _rag_initialized = True
     try:
+        import chromadb
         from sentence_transformers import SentenceTransformer
 
         os.makedirs(CHROMA_DIR, exist_ok=True)
