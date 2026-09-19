@@ -1,6 +1,6 @@
 /**
  * keep-alive.js
- * Pings every service in the Saarthi stack to prevent cold sleep / pausing.
+ * Pings every service in the Saarthi stack to prevent cold sleep/pausing.
  * Run this via GitHub Actions on a schedule (see .github/workflows/keep-alive.yml).
  */
 
