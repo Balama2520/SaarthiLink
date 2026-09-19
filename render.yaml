@@ -4,7 +4,7 @@ services:
     env: docker
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
-    healthCheckPath: /api/live
+    healthCheckPath: /api/health
     autoDeploy: "yes"
     envVars:
       - key: ENVIRONMENT
@@ -18,6 +18,24 @@ services:
       - key: ALLOWED_ORIGINS
         sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: HF_SPACE_ID
+        sync: false
+      - key: HF_API_TOKEN
+        sync: false
+      - key: HF_API_NAME
+        value: generate
+      - key: OLLAMA_URL
+        sync: false
+      - key: GOOGLE_SHEETS_SPREADSHEET_ID
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: INGEST_WEBHOOK_TOKEN
+        sync: false
+      - key: ADMIN_USERNAMES
         sync: false
       - key: SUPABASE_URL
         sync: false
