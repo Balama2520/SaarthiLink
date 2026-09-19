@@ -197,11 +197,13 @@ The backend webhook validates payloads, authenticates with `X-Saarthi-Ingest-Tok
 - SlowAPI rate limiting, request IDs, CORS controls, security headers
 - ChromaDB and sentence-transformers for retrieval features
 - PDF, DOCX, and TXT extraction for resume workflows
+- LangGraph-based agent workflow (`backend/app/agents`) for multi-step AI reasoning
+- Celery for background/async job processing (`backend/app/core/celery_app.py`, `backend/app/engine/outbox_worker.py`)
 
 ### Data & Infrastructure
 - Supabase PostgreSQL (primary database)
 - Supabase Storage (private resume/document storage)
-- Optional Redis-compatible cache
+- Optional Redis-compatible cache, also used as the Celery broker/result backend
 - Render (backend hosting), Netlify (frontend hosting)
 
 ### AI
