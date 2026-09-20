@@ -47,3 +47,4 @@ build/
 # Test artifacts
 coverage/
 .vitest/
+chroma_db/
