@@ -48,7 +48,9 @@ class DiscoveryRepository:
     def get_consent_by_session(self, session_id: str) -> Optional[ConsentRecord]:
         return (
             self.db.query(ConsentRecord)
-            .filter(ConsentRecord.session_id == session_id, ConsentRecord.status == "active")
+            .filter(
+                ConsentRecord.session_id == session_id, ConsentRecord.status == "active"
+            )
             .first()
         )
 
@@ -88,7 +90,9 @@ class DiscoveryRepository:
             self.db.refresh(profile)
         return profile
 
-    def update_profile_status(self, profile_id: str, status: str) -> Optional[UserDiscoveryProfile]:
+    def update_profile_status(
+        self, profile_id: str, status: str
+    ) -> Optional[UserDiscoveryProfile]:
         profile = (
             self.db.query(UserDiscoveryProfile)
             .filter(UserDiscoveryProfile.id == profile_id)
@@ -121,9 +125,13 @@ class DiscoveryRepository:
         return created
 
     # ── Career Challenges ───────────────────────────────────────────────────
-    def save_career_challenge(self, profile_id: str, data: Dict[str, Any]) -> CareerChallenge:
+    def save_career_challenge(
+        self, profile_id: str, data: Dict[str, Any]
+    ) -> CareerChallenge:
         challenge = (
-            self.db.query(CareerChallenge).filter(CareerChallenge.profile_id == profile_id).first()
+            self.db.query(CareerChallenge)
+            .filter(CareerChallenge.profile_id == profile_id)
+            .first()
         )
         if not challenge:
             challenge = CareerChallenge(profile_id=profile_id)
@@ -159,7 +167,9 @@ class DiscoveryRepository:
             )
             if existing:
                 existing.rating = item.get("rating", existing.rating)
-                existing.is_most_valuable = item.get("is_most_valuable", existing.is_most_valuable)
+                existing.is_most_valuable = item.get(
+                    "is_most_valuable", existing.is_most_valuable
+                )
                 existing.is_least_valuable = item.get(
                     "is_least_valuable", existing.is_least_valuable
                 )
@@ -186,8 +196,14 @@ class DiscoveryRepository:
         return res
 
     # ── Product Feedback ────────────────────────────────────────────────────
-    def save_product_feedback(self, profile_id: str, data: Dict[str, Any]) -> ProductFeedback:
-        pf = self.db.query(ProductFeedback).filter(ProductFeedback.profile_id == profile_id).first()
+    def save_product_feedback(
+        self, profile_id: str, data: Dict[str, Any]
+    ) -> ProductFeedback:
+        pf = (
+            self.db.query(ProductFeedback)
+            .filter(ProductFeedback.profile_id == profile_id)
+            .first()
+        )
         if not pf:
             pf = ProductFeedback(profile_id=profile_id)
             self.db.add(pf)

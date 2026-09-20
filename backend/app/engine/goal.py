@@ -48,7 +48,9 @@ class GoalEngine:
 
         # Blocked Dependency Penalty
         dependencies = (
-            self.db.query(GoalDependency).filter(GoalDependency.goal_id == goal.id).all()
+            self.db.query(GoalDependency)
+            .filter(GoalDependency.goal_id == goal.id)
+            .all()
         )
         for dep in dependencies:
             dep_goal = self.db.query(Goal).filter(Goal.id == dep.depends_on_id).first()
@@ -64,11 +66,15 @@ class GoalEngine:
 
         return max(0.0, min(1.0, health))
 
-    def generate_plan_from_template(self, user_id: int, template_id: str, user_context: str) -> Goal:
+    def generate_plan_from_template(
+        self, user_id: int, template_id: str, user_context: str
+    ) -> Goal:
         """
         Template -> Personalization -> Milestones -> JIT Tasks
         """
-        template = self.db.query(GoalTemplate).filter(GoalTemplate.id == template_id).first()
+        template = (
+            self.db.query(GoalTemplate).filter(GoalTemplate.id == template_id).first()
+        )
         if not template:
             raise ValueError("Template not found")
 
@@ -106,7 +112,9 @@ class GoalEngine:
         self.db.commit()
 
         # Activate first milestone
-        first_milestone = self.db.query(Goal).filter(Goal.parent_id == top_goal.id).first()
+        first_milestone = (
+            self.db.query(Goal).filter(Goal.parent_id == top_goal.id).first()
+        )
         if first_milestone:
             first_milestone.status = "ACTIVE"
             self.db.commit()
@@ -188,7 +196,9 @@ class GoalEngine:
                         parent.status = "COMPLETED"
 
                 # Activate next milestone if needed
-                next_milestone = next((s for s in siblings if s.status == "DRAFT"), None)
+                next_milestone = next(
+                    (s for s in siblings if s.status == "DRAFT"), None
+                )
                 if next_milestone:
                     next_milestone.status = "ACTIVE"
                     self.db.commit()
@@ -203,7 +213,9 @@ class GoalEngine:
         # Get active goal
         current_goal = (
             self.db.query(Goal)
-            .filter(Goal.user_id == user_id, Goal.type == "GOAL", Goal.status == "ACTIVE")
+            .filter(
+                Goal.user_id == user_id, Goal.type == "GOAL", Goal.status == "ACTIVE"
+            )
             .order_by(Goal.priority)
             .first()
         )
@@ -226,7 +238,9 @@ class GoalEngine:
 
         # Get tasks
         tasks = (
-            self.db.query(Goal).filter(Goal.parent_id == milestone_id, Goal.type == "TASK").all()
+            self.db.query(Goal)
+            .filter(Goal.parent_id == milestone_id, Goal.type == "TASK")
+            .all()
         )
 
         # Ensure active tasks array structure returned seamlessly
