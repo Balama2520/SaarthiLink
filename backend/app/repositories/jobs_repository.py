@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_, and_, desc
-from typing import Optional, List, Tuple
-from app.models.models import Job, Company, SavedJob, UserSkill, JobSkill
+from sqlalchemy import desc
+from typing import Optional, List
+from app.models.models import Job, SavedJob, UserSkill
 
 
 class JobsRepository:

@@ -5,7 +5,6 @@ Provides asynchronous inference routing to Gemini API & Hugging Face (Qwen2.5-3B
 Enforces strict 8.0-second HTTP timeout boundaries and context truncation (last 5 messages).
 """
 
-import asyncio
 import logging
 import os
 from typing import Any, Dict, List, Optional

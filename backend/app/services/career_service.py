@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import date, timedelta
+from datetime import date
 from app.repositories.career_repository import CareerRepository
 from app.models.models import DailyMission
 from app.ai.gateway import AIGateway

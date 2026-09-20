@@ -1,4 +1,3 @@
-import os
 import logging
 import speech_recognition as sr
 from io import BytesIO

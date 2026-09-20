@@ -6,9 +6,8 @@ returns structured JSON.  No DB persistence is needed for these features.
 
 import json
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from typing import Optional
 
 from app.core.dependencies.auth import get_current_user
 from app.models.models import User

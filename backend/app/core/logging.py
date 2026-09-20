@@ -5,11 +5,9 @@ Replaces structlog. Propagates request_id via contextvars.
 
 import logging
 import json
-import uuid
-import time
 from contextvars import ContextVar
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 # ── Context Variables ─────────────────────────────────────────────────────────
 _request_id_var: ContextVar[str] = ContextVar("request_id", default="")

@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from typing import List, Optional
 from app.repositories.jobs_repository import JobsRepository
 from app.models.models import JobApplication, Job, SavedJob
-from app.schemas.jobs import JobRecommendationOut, JobListOut, JobSkillOut, CompanyOut
+from app.schemas.jobs import JobRecommendationOut, JobListOut
 from app.ai.gateway import AIGateway
 from app.ai.prompt_manager import PromptManager
 

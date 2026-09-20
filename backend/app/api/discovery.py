@@ -6,9 +6,9 @@ and ecosystem contribution.
 """
 
 import uuid
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, Request
 from pydantic import BaseModel, Field
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db

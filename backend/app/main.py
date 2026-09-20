@@ -29,7 +29,7 @@ from slowapi.util import get_remote_address
 from app.api import api_router
 from app.core.cache import cache
 from app.core.config import get_settings
-from app.core.logging import get_request_id, set_request_context, setup_logging
+from app.core.logging import set_request_context
 from app.database.connection import SessionLocal
 from app.engine.outbox_worker import OutboxWorker
 

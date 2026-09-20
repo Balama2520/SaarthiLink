@@ -8,19 +8,12 @@ validation/deduplication, contact forms, consent logging, and feedback analytics
 import hashlib
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from sqlalchemy.orm import Session
 
 from app.repositories.discovery_repository import DiscoveryRepository
 from app.models.models import (
     ConsentRecord,
-    UserDiscoveryProfile,
-    CareerChallenge,
-    FeatureFeedback,
-    ProductFeedback,
-    OpportunitySignal,
-    CompanyProfile,
-    ContactRequest,
 )
 
 logger = logging.getLogger(__name__)

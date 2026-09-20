@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Dict, Any
-from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.models import EventOutbox
 

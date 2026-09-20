@@ -1,7 +1,6 @@
 import logging
 import json
 from typing import Dict, Any, Optional
-from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.models import WorkflowState

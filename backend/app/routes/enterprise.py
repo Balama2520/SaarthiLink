@@ -5,8 +5,8 @@ Provides secure enterprise integration, organization onboarding, and institution
 """
 
 import logging
-from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from typing import Optional
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
 from app.auth.security import AuthenticatedUser, get_current_user

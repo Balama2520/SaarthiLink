@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from typing import Optional
 
 from app.schemas.auth import UserCreate, Token
 from app.services.auth_service import AuthService

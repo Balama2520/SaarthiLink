@@ -1,6 +1,5 @@
 import json
 import logging
-from fastapi import HTTPException
 from app.repositories.project_repository import ProjectRepository
 from app.models.models import Project
 from app.ai.gateway import AIGateway

@@ -1,5 +1,4 @@
 from fastapi import Depends
-from app.database.connection import get_db
 from app.core.dependencies.repositories import (
     get_goal_repository,
     get_roadmap_repository,

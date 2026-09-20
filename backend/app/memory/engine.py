@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 import json
 
 from app.models.models import Memory, UserProfile
-from app.memory.redis_client import redis_memory
 
 logger = logging.getLogger(__name__)
 

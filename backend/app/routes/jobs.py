@@ -10,14 +10,13 @@ import logging
 import os
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from app.models.models import Company, Job, JobSkill
 
-from app.auth.security import AuthenticatedUser, get_current_user
 from app.core.config import get_settings
 from app.database.connection import get_db
 

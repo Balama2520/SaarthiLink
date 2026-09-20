@@ -1,11 +1,10 @@
 import logging
 import json
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_
 
-from app.models.models import Goal, GoalDependency, GoalTemplate, Memory, UserProfile
+from app.models.models import Goal, GoalDependency, GoalTemplate, Memory
 from app.services import ai_service  # Assuming an LLM wrapper is here
 
 logger = logging.getLogger(__name__)

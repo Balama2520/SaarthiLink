@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.dependencies.auth import get_current_user, require_authenticated_user
+from app.core.dependencies.auth import require_authenticated_user
 from app.models.models import User, ChatSession, ChatMessage
 from app.database.connection import get_db
 from app.ai.gateway import AIGateway

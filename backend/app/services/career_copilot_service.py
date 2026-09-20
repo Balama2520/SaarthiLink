@@ -1,8 +1,7 @@
 import logging
 import json
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
 
 from app.memory.redis_client import redis_memory
 from app.models.models import (
@@ -11,11 +10,9 @@ from app.models.models import (
     Resume,
     UserSkill,
     Goal,
-    JobApplication,
     InterviewSession,
     AIWorkspace,
     SavedJob,
-    DailyMission,
 )
 from app.ai.gateway import AIGateway
 
@@ -335,7 +332,7 @@ class CareerCopilotService:
         interviews = ctx.get("interviews", [])
         saved_jobs = ctx.get("saved_jobs", [])
         target_role = ctx.get("target_role", "Software Engineer")
-        skills = ctx.get("skills", [])
+        ctx.get("skills", [])
 
         pending_goals = [
             g for g in goals if g.status in ("pending", "ACTIVE", "in_progress")

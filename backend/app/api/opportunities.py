@@ -6,8 +6,8 @@ for verification and inclusion in the Saarthi Job Ecosystem.
 """
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel, HttpUrl
-from typing import Any, Dict, Optional
+from pydantic import BaseModel
+from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -18,7 +18,7 @@ from app.models.models import User
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 
 
-from pydantic import BaseModel, HttpUrl, model_validator
+from pydantic import BaseModel, model_validator
 
 
 class OpportunitySubmissionRequest(BaseModel):

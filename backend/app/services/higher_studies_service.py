@@ -2,7 +2,7 @@ import json
 from app.repositories.higher_studies_repository import HigherStudiesRepository
 from app.ai.gateway import AIGateway
 from app.ai.prompt_manager import PromptManager
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
 async def _collect_stream(stream) -> str:

@@ -5,9 +5,9 @@ Endpoints for sending contact messages and connection requests to
 the Saarthi AI team (saarthi.ai.team@gmail.com).
 """
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel, EmailStr, Field
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db

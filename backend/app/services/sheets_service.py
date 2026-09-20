@@ -55,10 +55,9 @@ STATUS:
 import hashlib
 import json
 import logging
-import os
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.config import get_settings
 

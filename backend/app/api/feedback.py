@@ -4,9 +4,9 @@ Feedback API Router — Saarthi 34-Feature Rating & Product Feedback System
 Endpoints for submitting and retrieving 34-feature ratings and product feedback.
 """
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -234,7 +234,7 @@ SAARTHI_34_FEATURES = [
 ]
 
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional, Union
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 

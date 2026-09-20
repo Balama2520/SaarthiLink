@@ -1,8 +1,7 @@
-import json
 import logging
 from sqlalchemy.orm import Session
-from app.models.models import UserProfile, UserSkill, Resume
-from typing import List, Dict
+from app.models.models import UserProfile, UserSkill
+from typing import List
 
 logger = logging.getLogger(__name__)
 
