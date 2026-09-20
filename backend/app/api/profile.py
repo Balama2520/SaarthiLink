@@ -10,7 +10,6 @@ from app.schemas.profile import (
     ProfileUpdate,
     ProfileResponse,
     ProfileCompletenessResponse,
-    ProfileSummaryResponse,
 )
 from app.core.dependencies.auth import require_authenticated_user
 from app.services.career_copilot_service import CareerCopilotService
@@ -24,7 +23,7 @@ def _parse_json_field(val: Any) -> List[str]:
     if isinstance(val, str):
         try:
             return json.loads(val)
-        except:
+        except json.JSONDecodeError:
             return []
     return val
 
@@ -247,73 +246,3 @@ def get_completeness(
     # Technical Skills (from UserSkill)
     ts_count = db.query(UserSkill).filter(UserSkill.user_id == current_user.id).count()
     sections["Technical Skills"] = min(100, ts_count * 20)
-    if ts_count == 0:
-        suggestions.append(
-            "Add Technical Skills (or let AI parse them from your resume)."
-        )
-
-    # Soft Skills
-    if profile.soft_skills_json and profile.soft_skills_json != "[]":
-        sections["Soft Skills"] = 100
-    else:
-        suggestions.append("Add Soft Skills.")
-
-    # Portfolio
-    port_score = 0
-    if profile.github_url:
-        port_score += 50
-    if profile.linkedin_url:
-        port_score += 50
-    sections["Portfolio"] = port_score
-    if port_score < 100:
-        suggestions.append("Link your GitHub and LinkedIn profiles.")
-
-    # Preferences
-    if profile.work_preferences_json and profile.work_preferences_json != "[]":
-        sections["Preferences"] = 100
-    else:
-        suggestions.append("Set your work preferences (Remote, Hybrid, etc.).")
-
-    overall = sum(sections.values()) // len(sections)
-
-    return {
-        "overall_percentage": overall,
-        "sections": sections,
-        "suggestions": suggestions[:3],  # Return top 3 suggestions
-    }
-
-
-@router.get("/summary", response_model=ProfileSummaryResponse)
-def get_summary(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_authenticated_user),
-):
-    profile = get_or_create_profile(current_user.id, db)
-
-    ts = (
-        db.query(UserSkill)
-        .filter(UserSkill.user_id == current_user.id)
-        .order_by(UserSkill.proficiency.desc())
-        .limit(5)
-        .all()
-    )
-    top_skills = [s.skill_name for s in ts]
-
-    summary = f"User is at {profile.career_stage or 'unknown'} stage targeting {profile.target_role or 'general roles'}. "
-    if profile.degree and profile.university:
-        summary += f"Studying {profile.degree} at {profile.university}. "
-
-    if top_skills:
-        summary += f"Top tech skills: {', '.join(top_skills)}. "
-
-    if profile.soft_skills_json and profile.soft_skills_json != "[]":
-        ss = ", ".join(_parse_json_field(profile.soft_skills_json))
-        summary += f"Soft skills: {ss}. "
-
-    if profile.preferred_locations_json and profile.preferred_locations_json != "[]":
-        locs = ", ".join(_parse_json_field(profile.preferred_locations_json))
-        summary += f"Prefers {locs}. "
-
-    summary += f"ATS Score: {profile.resume_ats_score}."
-
-    return {"summary_text": summary.strip()}
