@@ -40,9 +40,7 @@ async def generate_roadmap(
     roadmap_svc: RoadmapService = Depends(get_roadmap_service),
 ):
     user_id = current_user.id if current_user else -1
-    return await roadmap_svc.generate_roadmap(
-        user_id, request.target_role, request.duration_days
-    )
+    return await roadmap_svc.generate_roadmap(user_id, request.target_role, request.duration_days)
 
 
 class ProgressRequest(BaseModel):

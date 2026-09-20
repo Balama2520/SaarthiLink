@@ -105,9 +105,7 @@ class JobRecommendationOut(BaseModel):
     """Extends JobListOut with a recommendation score."""
 
     job: JobListOut
-    match_score: int = Field(
-        ..., ge=0, le=100, description="0-100 skill match percentage"
-    )
+    match_score: int = Field(..., ge=0, le=100, description="0-100 skill match percentage")
     matched_skills: list[str] = []
     missing_skills: list[str] = []
 

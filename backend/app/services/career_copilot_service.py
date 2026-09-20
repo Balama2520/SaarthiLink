@@ -100,9 +100,7 @@ class CareerCopilotService:
         self.ai_gateway = AIGateway()
 
     def invalidate_cache(self, user_id: int) -> None:
-        logger.info(
-            "Career copilot cache invalidate requested", extra={"user_id": user_id}
-        )
+        logger.info("Career copilot cache invalidate requested", extra={"user_id": user_id})
         redis_memory.invalidate_cache(f"dashboard_summary:{user_id}")
         redis_memory.invalidate_cache(f"next_action:{user_id}")
         redis_memory.invalidate_cache(f"career_health:{user_id}")
@@ -116,9 +114,7 @@ class CareerCopilotService:
         if not user:
             return {}
 
-        profile = (
-            self.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
-        )
+        profile = self.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
         resume = (
             self.db.query(Resume)
             .filter(Resume.user_id == user_id)
@@ -127,13 +123,9 @@ class CareerCopilotService:
         )
         skills = self.db.query(UserSkill).filter(UserSkill.user_id == user_id).all()
         goals = self.db.query(Goal).filter(Goal.user_id == user_id).all()
-        workspaces = (
-            self.db.query(AIWorkspace).filter(AIWorkspace.user_id == user_id).all()
-        )
+        workspaces = self.db.query(AIWorkspace).filter(AIWorkspace.user_id == user_id).all()
         interviews = (
-            self.db.query(InterviewSession)
-            .filter(InterviewSession.user_id == user_id)
-            .all()
+            self.db.query(InterviewSession).filter(InterviewSession.user_id == user_id).all()
         )
         saved_jobs = self.db.query(SavedJob).filter(SavedJob.user_id == user_id).all()
 
@@ -221,9 +213,7 @@ class CareerCopilotService:
                 resume_score = 20
 
         # 3. Skill Match (0-100)
-        matched_role_key = next(
-            (k for k in ROLE_SKILL_BASELINES if k in target_role), "software"
-        )
+        matched_role_key = next((k for k in ROLE_SKILL_BASELINES if k in target_role), "software")
         expected_skills = ROLE_SKILL_BASELINES[matched_role_key]
         user_skills_lower = {s.lower() for s in skills}
         matches = sum(1 for exp in expected_skills if exp.lower() in user_skills_lower)
@@ -235,18 +225,14 @@ class CareerCopilotService:
         if goals:
             completed = sum(1 for g in goals if g.status in ("completed", "COMPLETED"))
             avg_progress = sum(g.progress or 0 for g in goals) / len(goals)
-            goal_score = int(
-                min(100, (completed / len(goals)) * 40 + avg_progress * 0.6)
-            )
+            goal_score = int(min(100, (completed / len(goals)) * 40 + avg_progress * 0.6))
         else:
             goal_score = 25
 
         # 5. Interview Readiness (0-100)
         if interviews:
             recent_scores = [i.score for i in interviews if i.score is not None]
-            interview_score = (
-                int(sum(recent_scores) / len(recent_scores)) if recent_scores else 60
-            )
+            interview_score = int(sum(recent_scores) / len(recent_scores)) if recent_scores else 60
         else:
             interview_score = 20
 
@@ -334,9 +320,7 @@ class CareerCopilotService:
         target_role = ctx.get("target_role", "Software Engineer")
         ctx.get("skills", [])
 
-        pending_goals = [
-            g for g in goals if g.status in ("pending", "ACTIVE", "in_progress")
-        ]
+        pending_goals = [g for g in goals if g.status in ("pending", "ACTIVE", "in_progress")]
 
         # ── Priority 1: Target Role / Profile Setup ────────────────────────────
         if not profile or not profile.target_role:
@@ -419,11 +403,7 @@ class CareerCopilotService:
 
         # Select highest-priority pending goal
         priority_goal = next(
-            (
-                g
-                for g in pending_goals
-                if (g.priority or "").lower() in ("high", "urgent")
-            ),
+            (g for g in pending_goals if (g.priority or "").lower() in ("high", "urgent")),
             pending_goals[0],
         )
         if (priority_goal.progress or 0) < 50:
@@ -510,9 +490,7 @@ class CareerCopilotService:
     ) -> Dict[str, Any]:
         """Compares user's current skills against target role requirements with deterministic fallback."""
         ctx = self._gather_user_context(user_id)
-        target_role = target_role_override or ctx.get(
-            "target_role", "Software Engineer"
-        )
+        target_role = target_role_override or ctx.get("target_role", "Software Engineer")
 
         user_skills = ctx.get("skills", [])
         matched_role_key = next(
@@ -548,9 +526,7 @@ class CareerCopilotService:
             "gaps": gaps,
             "next_actions": next_actions,
             "resume_ready": bool(ctx.get("resume")),
-            "profile_stage": (
-                ctx.get("profile").career_stage if ctx.get("profile") else "Active"
-            ),
+            "profile_stage": (ctx.get("profile").career_stage if ctx.get("profile") else "Active"),
         }
 
     async def generate_career_roadmap(self, user_id: int) -> Dict[str, Any]:
@@ -559,9 +535,7 @@ class CareerCopilotService:
         target_role = ctx.get("target_role", "Software Engineer")
         gap_data = await self.analyze_skill_gap(user_id, target_role)
 
-        gaps = gap_data.get(
-            "gaps", ["Fundamentals", "Architecture", "Testing", "Deployment"]
-        )
+        gaps = gap_data.get("gaps", ["Fundamentals", "Architecture", "Testing", "Deployment"])
         weeks = []
         for i, gap in enumerate(gaps[:4], 1):
             weeks.append(

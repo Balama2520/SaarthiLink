@@ -53,9 +53,7 @@ class WorkspaceService:
         if not ws:
             raise HTTPException(status_code=404, detail="Workspace not found")
 
-        resumes, docs, notes, jobs = self.file_repo.get_workspace_items(
-            workspace_id, user_id
-        )
+        resumes, docs, notes, jobs = self.file_repo.get_workspace_items(workspace_id, user_id)
 
         context_parts = []
         for r in resumes:

@@ -54,9 +54,7 @@ class DiscoveryRepository:
     def get_consent_by_session(self, session_id: str) -> Optional[ConsentRecord]:
         return (
             self.db.query(ConsentRecord)
-            .filter(
-                ConsentRecord.session_id == session_id, ConsentRecord.status == "active"
-            )
+            .filter(ConsentRecord.session_id == session_id, ConsentRecord.status == "active")
             .first()
         )
 
@@ -96,9 +94,7 @@ class DiscoveryRepository:
             self.db.refresh(profile)
         return profile
 
-    def update_profile_status(
-        self, profile_id: str, status: str
-    ) -> Optional[UserDiscoveryProfile]:
+    def update_profile_status(self, profile_id: str, status: str) -> Optional[UserDiscoveryProfile]:
         profile = (
             self.db.query(UserDiscoveryProfile)
             .filter(UserDiscoveryProfile.id == profile_id)
@@ -111,9 +107,7 @@ class DiscoveryRepository:
         return profile
 
     # ── Intents ─────────────────────────────────────────────────────────────
-    def save_intents(
-        self, profile_id: str, intents_data: List[Dict[str, Any]]
-    ) -> List[UserIntent]:
+    def save_intents(self, profile_id: str, intents_data: List[Dict[str, Any]]) -> List[UserIntent]:
         # Delete existing intents for profile
         self.db.query(UserIntent).filter(UserIntent.profile_id == profile_id).delete()
         created = []
@@ -131,13 +125,9 @@ class DiscoveryRepository:
         return created
 
     # ── Career Challenges ───────────────────────────────────────────────────
-    def save_career_challenge(
-        self, profile_id: str, data: Dict[str, Any]
-    ) -> CareerChallenge:
+    def save_career_challenge(self, profile_id: str, data: Dict[str, Any]) -> CareerChallenge:
         challenge = (
-            self.db.query(CareerChallenge)
-            .filter(CareerChallenge.profile_id == profile_id)
-            .first()
+            self.db.query(CareerChallenge).filter(CareerChallenge.profile_id == profile_id).first()
         )
         if not challenge:
             challenge = CareerChallenge(profile_id=profile_id)
@@ -173,9 +163,7 @@ class DiscoveryRepository:
             )
             if existing:
                 existing.rating = item.get("rating", existing.rating)
-                existing.is_most_valuable = item.get(
-                    "is_most_valuable", existing.is_most_valuable
-                )
+                existing.is_most_valuable = item.get("is_most_valuable", existing.is_most_valuable)
                 existing.is_least_valuable = item.get(
                     "is_least_valuable", existing.is_least_valuable
                 )
@@ -202,14 +190,8 @@ class DiscoveryRepository:
         return res
 
     # ── Product Feedback ────────────────────────────────────────────────────
-    def save_product_feedback(
-        self, profile_id: str, data: Dict[str, Any]
-    ) -> ProductFeedback:
-        pf = (
-            self.db.query(ProductFeedback)
-            .filter(ProductFeedback.profile_id == profile_id)
-            .first()
-        )
+    def save_product_feedback(self, profile_id: str, data: Dict[str, Any]) -> ProductFeedback:
+        pf = self.db.query(ProductFeedback).filter(ProductFeedback.profile_id == profile_id).first()
         if not pf:
             pf = ProductFeedback(profile_id=profile_id)
             self.db.add(pf)
@@ -267,9 +249,7 @@ class DiscoveryRepository:
         self.db.refresh(cp)
         return cp
 
-    def create_hiring_signal(
-        self, company_profile_id: str, data: Dict[str, Any]
-    ) -> HiringSignal:
+    def create_hiring_signal(self, company_profile_id: str, data: Dict[str, Any]) -> HiringSignal:
         hs = HiringSignal(
             company_profile_id=company_profile_id,
             roles_hiring_for=data.get("roles_hiring_for"),
@@ -342,21 +322,15 @@ class DiscoveryRepository:
 
     # ── Admin Stats ─────────────────────────────────────────────────────────
     def get_discovery_stats(self) -> Dict[str, Any]:
-        total_profiles = (
-            self.db.query(func.count(UserDiscoveryProfile.id)).scalar() or 0
-        )
+        total_profiles = self.db.query(func.count(UserDiscoveryProfile.id)).scalar() or 0
         total_feedbacks = self.db.query(func.count(FeatureFeedback.id)).scalar() or 0
-        total_opportunities = (
-            self.db.query(func.count(OpportunitySignal.id)).scalar() or 0
-        )
+        total_opportunities = self.db.query(func.count(OpportunitySignal.id)).scalar() or 0
         total_contacts = self.db.query(func.count(ContactRequest.id)).scalar() or 0
         total_companies = self.db.query(func.count(CompanyProfile.id)).scalar() or 0
 
         # User type breakdown
         type_counts = (
-            self.db.query(
-                UserDiscoveryProfile.user_type, func.count(UserDiscoveryProfile.id)
-            )
+            self.db.query(UserDiscoveryProfile.user_type, func.count(UserDiscoveryProfile.id))
             .group_by(UserDiscoveryProfile.user_type)
             .all()
         )

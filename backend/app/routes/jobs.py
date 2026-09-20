@@ -84,13 +84,8 @@ def verify_ingestion_token(
     Evaluates explicit 'X-Saarthi-Ingest-Token' matching server environment records.
     Rejects unauthorized webhook callers with HTTP 401 Unauthorized.
     """
-    if (
-        not x_saarthi_ingest_token
-        or x_saarthi_ingest_token.strip() != INGEST_WEBHOOK_TOKEN
-    ):
-        logger.warning(
-            "UNAUTHORIZED INGESTION ATTEMPT: Invalid or missing X-Saarthi-Ingest-Token"
-        )
+    if not x_saarthi_ingest_token or x_saarthi_ingest_token.strip() != INGEST_WEBHOOK_TOKEN:
+        logger.warning("UNAUTHORIZED INGESTION ATTEMPT: Invalid or missing X-Saarthi-Ingest-Token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Ingestion Authentication Token (X-Saarthi-Ingest-Token)",
@@ -125,9 +120,7 @@ async def ingest_jobs(
             duplicate_count += 1
             continue
 
-        company = (
-            db.query(Company).filter(Company.name == job_data.company.strip()).first()
-        )
+        company = db.query(Company).filter(Company.name == job_data.company.strip()).first()
         if not company:
             company = Company(name=job_data.company.strip(), is_hiring=True)
             db.add(company)
@@ -184,12 +177,8 @@ async def ingest_jobs(
 )
 async def list_jobs(
     skip: int = Query(0, ge=0, description="Offset cursor"),
-    limit: int = Query(
-        20, ge=1, le=50, description="Page limit (Hard limit of 50 max)"
-    ),
-    query: Optional[str] = Query(
-        None, description="Search keyword (title, company, skills)"
-    ),
+    limit: int = Query(20, ge=1, le=50, description="Page limit (Hard limit of 50 max)"),
+    query: Optional[str] = Query(None, description="Search keyword (title, company, skills)"),
     location: Optional[str] = Query(None, description="Location filter"),
     experience: Optional[ExperienceLevelEnum] = Query(
         None, description="Rigid experience Enum filter"
@@ -203,9 +192,7 @@ async def list_jobs(
     # Enforce strict 50-item upper boundary
     safe_limit = min(limit, 50)
 
-    logger.info(
-        f"Job List Query: skip={skip}, limit={safe_limit} (requested {limit}), q={query}"
-    )
+    logger.info(f"Job List Query: skip={skip}, limit={safe_limit} (requested {limit}), q={query}")
 
     # Example query build
     return {

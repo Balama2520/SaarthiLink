@@ -44,11 +44,7 @@ class ResearchService:
             if filename.endswith(".pdf"):
                 reader = PdfReader(io.BytesIO(file_content))
                 text = "".join(
-                    [
-                        page.extract_text()
-                        for page in reader.pages
-                        if page.extract_text()
-                    ]
+                    [page.extract_text() for page in reader.pages if page.extract_text()]
                 )
             else:
                 text = file_content.decode("utf-8")
@@ -64,9 +60,7 @@ class ResearchService:
             clean = _strip_markdown_json(full_response)
             return json.loads(clean)
         except Exception:
-            logger.warning(
-                f"Using fallback research analysis for output: {full_response[:100]}"
-            )
+            logger.warning(f"Using fallback research analysis for output: {full_response[:100]}")
             return {
                 "summary": "This paper analyzes modern software and machine learning architectures.",
                 "explanation": "Presents empirical results, baseline benchmarking, and system optimization techniques.",

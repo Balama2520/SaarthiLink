@@ -47,15 +47,11 @@ class Settings(BaseSettings):
         "true",
         "yes",
     )
-    RATE_LIMIT_REQUESTS_PER_MINUTE: int = int(
-        os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "120")
-    )
+    RATE_LIMIT_REQUESTS_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "120"))
     RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 
     # Integrations & Communications
-    SAARTHI_CONTACT_EMAIL: str = os.getenv(
-        "SAARTHI_CONTACT_EMAIL", "saarthi.ai.team@gmail.com"
-    )
+    SAARTHI_CONTACT_EMAIL: str = os.getenv("SAARTHI_CONTACT_EMAIL", "saarthi.ai.team@gmail.com")
     HF_SPACE_ID: str = os.getenv("HF_SPACE_ID", "")
     HF_API_TOKEN: str = os.getenv("HF_API_TOKEN", "")
     HF_API_NAME: str = os.getenv("HF_API_NAME", "generate")
@@ -82,9 +78,7 @@ class Settings(BaseSettings):
     def model_post_init(self, __context) -> None:
         if self.ENVIRONMENT == "production":
             if len(self.SECRET_KEY) < 32:
-                raise ValueError(
-                    "SECRET_KEY must be at least 32 characters in production"
-                )
+                raise ValueError("SECRET_KEY must be at least 32 characters in production")
             if not self.ALLOWED_ORIGINS.strip():
                 raise ValueError(
                     "ALLOWED_ORIGINS must list explicit frontend origins in production"

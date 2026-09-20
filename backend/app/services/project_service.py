@@ -40,9 +40,7 @@ class ProjectService:
         )
 
         messages = [{"role": "user", "content": prompt}]
-        response_stream = AIGateway().generate_response_stream(
-            messages, personality="learning"
-        )
+        response_stream = AIGateway().generate_response_stream(messages, personality="learning")
 
         full_response = await _collect_stream(response_stream)
 
@@ -51,11 +49,7 @@ class ProjectService:
             parsed_data = json.loads(clean_json)
 
             # Save the capstone project to DB as the primary tracker
-            capstone = (
-                parsed_data.get("pipeline", [])[-1]
-                if parsed_data.get("pipeline")
-                else {}
-            )
+            capstone = parsed_data.get("pipeline", [])[-1] if parsed_data.get("pipeline") else {}
             if capstone and user_id != -1:
                 db_project = Project(
                     user_id=user_id,
@@ -68,9 +62,7 @@ class ProjectService:
             return parsed_data
 
         except Exception:
-            logger.warning(
-                f"Using fallback SkillForge pipeline for output: {full_response[:100]}"
-            )
+            logger.warning(f"Using fallback SkillForge pipeline for output: {full_response[:100]}")
             return {
                 "target_role": target_role,
                 "pipeline": [

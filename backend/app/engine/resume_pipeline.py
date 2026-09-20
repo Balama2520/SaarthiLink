@@ -51,9 +51,7 @@ class ResumeIntelligencePipeline:
         self.profile_sync = ProfileSyncService()
 
     # ── Stage 1: Validate ─────────────────────────────────────────────────────
-    def validate_file(
-        self, file_bytes: bytes, filename: str, content_type: str
-    ) -> None:
+    def validate_file(self, file_bytes: bytes, filename: str, content_type: str) -> None:
         """Validates size and extension. Raises HTTPException on failure."""
         if len(file_bytes) > self.MAX_SIZE_BYTES:
             logger.warning(
@@ -108,9 +106,7 @@ class ResumeIntelligencePipeline:
                             import PyPDF2
 
                             reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
-                            text = "\n".join(
-                                p.extract_text() or "" for p in reader.pages
-                            )
+                            text = "\n".join(p.extract_text() or "" for p in reader.pages)
                         except Exception:
                             text = ""
 
@@ -167,9 +163,7 @@ class ResumeIntelligencePipeline:
     async def analyze_with_ai(self, text: str, target_role: Optional[str]) -> dict:
         """Calls AI gateway, returns structured ATS analysis."""
         if not text.strip():
-            raise HTTPException(
-                status_code=400, detail="The document contains no readable text."
-            )
+            raise HTTPException(status_code=400, detail="The document contains no readable text.")
 
         word_count = len(text.split())
         prompt = f"""
@@ -211,9 +205,7 @@ Provide your analysis STRICTLY as a valid JSON object. Do NOT wrap in markdown c
         t0 = time.perf_counter()
         try:
             messages = [{"role": "user", "content": prompt}]
-            stream = self.ai_gateway.generate_response_stream(
-                messages, personality="career"
-            )
+            stream = self.ai_gateway.generate_response_stream(messages, personality="career")
             raw = await _collect_stream(stream)
             duration_ms = (time.perf_counter() - t0) * 1000
 
@@ -246,9 +238,7 @@ Provide your analysis STRICTLY as a valid JSON object. Do NOT wrap in markdown c
                 "Stage 3: AI analysis failed",
                 extra={"error": str(exc), "request_id": get_request_id()},
             )
-            raise HTTPException(
-                status_code=502, detail="AI analysis failed. Please try again."
-            )
+            raise HTTPException(status_code=502, detail="AI analysis failed. Please try again.")
 
     # ── Stage 4: Skill Normalization ──────────────────────────────────────────
     def normalize_skills(self, parsed_data: dict) -> dict:

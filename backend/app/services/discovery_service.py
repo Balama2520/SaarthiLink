@@ -156,9 +156,7 @@ class DiscoveryService:
 
         profile_id = None
         if session_id:
-            profile = self.repo.get_or_create_profile(
-                session_id=session_id, user_id=user_id
-            )
+            profile = self.repo.get_or_create_profile(session_id=session_id, user_id=user_id)
             profile_id = profile.id
 
         sig = self.repo.create_opportunity_signal(data, profile_id=profile_id)

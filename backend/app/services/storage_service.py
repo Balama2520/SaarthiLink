@@ -29,12 +29,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StorageResult:
     success: bool
-    storage_path: (
-        str  # bucket-relative object path, e.g. "resumes/user-42/resume-uuid.pdf"
-    )
-    reference: (
-        str  # opaque reference stored in Resume.file_path (never a local fs path)
-    )
+    storage_path: str  # bucket-relative object path, e.g. "resumes/user-42/resume-uuid.pdf"
+    reference: str  # opaque reference stored in Resume.file_path (never a local fs path)
     error: Optional[str] = None
 
 
@@ -126,11 +122,7 @@ class SupabaseStorageService:
                 res = client.upload(object_key, file_bytes)
 
             # Many versions return a requests.Response or dict-like
-            ok = (
-                getattr(res, "status_code", 200) < 300
-                if hasattr(res, "status_code")
-                else True
-            )
+            ok = getattr(res, "status_code", 200) < 300 if hasattr(res, "status_code") else True
             if not ok:
                 text = getattr(res, "text", str(res))[:200]
                 raise RuntimeError(f"storage upload returned non-2xx: {text}")
@@ -143,9 +135,7 @@ class SupabaseStorageService:
                 resume_id,
                 len(file_bytes),
             )
-            return StorageResult(
-                success=True, storage_path=object_key, reference=reference
-            )
+            return StorageResult(success=True, storage_path=object_key, reference=reference)
         except Exception as exc:
             logger.warning(
                 "Supabase Storage upload failed (non-fatal); Resume DB row still saved. "

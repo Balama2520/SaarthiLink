@@ -283,9 +283,7 @@ def submit_feature_rating(
     rating_str = str(payload.rating)
 
     # Lookup feature label from canonical list
-    feature_info = next(
-        (f for f in SAARTHI_34_FEATURES if f["id"] == payload.feature_id), None
-    )
+    feature_info = next((f for f in SAARTHI_34_FEATURES if f["id"] == payload.feature_id), None)
     if not feature_info:
         raise HTTPException(
             status_code=400,
