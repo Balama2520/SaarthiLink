@@ -1,9 +1,8 @@
 import json
 from datetime import datetime, timezone
-from typing import Dict, Any, List
+from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
 from app.database import get_db
 from app.models.models import UserProfile, User, UserSkill
@@ -13,7 +12,7 @@ from app.schemas.profile import (
     ProfileCompletenessResponse,
     ProfileSummaryResponse,
 )
-from app.core.dependencies.auth import get_current_user, require_authenticated_user
+from app.core.dependencies.auth import require_authenticated_user
 from app.services.career_copilot_service import CareerCopilotService
 
 router = APIRouter(prefix="/profile", tags=["profile"])
