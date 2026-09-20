@@ -6,7 +6,7 @@ Endpoints for submitting and retrieving 34-feature ratings and product feedback.
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -197,141 +197,101 @@ SAARTHI_34_FEATURES = [
     {
         "id": 29,
         "key": "project_showcase",
-        "label": "Project Showcase Builder",
+        "label": "Project & Coding Showcase Builder",
         "group": "Workspaces",
     },
     {
         "id": 30,
-        "key": "career_toolkit",
-        "label": "Career Utilities & Calculators",
+        "key": "team_sharing",
+        "label": "Peer Progress Sharing & Workspaces",
         "group": "Workspaces",
     },
-    # Group 7: Recruiter & Ecosystem (31-34)
+    # Group 7: Career Strategy & Extras (31-34)
     {
         "id": 31,
-        "key": "opportunity_submission",
-        "label": "Public Opportunity Signal Submissions",
-        "group": "Ecosystem",
+        "key": "company_decoding",
+        "label": "AI Company Strategy Decoder",
+        "group": "Career Toolkit",
     },
     {
         "id": 32,
-        "key": "company_hiring_portal",
-        "label": "Company Hiring Signal Portal",
-        "group": "Ecosystem",
+        "key": "outreach_templates",
+        "label": "Cold Outreach Cold-Email Generator",
+        "group": "Career Toolkit",
     },
     {
         "id": 33,
-        "key": "sheets_control_center",
-        "label": "Google Sheets Job Seeding Integration",
-        "group": "Ecosystem",
+        "key": "salary_negotiation",
+        "label": "Salary Guidance & Negotiation Script",
+        "group": "Career Toolkit",
     },
     {
         "id": 34,
-        "key": "admin_intelligence",
-        "label": "Admin Career Intelligence Dashboard",
-        "group": "Ecosystem",
+        "key": "daily_missions",
+        "label": "Daily Gamified Career Missions",
+        "group": "Career Toolkit",
     },
 ]
 
 
-from typing import Optional, Union
-
-# ── Schemas ──────────────────────────────────────────────────────────────────
-
-
-class FeatureRatingSubmission(BaseModel):
+class FeatureFeedbackSchema(BaseModel):
     feature_id: int
-    rating: Union[str, int] = Field(
-        ...,
-        description="not_useful | somewhat_useful | useful | very_useful | extremely_valuable | not_sure | 1..5",
-    )
+    rating: str = Field("useful", description="valuable | useful | neutral | bad")
     comment: Optional[str] = None
-    is_want_next: bool = False
 
 
-class ProductFeedbackSubmission(BaseModel):
-    message: Optional[str] = None
-    category: Optional[str] = None
-    what_you_like: Optional[str] = None
-    what_you_dislike: Optional[str] = None
-    what_feels_confusing: Optional[str] = None
-    wish_saarthi_could: Optional[str] = None
-    improve_immediately: Optional[str] = None
+class ProductFeedbackPayload(BaseModel):
+    session_id: Optional[str] = None
+    net_promoter_score: int = Field(..., ge=0, le=10)
+    primary_benefit: Optional[str] = None
+    missing_capabilities: Optional[str] = None
+    feature_feedbacks: List[FeatureFeedbackSchema] = []
 
 
-# ── Endpoints ────────────────────────────────────────────────────────────────
+@router.post("")
+def submit_feedback(
+    payload: ProductFeedbackPayload,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+):
+    """Submits multi-feature rating matrices and overall system reviews."""
+    session_id = payload.session_id or x_session_id or "anonymous_feedback"
+    user_id = current_user.id if current_user else None
+
+    # Normalise feature labels matching registry metadata schemas
+    registry_map = {f["id"]: f for f in SAARTHI_34_FEATURES}
+    feedbacks_processed = []
+
+    for item in payload.feature_feedbacks:
+        if item.feature_id in registry_map:
+            feat = registry_map[item.feature_id]
+            feedbacks_processed.append(
+                {
+                    "feature_id": item.feature_id,
+                    "feature_key": feat["key"],
+                    "feature_label": feat["label"],
+                    "rating": item.rating,
+                    "comment": item.comment,
+                }
+            )
+
+    data = {
+        "session_id": session_id,
+        "nps": payload.net_promoter_score,
+        "benefit": payload.primary_benefit,
+        "missing": payload.missing_capabilities,
+        "features": feedbacks_processed,
+    }
+
+    svc = DiscoveryService(db)
+    return svc.process_system_feedback(data, user_id=user_id)
 
 
 @router.get("/features")
-def list_features():
-    """Returns the canonical registry of all 34 Saarthi AI features."""
-    return {"features": SAARTHI_34_FEATURES, "total": len(SAARTHI_34_FEATURES)}
-
-
-@router.post("/feature")
-def submit_feature_rating(
-    payload: FeatureRatingSubmission,
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
-    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
-):
-    """
-    Rate a specific Saarthi AI feature by ID (1 to 34).
-    """
-    session_id = x_session_id or "anonymous_session"
-    user_id = current_user.id if current_user else None
-    rating_str = str(payload.rating)
-
-    # Lookup feature label from canonical list
-    feature_info = next((f for f in SAARTHI_34_FEATURES if f["id"] == payload.feature_id), None)
-    if not feature_info:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid feature_id {payload.feature_id}. Must be 1..34.",
-        )
-
-    svc = DiscoveryService(db)
-    profile = svc.repo.get_or_create_profile(session_id=session_id, user_id=user_id)
-    svc.repo.save_feature_feedbacks(
-        profile.id,
-        [
-            {
-                "feature_id": payload.feature_id,
-                "feature_key": feature_info["key"],
-                "feature_label": feature_info["label"],
-                "rating": rating_str,
-                "comment": payload.comment,
-                "is_want_next": payload.is_want_next,
-            }
-        ],
-    )
+def get_features_registry():
+    """Returns the canonical catalog of all 34 evaluation features."""
     return {
-        "status": "success",
-        "feature_id": payload.feature_id,
-        "rating": rating_str,
-        "message": f"Rating recorded for {feature_info['label']}.",
-    }
-
-
-@router.post("/product")
-def submit_product_feedback(
-    payload: ProductFeedbackSubmission,
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
-    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
-):
-    """Submit general product feedback."""
-    session_id = x_session_id or "anonymous_session"
-    user_id = current_user.id if current_user else None
-
-    dump = payload.model_dump()
-    if dump.get("message") and not dump.get("what_you_like"):
-        dump["what_you_like"] = dump["message"]
-
-    svc = DiscoveryService(db)
-    profile = svc.repo.get_or_create_profile(session_id=session_id, user_id=user_id)
-    svc.repo.save_product_feedback(profile.id, dump)
-    return {
-        "status": "success",
-        "message": "Thank you for your feedback! It will help shape the future of Saarthi AI.",
+        "total_registered": len(SAARTHI_34_FEATURES),
+        "features": SAARTHI_34_FEATURES,
     }

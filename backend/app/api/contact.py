@@ -6,7 +6,7 @@ the Saarthi AI team (saarthi.ai.team@gmail.com).
 """
 
 from fastapi import APIRouter, Depends, Header
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 from typing import Any, Optional
 from sqlalchemy.orm import Session
 
@@ -17,9 +17,6 @@ from app.models.models import User
 from app.core.config import get_settings
 
 router = APIRouter(prefix="/contact", tags=["contact"])
-
-
-from pydantic import BaseModel, EmailStr, Field, model_validator
 
 
 class ContactRequestSchema(BaseModel):
