@@ -50,7 +50,9 @@ class CompanyDecodeBody(BaseModel):
 
 
 @router.post("/company/decode")
-async def decode_company(body: CompanyDecodeBody, current_user: User = Depends(get_current_user)):
+async def decode_company(
+    body: CompanyDecodeBody, current_user: User = Depends(get_current_user)
+):
     return await _run_prompt("career/decode_company", company_name=body.company_name)
 
 
@@ -65,7 +67,9 @@ class CodingArenaBody(BaseModel):
 
 
 @router.post("/coding/arena")
-async def coding_arena(body: CodingArenaBody, current_user: User = Depends(get_current_user)):
+async def coding_arena(
+    body: CodingArenaBody, current_user: User = Depends(get_current_user)
+):
     return await _run_prompt(
         "career/coding_arena",
         problem_title=body.problem_title,
@@ -85,7 +89,9 @@ class NetworkBody(BaseModel):
 
 
 @router.post("/network/builder")
-async def network_builder(body: NetworkBody, current_user: User = Depends(get_current_user)):
+async def network_builder(
+    body: NetworkBody, current_user: User = Depends(get_current_user)
+):
     return await _run_prompt(
         "career/network_outreach",
         person_type=body.person_type,
@@ -103,8 +109,12 @@ class SalaryBody(BaseModel):
 
 
 @router.post("/salary/insight")
-async def salary_insight(body: SalaryBody, current_user: User = Depends(get_current_user)):
-    return await _run_prompt("career/salary_insight", role=body.role, location=body.location)
+async def salary_insight(
+    body: SalaryBody, current_user: User = Depends(get_current_user)
+):
+    return await _run_prompt(
+        "career/salary_insight", role=body.role, location=body.location
+    )
 
 
 # ── Global Path ───────────────────────────────────────────────────────────────
@@ -115,7 +125,9 @@ class GlobalPathBody(BaseModel):
 
 
 @router.post("/global/path")
-async def global_path(body: GlobalPathBody, current_user: User = Depends(get_current_user)):
+async def global_path(
+    body: GlobalPathBody, current_user: User = Depends(get_current_user)
+):
     return await _run_prompt("career/global_path", country=body.country)
 
 
@@ -185,7 +197,9 @@ class KeywordsBody(BaseModel):
 
 
 @router.post("/resume/keywords")
-async def optimize_keywords(body: KeywordsBody, current_user: User = Depends(get_current_user)):
+async def optimize_keywords(
+    body: KeywordsBody, current_user: User = Depends(get_current_user)
+):
     return await _run_prompt(
         "career/keywords", resume_text=body.resume_text, job_title=body.job_title
     )

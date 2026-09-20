@@ -30,17 +30,23 @@ class GeminiProvider(BaseProvider):
                 system_instruction = m.get("content", "")
             else:
                 role = "user" if m.get("role") == "user" else "model"
-                gemini_contents.append({"role": role, "parts": [{"text": m.get("content", "")}]})
+                gemini_contents.append(
+                    {"role": role, "parts": [{"text": m.get("content", "")}]}
+                )
 
         if not gemini_contents:
-            raise Exception("No user/assistant messages provided to Gemini (only system message).")
+            raise Exception(
+                "No user/assistant messages provided to Gemini (only system message)."
+            )
 
         gemini_model = settings.GEMINI_MODEL or "gemini-2.5-flash"
         gemini_url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
             f"{gemini_model}:streamGenerateContent?key={gemini_key}&alt=sse"
         )
-        logger.info("Gemini request: model=%s, messages=%d", gemini_model, len(gemini_contents))
+        logger.info(
+            "Gemini request: model=%s, messages=%d", gemini_model, len(gemini_contents)
+        )
         payload: dict = {"contents": gemini_contents}
         if system_instruction:
             payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
@@ -50,7 +56,9 @@ class GeminiProvider(BaseProvider):
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 async with httpx.AsyncClient(timeout=45.0) as client:
-                    async with client.stream("POST", gemini_url, json=payload) as response:
+                    async with client.stream(
+                        "POST", gemini_url, json=payload
+                    ) as response:
                         if response.status_code != 200:
                             error_msg = await response.aread()
                             error_str = (
@@ -58,7 +66,9 @@ class GeminiProvider(BaseProvider):
                                 if isinstance(error_msg, bytes)
                                 else str(error_msg)
                             )
-                            is_retryable = response.status_code in RETRYABLE_STATUS_CODES
+                            is_retryable = (
+                                response.status_code in RETRYABLE_STATUS_CODES
+                            )
 
                             if is_retryable and attempt < MAX_RETRIES:
                                 backoff = (1.5**attempt) + random.uniform(0.1, 0.4)
@@ -89,7 +99,11 @@ class GeminiProvider(BaseProvider):
                                 chunk = json.loads(line)
                                 candidates = chunk.get("candidates", [])
                                 if candidates:
-                                    parts = candidates[0].get("content", {}).get("parts", [])
+                                    parts = (
+                                        candidates[0]
+                                        .get("content", {})
+                                        .get("parts", [])
+                                    )
                                     for part in parts:
                                         text = part.get("text", "")
                                         if text:

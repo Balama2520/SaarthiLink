@@ -39,7 +39,11 @@ class AIGateway:
                 del copy_msg["timestamp"]
             processed_messages.append(copy_msg)
 
-        if image_data and processed_messages and processed_messages[-1]["role"] == "user":
+        if (
+            image_data
+            and processed_messages
+            and processed_messages[-1]["role"] == "user"
+        ):
             processed_messages[-1]["images"] = [image_data]
 
         # Prefer the configured Hugging Face Space when available, then try
@@ -58,7 +62,9 @@ class AIGateway:
         for provider_name, provider_model in providers:
             provider = self.router.get_provider(provider_name)
             try:
-                async for chunk in provider.generate_stream(processed_messages, provider_model):
+                async for chunk in provider.generate_stream(
+                    processed_messages, provider_model
+                ):
                     yield chunk
                 return
             except Exception as error:

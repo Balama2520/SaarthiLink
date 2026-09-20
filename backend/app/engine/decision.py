@@ -20,7 +20,9 @@ class DecisionEngine:
         content = f"{system_state}:{user_message}"
         return hashlib.sha256(content.encode()).hexdigest()
 
-    def evaluate(self, user_id: int, system_state: str, user_message: str) -> Dict[str, Any]:
+    def evaluate(
+        self, user_id: int, system_state: str, user_message: str
+    ) -> Dict[str, Any]:
         """
         Evaluates the aggregated system state and user message to decide the next action.
         """
@@ -47,12 +49,16 @@ class DecisionEngine:
 
         return decision
 
-    def _rule_based_evaluation(self, system_state: str, user_message: str) -> Dict[str, Any]:
+    def _rule_based_evaluation(
+        self, system_state: str, user_message: str
+    ) -> Dict[str, Any]:
         msg_lower = user_message.lower()
 
         # Heuristic 1: Explicit workflow advancement
         if "ACTIVE MULTI-MODULE WORKFLOW" in system_state:
-            if any(word in msg_lower for word in ["next", "continue", "ready", "resume"]):
+            if any(
+                word in msg_lower for word in ["next", "continue", "ready", "resume"]
+            ):
                 return {
                     "intent_category": "WORKFLOW_ADVANCE",
                     "reasoning": "User explicitly asked to advance the active workflow.",

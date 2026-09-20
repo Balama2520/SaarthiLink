@@ -64,7 +64,9 @@ def is_admin_user(current_user: User | GuestUser) -> bool:
 
     raw_admins = get_settings().ADMIN_USERNAMES
     configured_admins = {
-        username.strip().lower() for username in raw_admins.split(",") if username.strip()
+        username.strip().lower()
+        for username in raw_admins.split(",")
+        if username.strip()
     }
     user_name = (getattr(current_user, "username", None) or "").strip().lower()
     return user_name in configured_admins

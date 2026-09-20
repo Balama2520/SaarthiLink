@@ -33,7 +33,9 @@ _subscribers: Dict[str, List[Callable]] = {}
 def subscribe(event_type: str, handler: Callable):
     """Register an async event handler for a given domain event type."""
     _subscribers.setdefault(event_type, []).append(handler)
-    logger.debug(f"[EventBus] Registered handler for '{event_type}': {handler.__name__}")
+    logger.debug(
+        f"[EventBus] Registered handler for '{event_type}': {handler.__name__}"
+    )
 
 
 async def _dispatch(event_type: str, payload: dict):
@@ -46,7 +48,9 @@ async def _dispatch(event_type: str, payload: dict):
     for handler in handlers:
         try:
             await handler(payload)
-            logger.info(f"[EventBus] Handler '{handler.__name__}' processed '{event_type}'")
+            logger.info(
+                f"[EventBus] Handler '{handler.__name__}' processed '{event_type}'"
+            )
         except Exception as exc:
             logger.error(
                 f"[EventBus] Handler '{handler.__name__}' failed for '{event_type}': {exc}",
@@ -137,7 +141,9 @@ class OutboxWorker:
                     event.retry_count = (event.retry_count or 0) + 1
                     event.last_error = str(exc)[:1000]
                     event.status = (
-                        "DEAD_LETTER" if event.retry_count >= self._max_retries else "PENDING"
+                        "DEAD_LETTER"
+                        if event.retry_count >= self._max_retries
+                        else "PENDING"
                     )
                     if event.status == "DEAD_LETTER":
                         logger.error(

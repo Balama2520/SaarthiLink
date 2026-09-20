@@ -7,7 +7,6 @@ contact requests, and consent records.
 
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.models.models import (
     ConsentRecord,
@@ -17,11 +16,6 @@ from app.models.models import (
     FeatureFeedback,
     ProductFeedback,
     OpportunitySignal,
-    CompanyProfile,
-    HiringSignal,
-    JobSubmission,
-    ContactRequest,
-    FeedbackEvent,
 )
 
 
@@ -107,7 +101,9 @@ class DiscoveryRepository:
         return profile
 
     # ── Intents ─────────────────────────────────────────────────────────────
-    def save_intents(self, profile_id: str, intents_data: List[Dict[str, Any]]) -> List[UserIntent]:
+    def save_intents(
+        self, profile_id: str, intents_data: List[Dict[str, Any]]
+    ) -> List[UserIntent]:
         # Delete existing intents for profile
         self.db.query(UserIntent).filter(UserIntent.profile_id == profile_id).delete()
         created = []
@@ -219,127 +215,8 @@ class DiscoveryRepository:
             company=data.get("company"),
             role=data.get("role"),
             location=data.get("location"),
-            skills=data.get("skills"),
-            additional_context=data.get("additional_context"),
-            submitter_email=data.get("submitter_email"),
-            dedup_hash=data.get("dedup_hash"),
         )
         self.db.add(sig)
         self.db.commit()
         self.db.refresh(sig)
         return sig
-
-    # ── Company & Hiring ────────────────────────────────────────────────────
-    def create_company_profile(
-        self, data: Dict[str, Any], profile_id: Optional[str] = None
-    ) -> CompanyProfile:
-        cp = CompanyProfile(
-            profile_id=profile_id,
-            company_name=data.get("company_name"),
-            website=data.get("website"),
-            industry=data.get("industry"),
-            company_size=data.get("company_size"),
-            contact_name=data.get("contact_name"),
-            contact_role=data.get("contact_role"),
-            contact_email=data.get("contact_email"),
-            hiring_plans=data.get("hiring_plans"),
-        )
-        self.db.add(cp)
-        self.db.commit()
-        self.db.refresh(cp)
-        return cp
-
-    def create_hiring_signal(self, company_profile_id: str, data: Dict[str, Any]) -> HiringSignal:
-        hs = HiringSignal(
-            company_profile_id=company_profile_id,
-            roles_hiring_for=data.get("roles_hiring_for"),
-            skills_needed=data.get("skills_needed"),
-            experience_levels=data.get("experience_levels"),
-            biggest_hiring_challenge=data.get("biggest_hiring_challenge"),
-            interested_in_saarthi_hire=data.get("interested_in_saarthi_hire", False),
-        )
-        self.db.add(hs)
-        self.db.commit()
-        self.db.refresh(hs)
-        return hs
-
-    def create_job_submission(
-        self, data: Dict[str, Any], company_profile_id: Optional[str] = None
-    ) -> JobSubmission:
-        js = JobSubmission(
-            company_profile_id=company_profile_id,
-            title=data.get("title"),
-            jd_text=data.get("jd_text"),
-            apply_link=data.get("apply_link"),
-            location=data.get("location"),
-            salary_range=data.get("salary_range"),
-        )
-        self.db.add(js)
-        self.db.commit()
-        self.db.refresh(js)
-        return js
-
-    # ── Contact Request ─────────────────────────────────────────────────────
-    def create_contact_request(
-        self, data: Dict[str, Any], user_id: Optional[int] = None
-    ) -> ContactRequest:
-        cr = ContactRequest(
-            session_id=data.get("session_id"),
-            user_id=user_id,
-            name=data.get("name"),
-            email=data.get("email"),
-            role_type=data.get("role_type"),
-            message=data.get("message"),
-            reason=data.get("reason"),
-            category=data.get("category") or data.get("reason", "general"),
-            consent_given=data.get("consent_given", True),
-            target_email=data.get("target_email", "saarthi.ai.team@gmail.com"),
-        )
-        self.db.add(cr)
-        self.db.commit()
-        self.db.refresh(cr)
-        return cr
-
-    # ── Feedback Event ──────────────────────────────────────────────────────
-    def log_event(
-        self,
-        event_type: str,
-        entity_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        user_id: Optional[int] = None,
-        payload_json: Optional[str] = None,
-    ) -> FeedbackEvent:
-        evt = FeedbackEvent(
-            event_type=event_type,
-            entity_id=entity_id,
-            session_id=session_id,
-            user_id=user_id,
-            payload_json=payload_json,
-        )
-        self.db.add(evt)
-        self.db.commit()
-        return evt
-
-    # ── Admin Stats ─────────────────────────────────────────────────────────
-    def get_discovery_stats(self) -> Dict[str, Any]:
-        total_profiles = self.db.query(func.count(UserDiscoveryProfile.id)).scalar() or 0
-        total_feedbacks = self.db.query(func.count(FeatureFeedback.id)).scalar() or 0
-        total_opportunities = self.db.query(func.count(OpportunitySignal.id)).scalar() or 0
-        total_contacts = self.db.query(func.count(ContactRequest.id)).scalar() or 0
-        total_companies = self.db.query(func.count(CompanyProfile.id)).scalar() or 0
-
-        # User type breakdown
-        type_counts = (
-            self.db.query(UserDiscoveryProfile.user_type, func.count(UserDiscoveryProfile.id))
-            .group_by(UserDiscoveryProfile.user_type)
-            .all()
-        )
-
-        return {
-            "total_discovery_profiles": total_profiles,
-            "total_feature_feedbacks": total_feedbacks,
-            "total_opportunity_signals": total_opportunities,
-            "total_contact_requests": total_contacts,
-            "total_company_profiles": total_companies,
-            "user_type_breakdown": {t: c for t, c in type_counts if t},
-        }

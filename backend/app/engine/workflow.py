@@ -54,14 +54,18 @@ class WorkflowEngine:
         """
         Moves a workflow to the next step and merges context.
         """
-        workflow = self.db.query(WorkflowState).filter(WorkflowState.id == workflow_id).first()
+        workflow = (
+            self.db.query(WorkflowState).filter(WorkflowState.id == workflow_id).first()
+        )
         if not workflow:
             raise ValueError("Workflow not found")
 
         workflow.current_step = next_step
 
         # Merge context
-        current_context = json.loads(workflow.context_payload) if workflow.context_payload else {}
+        current_context = (
+            json.loads(workflow.context_payload) if workflow.context_payload else {}
+        )
         current_context.update(context_updates)
         workflow.context_payload = json.dumps(current_context)
 
@@ -74,7 +78,9 @@ class WorkflowEngine:
         """
         Marks a workflow as completed and emits an event.
         """
-        workflow = self.db.query(WorkflowState).filter(WorkflowState.id == workflow_id).first()
+        workflow = (
+            self.db.query(WorkflowState).filter(WorkflowState.id == workflow_id).first()
+        )
         if not workflow:
             raise ValueError("Workflow not found")
 
@@ -89,7 +95,9 @@ class WorkflowEngine:
                 "user_id": workflow.user_id,
                 "type": workflow.workflow_type,
                 "final_context": (
-                    json.loads(workflow.context_payload) if workflow.context_payload else {}
+                    json.loads(workflow.context_payload)
+                    if workflow.context_payload
+                    else {}
                 ),
             },
         )
@@ -110,7 +118,9 @@ class WorkflowEngine:
         """
         Resumes a suspended workflow.
         """
-        workflow = self.db.query(WorkflowState).filter(WorkflowState.id == workflow_id).first()
+        workflow = (
+            self.db.query(WorkflowState).filter(WorkflowState.id == workflow_id).first()
+        )
         if not workflow:
             raise ValueError("Workflow not found")
 

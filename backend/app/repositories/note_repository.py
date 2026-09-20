@@ -22,7 +22,11 @@ class NoteRepository:
         )
 
     def get_note(self, note_id: int, user_id: int) -> Optional[Note]:
-        return self.db.query(Note).filter(Note.id == note_id, Note.user_id == user_id).first()
+        return (
+            self.db.query(Note)
+            .filter(Note.id == note_id, Note.user_id == user_id)
+            .first()
+        )
 
     def delete(self, note: Note) -> None:
         self.db.delete(note)

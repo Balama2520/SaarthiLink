@@ -25,7 +25,9 @@ def _ensure_initialized() -> bool:
         chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
         collection = chroma_client.get_or_create_collection(name="saarthi_docs")
     except Exception as exc:
-        logger.error(f"Failed to initialize ChromaDB or SentenceTransformer in RAG: {exc}")
+        logger.error(
+            f"Failed to initialize ChromaDB or SentenceTransformer in RAG: {exc}"
+        )
         embedding_model = None
         collection = None
 
@@ -51,8 +53,12 @@ def index_text_content(file_id: str, filename: str, text_content: str) -> bool:
             ids = [f"{file_id}_chunk_{i}" for i in range(len(chunks))]
             metadatas = [{"file_id": file_id, "filename": filename} for _ in chunks]
 
-            collection.add(documents=chunks, embeddings=embeddings, metadatas=metadatas, ids=ids)
-            logger.info(f"RAG: Indexed {len(chunks)} chunks for {filename} -> {file_id}")
+            collection.add(
+                documents=chunks, embeddings=embeddings, metadatas=metadatas, ids=ids
+            )
+            logger.info(
+                f"RAG: Indexed {len(chunks)} chunks for {filename} -> {file_id}"
+            )
             return True
     except Exception as e:
         logger.error(f"RAG: Failed to index file {filename}: {e}")

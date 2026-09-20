@@ -37,7 +37,8 @@ class RoadmapService:
         for index, milestone in enumerate(milestones):
             milestone.setdefault(
                 "course_url",
-                "https://www.coursera.org/search?query=" + target_role.replace(" ", "%20"),
+                "https://www.coursera.org/search?query="
+                + target_role.replace(" ", "%20"),
             )
             milestone.setdefault(
                 "estimated_hours", max(4, duration_days // max(1, len(milestones)))
@@ -49,9 +50,13 @@ class RoadmapService:
             "milestones": milestones,
         }
 
-    async def generate_roadmap(self, user_id: int, target_role: str, duration_days: int) -> dict:
+    async def generate_roadmap(
+        self, user_id: int, target_role: str, duration_days: int
+    ) -> dict:
         if duration_days not in [30, 90]:
-            raise HTTPException(status_code=400, detail="Duration must be 30 or 90 days.")
+            raise HTTPException(
+                status_code=400, detail="Duration must be 30 or 90 days."
+            )
 
         prompt = PromptManager.load(
             "roadmap/generate", duration_days=duration_days, target_role=target_role
@@ -140,7 +145,9 @@ class RoadmapService:
             milestones[milestone_index].get("tasks", [])
         ):
             raise HTTPException(status_code=422, detail="Invalid roadmap task")
-        completed_ids = set(milestones[milestone_index].setdefault("completed_task_ids", []))
+        completed_ids = set(
+            milestones[milestone_index].setdefault("completed_task_ids", [])
+        )
         if completed:
             completed_ids.add(task_index)
         else:

@@ -122,7 +122,8 @@ def _sanitise_error(msg: str) -> str:
     """Strip credential fragments from error messages before logging."""
     lower = msg.lower()
     if any(
-        term in lower for term in ("private_key", "token", "client_email", "secret", "credential")
+        term in lower
+        for term in ("private_key", "token", "client_email", "secret", "credential")
     ):
         return "Authentication failed (credential error — check GOOGLE_SERVICE_ACCOUNT_JSON)"
     return msg[:200]
@@ -130,7 +131,9 @@ def _sanitise_error(msg: str) -> str:
 
 def _dedup_hash(company: str, title: str, location: str) -> str:
     """sha256 deduplication hash matching existing Job model logic."""
-    raw = f"{(company or '').lower()}:{(title or '').lower()}:{(location or '').lower()}"
+    raw = (
+        f"{(company or '').lower()}:{(title or '').lower()}:{(location or '').lower()}"
+    )
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
@@ -216,7 +219,8 @@ class GoogleSheetsService:
             from google.oauth2.service_account import Credentials
         except ImportError as exc:
             raise ImportError(
-                "Google Sheets dependencies not installed. " "Run: pip install gspread google-auth"
+                "Google Sheets dependencies not installed. "
+                "Run: pip install gspread google-auth"
             ) from exc
 
         try:
@@ -226,7 +230,9 @@ class GoogleSheetsService:
                 creds = Credentials.from_service_account_info(cred_info, scopes=SCOPES)
             else:
                 # It's a file path
-                creds = Credentials.from_service_account_file(cred_source, scopes=SCOPES)
+                creds = Credentials.from_service_account_file(
+                    cred_source, scopes=SCOPES
+                )
 
             gc = gspread.authorize(creds)
             self._client = gc.open_by_key(self._spreadsheet_id)
@@ -250,7 +256,9 @@ class GoogleSheetsService:
         try:
             return client.worksheet(tab_name)
         except Exception as exc:
-            raise SheetsServiceError(f"Worksheet '{tab_name}' not found: {exc}") from exc
+            raise SheetsServiceError(
+                f"Worksheet '{tab_name}' not found: {exc}"
+            ) from exc
 
     def _assert_write_allowed(self, tab_key: str) -> None:
         """Raise SheetsWriteProtectedError if tab is not write-allowed."""
@@ -295,7 +303,11 @@ class GoogleSheetsService:
                 results[name] = "FOUND"
             except Exception as exc:
                 err_str = str(exc).lower()
-                if "not found" in err_str or "no sheet" in err_str or "worksheet" in err_str:
+                if (
+                    "not found" in err_str
+                    or "no sheet" in err_str
+                    or "worksheet" in err_str
+                ):
                     results[name] = "NOT_FOUND"
                 else:
                     results[name] = "ACCESS_ERROR"
@@ -355,7 +367,12 @@ class GoogleSheetsService:
         rows = self.read_tab("dashboard")
         metrics: Dict[str, Any] = {}
         for row in rows:
-            key = row.get("Metric") or row.get("metric") or row.get("Key") or row.get("key")
+            key = (
+                row.get("Metric")
+                or row.get("metric")
+                or row.get("Key")
+                or row.get("key")
+            )
             val = row.get("Value") or row.get("value")
             if key:
                 metrics[str(key)] = val
@@ -574,14 +591,17 @@ class SeedingPipeline:
                 "server_error": 0,
                 "skipped": len(jobs),
                 "results": [
-                    {"job": j.get("title", "?"), "status": SYNC_STATUS_DRY_RUN} for j in jobs
+                    {"job": j.get("title", "?"), "status": SYNC_STATUS_DRY_RUN}
+                    for j in jobs
                 ],
             }
 
         try:
             import httpx
         except ImportError as exc:
-            raise ImportError("httpx is required for backend sync. Run: pip install httpx") from exc
+            raise ImportError(
+                "httpx is required for backend sync. Run: pip install httpx"
+            ) from exc
 
         summary = {
             "dry_run": False,
@@ -677,7 +697,9 @@ class SeedingPipeline:
                     return  # Continue remaining jobs
 
                 elif code == 429:
-                    retry_after = float(resp.headers.get("Retry-After", BASE_BACKOFF_SECONDS))
+                    retry_after = float(
+                        resp.headers.get("Retry-After", BASE_BACKOFF_SECONDS)
+                    )
                     wait = retry_after if retries == 0 else retry_after * (2**retries)
                     logger.warning(
                         "Rate limited (429). Waiting %.1fs before retry %d.",
@@ -783,7 +805,9 @@ class SeedingPipeline:
         try:
             self.sheets.append_seed_run(seed_run_row)
         except Exception as exc:
-            logger.warning("Could not write seed run log: %s", _sanitise_error(str(exc)))
+            logger.warning(
+                "Could not write seed run log: %s", _sanitise_error(str(exc))
+            )
 
         # 11_SYNC_LOGS individual job rows
         for result in summary.get("results", []):
@@ -798,7 +822,9 @@ class SeedingPipeline:
             try:
                 self.sheets.append_sync_log(log_row)
             except Exception as exc:
-                logger.warning("Could not write sync log: %s", _sanitise_error(str(exc)))
+                logger.warning(
+                    "Could not write sync log: %s", _sanitise_error(str(exc))
+                )
 
     def log_source_error(self, source: str, error: str, run_id: str = "") -> None:
         """Write an error entry to 12_SOURCE_ERRORS."""
@@ -811,7 +837,9 @@ class SeedingPipeline:
         try:
             self.sheets.append_source_error(row)
         except Exception as exc:
-            logger.warning("Could not write source error: %s", _sanitise_error(str(exc)))
+            logger.warning(
+                "Could not write source error: %s", _sanitise_error(str(exc))
+            )
 
     # ── Full pipeline run ───────────────────────────────────────────────────
 

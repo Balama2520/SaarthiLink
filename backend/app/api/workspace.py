@@ -78,12 +78,16 @@ def get_workspace_items(
     db: Session = Depends(get_db),
 ):
     file_repo = WorkspaceFileRepository(db)
-    resumes, docs, notes, jobs = file_repo.get_workspace_items(workspace_id, current_user.id)
+    resumes, docs, notes, jobs = file_repo.get_workspace_items(
+        workspace_id, current_user.id
+    )
     return {
         "resumes": [{"id": r.id, "filename": r.filename} for r in resumes],
         "docs": [{"id": d.id, "filename": d.filename} for d in docs],
         "notes": [{"id": n.id, "title": n.title} for n in notes],
-        "jobs": [{"id": j.id, "job_title": j.job_title, "company": j.company} for j in jobs],
+        "jobs": [
+            {"id": j.id, "job_title": j.job_title, "company": j.company} for j in jobs
+        ],
     }
 
 

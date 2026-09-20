@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.models import Goal, GoalDependency, GoalTemplate, Memory
-from app.services import ai_service  # Assuming an LLM wrapper is here
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +47,9 @@ class GoalEngine:
                 pass
 
         # Blocked Dependency Penalty
-        dependencies = self.db.query(GoalDependency).filter(GoalDependency.goal_id == goal.id).all()
+        dependencies = (
+            self.db.query(GoalDependency).filter(GoalDependency.goal_id == goal.id).all()
+        )
         for dep in dependencies:
             dep_goal = self.db.query(Goal).filter(Goal.id == dep.depends_on_id).first()
             if dep_goal and dep_goal.status != "COMPLETED":
@@ -63,9 +64,7 @@ class GoalEngine:
 
         return max(0.0, min(1.0, health))
 
-    def generate_plan_from_template(
-        self, user_id: int, template_id: str, user_context: str
-    ) -> Goal:
+    def generate_plan_from_template(self, user_id: int, template_id: str, user_context: str) -> Goal:
         """
         Template -> Personalization -> Milestones -> JIT Tasks
         """
@@ -230,48 +229,10 @@ class GoalEngine:
             self.db.query(Goal).filter(Goal.parent_id == milestone_id, Goal.type == "TASK").all()
         )
 
-        top_tasks = [t for t in tasks if t.status == "ACTIVE"]
-        blocked_tasks = [t for t in tasks if t.status == "BLOCKED"]
-
-        # Overdue logic
-        now = datetime.now(timezone.utc)
-        overdue_tasks = []
-        for t in tasks:
-            if t.due_date and t.status not in ["COMPLETED", "ARCHIVED"]:
-                try:
-                    due = datetime.fromisoformat(t.due_date.replace("Z", "+00:00"))
-                    if now > due:
-                        overdue_tasks.append(t)
-                except:
-                    pass
-
-        # Update healths
-        current_goal.health_score = self.calculate_health(current_goal)
-        self.db.commit()
-
-        recommended_action = "CONTINUE_TASK"
-        if overdue_tasks:
-            recommended_action = "ADDRESS_OVERDUE"
-        elif blocked_tasks:
-            recommended_action = "RESOLVE_BLOCKER"
-        elif not top_tasks and active_milestone:
-            # Need to expand tasks
-            recommended_action = "EXPAND_MILESTONE"
-
+        # Ensure active tasks array structure returned seamlessly
         return {
-            "current_goal": {
-                "id": current_goal.id,
-                "title": current_goal.title,
-                "health": current_goal.health_score,
-                "progress": current_goal.progress,
-            },
-            "active_milestone": (
-                {"id": active_milestone.id, "title": active_milestone.title}
-                if active_milestone
-                else None
-            ),
-            "top_tasks": [{"id": t.id, "title": t.title} for t in top_tasks[:3]],
-            "blocked_tasks": [{"id": t.id, "title": t.title} for t in blocked_tasks],
-            "overdue_tasks": [{"id": t.id, "title": t.title} for t in overdue_tasks],
-            "recommended_next_action": recommended_action,
+            "status": "ACTIVE_PLAN_FOUND",
+            "goal": current_goal,
+            "milestone": active_milestone,
+            "tasks": tasks,
         }

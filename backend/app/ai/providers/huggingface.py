@@ -123,10 +123,16 @@ class HuggingFaceSaarthiBrain(BaseProvider):
                     if resp.status_code == 200:
                         body = resp.json()
                         if body.get("data"):
-                            return str(body["data"][0]) if body["data"][0] is not None else ""
+                            return (
+                                str(body["data"][0])
+                                if body["data"][0] is not None
+                                else ""
+                            )
                         event_id = body.get("event_id")
                         if not event_id:
-                            raise RuntimeError("HF Space event API did not return an event_id")
+                            raise RuntimeError(
+                                "HF Space event API did not return an event_id"
+                            )
                         async with client.stream(
                             "GET",
                             f"{base_url}/gradio_api/call/{self._get_api_name()}/{event_id}",
@@ -149,7 +155,9 @@ class HuggingFaceSaarthiBrain(BaseProvider):
                                     continue
                                 if isinstance(values, list):
                                     result_parts.extend(
-                                        str(value) for value in values if value is not None
+                                        str(value)
+                                        for value in values
+                                        if value is not None
                                     )
                             if result_parts:
                                 return result_parts[-1]
@@ -193,7 +201,9 @@ class HuggingFaceSaarthiBrain(BaseProvider):
                         await asyncio.sleep(backoff)
                         continue
 
-                    raise RuntimeError(f"HF Space returned HTTP {resp.status_code}: {error_text}")
+                    raise RuntimeError(
+                        f"HF Space returned HTTP {resp.status_code}: {error_text}"
+                    )
 
             except (PermissionError, RuntimeError):
                 raise

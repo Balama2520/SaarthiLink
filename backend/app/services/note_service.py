@@ -36,7 +36,9 @@ class NoteService:
         prompt = PromptManager.load("notes/generate_note", topic=topic, depth=depth)
 
         messages = [{"role": "user", "content": prompt}]
-        response_stream = AIGateway().generate_response_stream(messages, personality="learning")
+        response_stream = AIGateway().generate_response_stream(
+            messages, personality="learning"
+        )
         full_response = await _collect_stream(response_stream)
 
         try:

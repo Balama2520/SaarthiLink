@@ -31,7 +31,9 @@ class WorkingMemoryEngine:
             # 1. Recency Score (Decays over time, but slowly)
             # Days since updated
             age_days = (
-                (now - mem.updated_at.replace(tzinfo=timezone.utc)).days if mem.updated_at else 0
+                (now - mem.updated_at.replace(tzinfo=timezone.utc)).days
+                if mem.updated_at
+                else 0
             )
             recency_score = max(0, 1.0 - (age_days / 365.0))  # 0.0 to 1.0
 
@@ -46,7 +48,9 @@ class WorkingMemoryEngine:
             relevance_score = 0.5  # Base relevance
             if query_context:
                 query_words = set(query_context.lower().split())
-                mem_words = set(f"{mem.subject} {mem.value} {mem.category}".lower().split())
+                mem_words = set(
+                    f"{mem.subject} {mem.value} {mem.category}".lower().split()
+                )
                 overlap = len(query_words.intersection(mem_words))
                 relevance_score = min(1.0, 0.5 + (overlap * 0.1))
 
@@ -76,7 +80,9 @@ class WorkingMemoryEngine:
         Constructs the optimal working context for the AI request.
         """
         # 1. Fetch User Profile
-        profile = self.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        profile = (
+            self.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        )
         profile_str = ""
         if profile:
             profile_str = f"User: {profile.headline} targeting {profile.target_role}.\nBackground: {profile.background_summary}"
@@ -92,7 +98,9 @@ class WorkingMemoryEngine:
         if not top_memories:
             memories_str += "No historical memory found for this user.\n"
         for mem in top_memories:
-            memories_str += f"[{mem.type}] ({mem.category}) {mem.subject}: {mem.value}\n"
+            memories_str += (
+                f"[{mem.type}] ({mem.category}) {mem.subject}: {mem.value}\n"
+            )
 
         # 3. Incorporate UI State Context
         ui_str = "--- CURRENT UI CONTEXT ---\n"

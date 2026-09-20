@@ -127,7 +127,9 @@ class InterviewService:
             return parsed_data
 
         except Exception:
-            logger.warning(f"Using fallback interview evaluation for output: {full_text[:100]}")
+            logger.warning(
+                f"Using fallback interview evaluation for output: {full_text[:100]}"
+            )
             return {
                 "score": 78,
                 "strengths": [

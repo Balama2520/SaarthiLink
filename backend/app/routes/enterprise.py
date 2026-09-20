@@ -17,7 +17,9 @@ router = APIRouter(prefix="/enterprise", tags=["Back-Channel Enterprise Module"]
 
 class EnterpriseOrgRegister(BaseModel):
     organization_name: str = Field(..., min_length=2, max_length=150)
-    domain: str = Field(..., description="Corporate/Institutional domain, e.g. company.com")
+    domain: str = Field(
+        ..., description="Corporate/Institutional domain, e.g. company.com"
+    )
     contact_email: str = Field(..., description="Primary administrator contact email")
     cohort_size: int = Field(50, ge=1, le=10000)
 

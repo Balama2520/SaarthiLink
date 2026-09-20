@@ -23,7 +23,9 @@ def router_node(state: AgentState):
         return {"next_agent": "career"}
     elif any(keyword in last_message for keyword in ["interview", "mock", "question"]):
         return {"next_agent": "interview"}
-    elif any(keyword in last_message for keyword in ["learn", "roadmap", "study", "guide"]):
+    elif any(
+        keyword in last_message for keyword in ["learn", "roadmap", "study", "guide"]
+    ):
         return {"next_agent": "learning"}
     else:
         return {"next_agent": "default"}

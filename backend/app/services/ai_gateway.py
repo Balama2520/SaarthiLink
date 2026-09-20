@@ -17,7 +17,9 @@ logger = logging.getLogger("saarthi.ai_gateway")
 settings = get_settings()
 
 # Environment settings
-GEMINI_API_KEY = getattr(settings, "GEMINI_API_KEY", None) or os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = getattr(settings, "GEMINI_API_KEY", None) or os.getenv(
+    "GEMINI_API_KEY"
+)
 HF_API_KEY = getattr(settings, "HF_API_KEY", None) or os.getenv("HF_API_KEY")
 HF_MODEL_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-3B-Instruct"
 
@@ -67,7 +69,9 @@ class AIGatewayService:
         # Try Gemini API first if configured
         if self.gemini_key:
             try:
-                return await self._call_gemini_api(prompt, truncated_history, system_instruction)
+                return await self._call_gemini_api(
+                    prompt, truncated_history, system_instruction
+                )
             except Exception as exc:
                 logger.warning(
                     f"Gemini API invocation failed or timed out: {exc}. Falling back to Hugging Face Qwen."
@@ -75,7 +79,9 @@ class AIGatewayService:
 
         # Fallback to Hugging Face (Qwen2.5-3B-Instruct)
         try:
-            return await self._call_huggingface_qwen(prompt, truncated_history, system_instruction)
+            return await self._call_huggingface_qwen(
+                prompt, truncated_history, system_instruction
+            )
         except Exception as exc:
             logger.error(f"Hugging Face Inference invocation failed: {exc}")
             # Graceful degraded fallback
@@ -156,8 +162,12 @@ class AIGatewayService:
         formatted_messages = f"<|im_start|>system\n{system_instruction}<|im_end|>\n"
         for msg in chat_history:
             role = msg.get("role", "user")
-            formatted_messages += f"<|im_start|>{role}\n{msg.get('content', '')}<|im_end|>\n"
-        formatted_messages += f"<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
+            formatted_messages += (
+                f"<|im_start|>{role}\n{msg.get('content', '')}<|im_end|>\n"
+            )
+        formatted_messages += (
+            f"<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
+        )
 
         payload = {
             "inputs": formatted_messages,

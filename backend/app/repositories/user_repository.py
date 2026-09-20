@@ -30,7 +30,9 @@ class UserRepository:
         return refresh_token
 
     def get_refresh_token(self, token: str) -> Optional[RefreshToken]:
-        db_token = self.db.query(RefreshToken).filter(RefreshToken.token == token).first()
+        db_token = (
+            self.db.query(RefreshToken).filter(RefreshToken.token == token).first()
+        )
         if db_token and db_token.expires_at is not None:
             # SQLite stores datetimes without timezone info.
             # Make expires_at timezone-aware so comparison with
@@ -40,7 +42,9 @@ class UserRepository:
         return db_token
 
     def delete_refresh_token(self, token: str) -> None:
-        db_token = self.db.query(RefreshToken).filter(RefreshToken.token == token).first()
+        db_token = (
+            self.db.query(RefreshToken).filter(RefreshToken.token == token).first()
+        )
         if db_token:
             self.db.delete(db_token)
             self.db.commit()

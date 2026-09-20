@@ -57,7 +57,11 @@ class JobsService:
         import json
 
         # 1. Fetch user profile preferences
-        profile = self.repo.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        profile = (
+            self.repo.db.query(UserProfile)
+            .filter(UserProfile.user_id == user_id)
+            .first()
+        )
         pref_locations = set()
         work_prefs = set()
         if profile:
@@ -65,7 +69,9 @@ class JobsService:
                 if profile.preferred_locations_json:
                     pref_locations = set(json.loads(profile.preferred_locations_json))
                 if profile.work_preferences_json:
-                    work_prefs = set([p.lower() for p in json.loads(profile.work_preferences_json)])
+                    work_prefs = set(
+                        [p.lower() for p in json.loads(profile.work_preferences_json)]
+                    )
             except:
                 pass
 
@@ -82,7 +88,9 @@ class JobsService:
             # Filter by work preferences if strictly specified
             job_remote = job.remote_type.lower() if job.remote_type else ""
             if work_prefs and (
-                "remote" in work_prefs or "hybrid" in work_prefs or "onsite" in work_prefs
+                "remote" in work_prefs
+                or "hybrid" in work_prefs
+                or "onsite" in work_prefs
             ):
                 # Basic preference check (soft filter, we'll just penalize score if mismatch)
                 pass
@@ -205,4 +213,6 @@ class JobsService:
 
         except json.JSONDecodeError:
             logger.error(f"Failed to decode LLM JSON. Raw output: {full_text}")
-            raise HTTPException(status_code=500, detail="Failed to match job. Please try again.")
+            raise HTTPException(
+                status_code=500, detail="Failed to match job. Please try again."
+            )

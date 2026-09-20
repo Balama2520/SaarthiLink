@@ -8,7 +8,9 @@ class WorkspaceFileService:
         self.repo = repo
         self.file_repo = file_repo
 
-    def link_item(self, workspace_id: str, item_type: str, item_id: str, user_id: int) -> dict:
+    def link_item(
+        self, workspace_id: str, item_type: str, item_id: str, user_id: int
+    ) -> dict:
         ws = self.repo.get_by_id_and_user(workspace_id, user_id)
         if not ws:
             raise HTTPException(status_code=404, detail="Workspace not found")
@@ -40,13 +42,17 @@ class WorkspaceFileService:
         return {"status": "linked"}
 
     def get_workspace_items(self, workspace_id: str, user_id: int) -> dict:
-        resumes, docs, notes, jobs = self.file_repo.get_workspace_items(workspace_id, user_id)
+        resumes, docs, notes, jobs = self.file_repo.get_workspace_items(
+            workspace_id, user_id
+        )
         return {
             "resumes": [
-                {"id": r.id, "filename": r.filename, "ats_score": r.ats_score} for r in resumes
+                {"id": r.id, "filename": r.filename, "ats_score": r.ats_score}
+                for r in resumes
             ],
             "documents": [
-                {"id": d.id, "filename": d.filename, "status": d.processed_status} for d in docs
+                {"id": d.id, "filename": d.filename, "status": d.processed_status}
+                for d in docs
             ],
             "notes": [{"id": n.id, "title": n.title, "tags": n.tags} for n in notes],
             "jobs": [
@@ -64,10 +70,12 @@ class WorkspaceFileService:
         resumes, docs, notes, jobs = self.file_repo.get_unlinked_items(user_id)
         return {
             "resumes": [
-                {"id": r.id, "filename": r.filename, "ats_score": r.ats_score} for r in resumes
+                {"id": r.id, "filename": r.filename, "ats_score": r.ats_score}
+                for r in resumes
             ],
             "documents": [
-                {"id": d.id, "filename": d.filename, "status": d.processed_status} for d in docs
+                {"id": d.id, "filename": d.filename, "status": d.processed_status}
+                for d in docs
             ],
             "notes": [{"id": n.id, "title": n.title, "tags": n.tags} for n in notes],
             "jobs": [

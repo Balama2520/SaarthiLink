@@ -24,7 +24,9 @@ class RedisMemory:
             )
             logger.info("Redis client configured; availability will be checked on use.")
         except Exception as e:
-            logger.warning(f"Redis not available: {e}. Falling back to DB for short-term memory.")
+            logger.warning(
+                f"Redis not available: {e}. Falling back to DB for short-term memory."
+            )
             self.client = None
 
     def save_session_context(self, session_id: str, context: list):

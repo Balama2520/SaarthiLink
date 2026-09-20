@@ -34,7 +34,9 @@ class ResumeService:
         self, user_id: int, text: str, filename: str, target_role: str | None
     ) -> dict:
         if not text.strip():
-            raise HTTPException(status_code=400, detail="The document contains no readable text.")
+            raise HTTPException(
+                status_code=400, detail="The document contains no readable text."
+            )
 
         word_count = len(text.split())
 
@@ -63,7 +65,9 @@ Provide your analysis STRICTLY as a valid JSON object matching this structure. D
 }}
 """
         messages = [{"role": "user", "content": prompt}]
-        response_stream = AIGateway().generate_response_stream(messages, personality="career")
+        response_stream = AIGateway().generate_response_stream(
+            messages, personality="career"
+        )
         full_text = await _collect_stream(response_stream)
 
         try:

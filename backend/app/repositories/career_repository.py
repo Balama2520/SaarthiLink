@@ -61,7 +61,9 @@ class CareerRepository:
         )
         return applications, interviews, self.get_latest_resume(user_id)
 
-    def get_mission_by_date(self, user_id: int, date_str: str) -> Optional[DailyMission]:
+    def get_mission_by_date(
+        self, user_id: int, date_str: str
+    ) -> Optional[DailyMission]:
         return (
             self.db.query(DailyMission)
             .filter(DailyMission.user_id == user_id, DailyMission.date == date_str)

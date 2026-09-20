@@ -15,7 +15,9 @@ class RoadmapRepository:
     def get_for_user(self, roadmap_id: str, user_id: int) -> LearningRoadmap | None:
         return (
             self.db.query(LearningRoadmap)
-            .filter(LearningRoadmap.id == roadmap_id, LearningRoadmap.user_id == user_id)
+            .filter(
+                LearningRoadmap.id == roadmap_id, LearningRoadmap.user_id == user_id
+            )
             .first()
         )
 

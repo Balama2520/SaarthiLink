@@ -56,7 +56,9 @@ class GoalService:
         )
         return self.repo.save(goal)
 
-    def add_milestone(self, goal_id: str, milestone_in: MilestoneCreate, user_id: int) -> Goal:
+    def add_milestone(
+        self, goal_id: str, milestone_in: MilestoneCreate, user_id: int
+    ) -> Goal:
         goal = self.get_goal(goal_id, user_id)
         milestone = Goal(
             user_id=user_id,
@@ -72,7 +74,9 @@ class GoalService:
     def add_task(self, milestone_id: str, task_in: TaskCreate, user_id: int) -> Goal:
         milestone = self.get_goal(milestone_id, user_id)
         if milestone.type != "MILESTONE":
-            raise HTTPException(status_code=400, detail="Tasks must belong to a Milestone")
+            raise HTTPException(
+                status_code=400, detail="Tasks must belong to a Milestone"
+            )
 
         task = Goal(
             user_id=user_id,
@@ -150,7 +154,9 @@ class GoalService:
     def _recalculate_parent_progress(self, parent_id: str, user_id: int) -> None:
         """Derive parent progress from child completion rather than stale manual values."""
         parent = self.get_goal(parent_id, user_id)
-        children = [child for child in parent.children if child.type in ("TASK", "MILESTONE")]
+        children = [
+            child for child in parent.children if child.type in ("TASK", "MILESTONE")
+        ]
         if not children:
             return
         completed = sum(child.status.lower() == "completed" for child in children)
