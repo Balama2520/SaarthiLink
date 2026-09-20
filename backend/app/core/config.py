@@ -6,6 +6,7 @@ from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
+
 class Settings(BaseSettings):
     # App Info
     APP_NAME: str = "Saarthi AI"
@@ -19,7 +20,10 @@ class Settings(BaseSettings):
     PORT: int = 2520
 
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'saarthi.db')}")
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        f"sqlite:///{os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'saarthi.db')}",
+    )
     REDIS_URL: str = os.getenv("REDIS_URL", "")
 
     # Security
@@ -33,15 +37,25 @@ class Settings(BaseSettings):
     ADMIN_USERNAMES: str = os.getenv("ADMIN_USERNAMES", "")
 
     # CORS Configuration
-    ALLOWED_ORIGINS: str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+    ALLOWED_ORIGINS: str = os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"
+    )
 
     # Rate limiting
-    RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() in ("1", "true", "yes")
-    RATE_LIMIT_REQUESTS_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "120"))
+    RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    RATE_LIMIT_REQUESTS_PER_MINUTE: int = int(
+        os.getenv("RATE_LIMIT_REQUESTS_PER_MINUTE", "120")
+    )
     RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 
     # Integrations & Communications
-    SAARTHI_CONTACT_EMAIL: str = os.getenv("SAARTHI_CONTACT_EMAIL", "saarthi.ai.team@gmail.com")
+    SAARTHI_CONTACT_EMAIL: str = os.getenv(
+        "SAARTHI_CONTACT_EMAIL", "saarthi.ai.team@gmail.com"
+    )
     HF_SPACE_ID: str = os.getenv("HF_SPACE_ID", "")
     HF_API_TOKEN: str = os.getenv("HF_API_TOKEN", "")
     HF_API_NAME: str = os.getenv("HF_API_NAME", "generate")
@@ -51,11 +65,13 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
     STORAGE_BUCKET: str = os.getenv("STORAGE_BUCKET", "resumes")
 
-    @field_validator('SECRET_KEY')
+    @field_validator("SECRET_KEY")
     @classmethod
     def validate_secret_key(cls, v):
         if not v:
-            logger.warning("SECRET_KEY is not configured; authentication is unavailable until it is set.")
+            logger.warning(
+                "SECRET_KEY is not configured; authentication is unavailable until it is set."
+            )
         return v
 
     @field_validator("ENVIRONMENT")
@@ -66,9 +82,13 @@ class Settings(BaseSettings):
     def model_post_init(self, __context) -> None:
         if self.ENVIRONMENT == "production":
             if len(self.SECRET_KEY) < 32:
-                raise ValueError("SECRET_KEY must be at least 32 characters in production")
+                raise ValueError(
+                    "SECRET_KEY must be at least 32 characters in production"
+                )
             if not self.ALLOWED_ORIGINS.strip():
-                raise ValueError("ALLOWED_ORIGINS must list explicit frontend origins in production")
+                raise ValueError(
+                    "ALLOWED_ORIGINS must list explicit frontend origins in production"
+                )
 
     # AI Engine — Ollama (primary) with Gemini fallback
     OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
