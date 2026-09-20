@@ -26,4 +26,6 @@ async def generate_pipeline(
     current_user: User = Depends(get_current_user),
     svc: ProjectService = Depends(_get_service),
 ):
-    return await svc.generate_skillforge_pipeline(current_user.id, body.target_role, body.current_skills)
+    return await svc.generate_skillforge_pipeline(
+        current_user.id, body.target_role, body.current_skills
+    )

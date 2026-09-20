@@ -3,6 +3,7 @@ End-to-end integration tests for the Saarthi backend.
 Tests the complete user flow: Register → Profile → Resume Upload → Sync.
 All external services (AI, Redis) are mocked.
 """
+
 import json
 import io
 import pytest
@@ -14,18 +15,44 @@ def _fake_ai_pipeline_result():
     return {
         "overall_ats_score": 78,
         "section_scores": {
-            "structure": 80, "skills": 75, "education": 70,
-            "experience": 85, "keywords": 80,
+            "structure": 80,
+            "skills": 75,
+            "education": 70,
+            "experience": 85,
+            "keywords": 80,
         },
-        "personal_info": {"name": "Jane Doe", "email": "jane@example.com", "phone": "+91-9999999999"},
-        "education": [{"degree": "B.Tech", "university": "IIT Delhi", "graduation_year": 2024, "cgpa": "8.5"}],
-        "experience": [{"company": "Acme Corp", "role": "Software Engineer", "duration": "1 year"}],
-        "projects": [{"title": "Portfolio", "description": "Personal site", "technologies": ["React"]}],
+        "personal_info": {
+            "name": "Jane Doe",
+            "email": "jane@example.com",
+            "phone": "+91-9999999999",
+        },
+        "education": [
+            {
+                "degree": "B.Tech",
+                "university": "IIT Delhi",
+                "graduation_year": 2024,
+                "cgpa": "8.5",
+            }
+        ],
+        "experience": [
+            {"company": "Acme Corp", "role": "Software Engineer", "duration": "1 year"}
+        ],
+        "projects": [
+            {
+                "title": "Portfolio",
+                "description": "Personal site",
+                "technologies": ["React"],
+            }
+        ],
         "tech_skills": ["Python", "React", "FastAPI"],
         "soft_skills": ["Communication", "Teamwork"],
         "certifications": ["AWS Certified"],
         "languages": ["English", "Hindi"],
-        "links": {"github": "https://github.com/jane", "linkedin": None, "portfolio": None},
+        "links": {
+            "github": "https://github.com/jane",
+            "linkedin": None,
+            "portfolio": None,
+        },
         "strengths": ["Strong Python skills", "Good project depth"],
         "weaknesses": ["No leadership experience"],
         "skill_gaps": ["Kubernetes", "Kafka"],
@@ -39,10 +66,16 @@ def _fake_ai_pipeline_result():
 class TestAuthFlow:
     def test_register_and_login(self, client):
         """Register a new user and obtain a JWT token."""
-        r = client.post("/api/auth/register", json={"username": "integuser", "password": "IntegPass123!"})
+        r = client.post(
+            "/api/auth/register",
+            json={"username": "integuser", "password": "IntegPass123!"},
+        )
         assert r.status_code in (200, 201), r.text
 
-        r = client.post("/api/auth/login", data={"username": "integuser", "password": "IntegPass123!"})
+        r = client.post(
+            "/api/auth/login",
+            data={"username": "integuser", "password": "IntegPass123!"},
+        )
         assert r.status_code == 200
         token = r.json().get("access_token")
         assert token, "Expected access_token in login response"
@@ -120,7 +153,10 @@ class TestResumeFlow:
         """Uploading a file with a disallowed extension must be rejected with 400."""
         files = {"file": ("malware.exe", io.BytesIO(b"MZ"), "application/octet-stream")}
         r = client.post("/api/resume/upload", files=files, headers=auth_headers)
-        assert r.status_code in (400, 422), f"Expected 400/422, got {r.status_code}: {r.text}"
+        assert r.status_code in (
+            400,
+            422,
+        ), f"Expected 400/422, got {r.status_code}: {r.text}"
 
     def test_resume_upload_too_large(self, client, auth_headers):
         """File exceeding 5 MB must be rejected with 400."""

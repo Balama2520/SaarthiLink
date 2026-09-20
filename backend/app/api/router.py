@@ -6,7 +6,10 @@ from app.api.jobs import router as jobs_router
 from app.api.interview import router as interview_router
 from app.api.goals import router as goals_router
 from app.api.profile import router as profile_router
-from app.api.career import router as career_router, legacy_router as career_legacy_router
+from app.api.career import (
+    router as career_router,
+    legacy_router as career_legacy_router,
+)
 from app.api.workspace import router as workspace_router
 from app.api.gradhub import router as gradhub_router
 from app.api.notes import router as notes_router

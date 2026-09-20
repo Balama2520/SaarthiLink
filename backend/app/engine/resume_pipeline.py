@@ -2,6 +2,7 @@
 Resume Intelligence Pipeline — modular processing stages with structured logging,
 timing metrics, and granular error handling.
 """
+
 import json
 import logging
 import time
@@ -28,7 +29,7 @@ def _strip_markdown_json(text: str) -> str:
     clean = text.strip()
     for prefix in ("```json", "```"):
         if clean.startswith(prefix):
-            clean = clean[len(prefix):]
+            clean = clean[len(prefix) :]
             break
     if clean.endswith("```"):
         clean = clean[:-3]
@@ -50,14 +51,18 @@ class ResumeIntelligencePipeline:
         self.profile_sync = ProfileSyncService()
 
     # ── Stage 1: Validate ─────────────────────────────────────────────────────
-    def validate_file(self, file_bytes: bytes, filename: str, content_type: str) -> None:
+    def validate_file(
+        self, file_bytes: bytes, filename: str, content_type: str
+    ) -> None:
         """Validates size and extension. Raises HTTPException on failure."""
         if len(file_bytes) > self.MAX_SIZE_BYTES:
             logger.warning(
                 "Resume upload rejected: file too large",
                 extra={"resume_filename": filename, "size_bytes": len(file_bytes)},
             )
-            raise HTTPException(status_code=400, detail="File too large. Maximum allowed size is 5 MB.")
+            raise HTTPException(
+                status_code=400, detail="File too large. Maximum allowed size is 5 MB."
+            )
 
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         if ext not in {"pdf", "docx", "txt"}:
@@ -65,7 +70,9 @@ class ResumeIntelligencePipeline:
                 "Resume upload rejected: invalid extension",
                 extra={"resume_filename": filename, "extension": ext},
             )
-            raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT.")
+            raise HTTPException(
+                status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT."
+            )
 
     # ── Stage 2: Extract Text ─────────────────────────────────────────────────
     def extract_text(self, file_bytes: bytes, filename: str) -> str:
@@ -78,6 +85,7 @@ class ResumeIntelligencePipeline:
                 # Primary: pdfplumber — best for modern, form, and multi-column PDFs
                 try:
                     import pdfplumber
+
                     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
                         pages_text = []
                         for page in pdf.pages:
@@ -92,13 +100,13 @@ class ResumeIntelligencePipeline:
                 if not text.strip():
                     try:
                         import pypdf
+
                         reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-                        text = "\n".join(
-                            p.extract_text() or "" for p in reader.pages
-                        )
+                        text = "\n".join(p.extract_text() or "" for p in reader.pages)
                     except Exception:
                         try:
                             import PyPDF2
+
                             reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
                             text = "\n".join(
                                 p.extract_text() or "" for p in reader.pages
@@ -121,6 +129,7 @@ class ResumeIntelligencePipeline:
 
             elif ext == "docx":
                 from docx import Document
+
                 doc = Document(io.BytesIO(file_bytes))
                 text = "\n".join(para.text for para in doc.paragraphs)
             else:
@@ -143,16 +152,24 @@ class ResumeIntelligencePipeline:
         except Exception as exc:
             logger.error(
                 "Stage 2: Text extraction failed",
-                extra={"resume_filename": filename, "error": str(exc), "request_id": get_request_id()},
+                extra={
+                    "resume_filename": filename,
+                    "error": str(exc),
+                    "request_id": get_request_id(),
+                },
             )
-            raise HTTPException(status_code=422, detail="Could not read the uploaded file. It may be corrupt or password-protected.")
-
+            raise HTTPException(
+                status_code=422,
+                detail="Could not read the uploaded file. It may be corrupt or password-protected.",
+            )
 
     # ── Stage 3: AI Analysis & ATS Scoring ───────────────────────────────────
     async def analyze_with_ai(self, text: str, target_role: Optional[str]) -> dict:
         """Calls AI gateway, returns structured ATS analysis."""
         if not text.strip():
-            raise HTTPException(status_code=400, detail="The document contains no readable text.")
+            raise HTTPException(
+                status_code=400, detail="The document contains no readable text."
+            )
 
         word_count = len(text.split())
         prompt = f"""
@@ -194,7 +211,9 @@ Provide your analysis STRICTLY as a valid JSON object. Do NOT wrap in markdown c
         t0 = time.perf_counter()
         try:
             messages = [{"role": "user", "content": prompt}]
-            stream = self.ai_gateway.generate_response_stream(messages, personality="career")
+            stream = self.ai_gateway.generate_response_stream(
+                messages, personality="career"
+            )
             raw = await _collect_stream(stream)
             duration_ms = (time.perf_counter() - t0) * 1000
 
@@ -218,13 +237,18 @@ Provide your analysis STRICTLY as a valid JSON object. Do NOT wrap in markdown c
                 "Stage 3: LLM returned invalid JSON",
                 extra={"error": str(exc), "request_id": get_request_id()},
             )
-            raise HTTPException(status_code=502, detail="AI analysis returned an invalid response. Please retry.")
+            raise HTTPException(
+                status_code=502,
+                detail="AI analysis returned an invalid response. Please retry.",
+            )
         except Exception as exc:
             logger.error(
                 "Stage 3: AI analysis failed",
                 extra={"error": str(exc), "request_id": get_request_id()},
             )
-            raise HTTPException(status_code=502, detail="AI analysis failed. Please try again.")
+            raise HTTPException(
+                status_code=502, detail="AI analysis failed. Please try again."
+            )
 
     # ── Stage 4: Skill Normalization ──────────────────────────────────────────
     def normalize_skills(self, parsed_data: dict) -> dict:

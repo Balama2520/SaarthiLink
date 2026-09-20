@@ -3,9 +3,9 @@ Tests for Discovery, Feedback, Contact, and Opportunity APIs.
 Uses the shared `client` fixture from conftest so the in-memory DB
 (with all models created) is always available.
 """
+
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ── All tests use the `client` fixture from conftest.py ──────────────────────
 # That fixture wires the FastAPI app to an in-memory SQLite DB with
@@ -39,7 +39,11 @@ class TestDiscoverySubmission:
             "user_type": "student",
             "consent_given": True,
             "intents": [
-                {"intent_key": "find_first_job", "intent_label": "Find first job", "is_primary": True}
+                {
+                    "intent_key": "find_first_job",
+                    "intent_label": "Find first job",
+                    "is_primary": True,
+                }
             ],
             "challenges": {
                 "finding_relevant_jobs": 4,
@@ -82,7 +86,11 @@ class TestDiscoverySubmission:
         assert res.json()["status"] == "success"
 
     def test_duplicate_session_updates_profile(self, client):
-        payload = {"session_id": "same_session_x1", "user_type": "student", "consent_given": True}
+        payload = {
+            "session_id": "same_session_x1",
+            "user_type": "student",
+            "consent_given": True,
+        }
         r1 = client.post("/api/discovery/submit", json=payload)
         r2 = client.post("/api/discovery/submit", json=payload)
         assert r1.status_code == 200

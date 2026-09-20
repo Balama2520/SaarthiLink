@@ -92,7 +92,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── Requirement 1: Strict CORS Isolation Limits ───────────────────────────────
 # Explicitly locked origins only. Wildcards ("*") are completely removed.
-EXPLICIT_LOCKED_ORIGINS: List[str] = [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]
+EXPLICIT_LOCKED_ORIGINS: List[str] = [
+    origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -113,6 +115,7 @@ app.add_middleware(
 
 
 from app.core.rate_limit import rate_limiter
+
 
 # ── Requirement 2: Global Exception Handler & Telemetry Masking ───────────────
 @app.middleware("http")
@@ -150,7 +153,9 @@ async def global_security_exception_and_tracing_middleware(request: Request, cal
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
+        )
         if not settings.DEBUG:
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains"
@@ -194,6 +199,7 @@ app.include_router(jobs_router, prefix=f"{settings.API_PREFIX}")
 
 # 3. Back-Channel Enterprise Module Sub-Router (/api/v1/enterprise)
 app.include_router(enterprise_router, prefix=f"{settings.API_PREFIX}")
+
 
 # ── Root & Health Endpoints ───────────────────────────────────────────────────
 @app.get("/", tags=["System Identity"])
@@ -249,4 +255,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app.main:app", host="0.0.0.0", port=2520, reload=settings.DEBUG)

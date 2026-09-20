@@ -30,9 +30,13 @@ class ResumeService:
     def __init__(self, repo: ResumeRepository):
         self.repo = repo
 
-    async def analyze_resume(self, user_id: int, text: str, filename: str, target_role: str | None) -> dict:
+    async def analyze_resume(
+        self, user_id: int, text: str, filename: str, target_role: str | None
+    ) -> dict:
         if not text.strip():
-            raise HTTPException(status_code=400, detail="The document contains no readable text.")
+            raise HTTPException(
+                status_code=400, detail="The document contains no readable text."
+            )
 
         word_count = len(text.split())
 
@@ -61,7 +65,9 @@ Provide your analysis STRICTLY as a valid JSON object matching this structure. D
 }}
 """
         messages = [{"role": "user", "content": prompt}]
-        response_stream = AIGateway().generate_response_stream(messages, personality="career")
+        response_stream = AIGateway().generate_response_stream(
+            messages, personality="career"
+        )
         full_text = await _collect_stream(response_stream)
 
         try:
@@ -75,7 +81,7 @@ Provide your analysis STRICTLY as a valid JSON object matching this structure. D
                     file_path="",
                     ats_score=parsed_data.get("ats_score", 0),
                     raw_text=text[:5000],
-                    parsed_json=json.dumps(parsed_data)
+                    parsed_json=json.dumps(parsed_data),
                 )
                 self.repo.create(db_resume)
 
@@ -84,4 +90,6 @@ Provide your analysis STRICTLY as a valid JSON object matching this structure. D
 
         except json.JSONDecodeError:
             logger.error(f"Failed to decode LLM JSON. Raw output: {full_text}")
-            raise HTTPException(status_code=500, detail="Failed to analyze resume. Please try again.")
+            raise HTTPException(
+                status_code=500, detail="Failed to analyze resume. Please try again."
+            )

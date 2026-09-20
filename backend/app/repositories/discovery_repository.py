@@ -4,6 +4,7 @@ Discovery Repository — Data Access Layer for Saarthi Discovery & Intelligence
 Provides CRUD and query methods for discovery profiles, feedback, opportunities,
 contact requests, and consent records.
 """
+
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -53,7 +54,9 @@ class DiscoveryRepository:
     def get_consent_by_session(self, session_id: str) -> Optional[ConsentRecord]:
         return (
             self.db.query(ConsentRecord)
-            .filter(ConsentRecord.session_id == session_id, ConsentRecord.status == "active")
+            .filter(
+                ConsentRecord.session_id == session_id, ConsentRecord.status == "active"
+            )
             .first()
         )
 
@@ -93,8 +96,14 @@ class DiscoveryRepository:
             self.db.refresh(profile)
         return profile
 
-    def update_profile_status(self, profile_id: str, status: str) -> Optional[UserDiscoveryProfile]:
-        profile = self.db.query(UserDiscoveryProfile).filter(UserDiscoveryProfile.id == profile_id).first()
+    def update_profile_status(
+        self, profile_id: str, status: str
+    ) -> Optional[UserDiscoveryProfile]:
+        profile = (
+            self.db.query(UserDiscoveryProfile)
+            .filter(UserDiscoveryProfile.id == profile_id)
+            .first()
+        )
         if profile:
             profile.status = status
             self.db.commit()
@@ -102,7 +111,9 @@ class DiscoveryRepository:
         return profile
 
     # ── Intents ─────────────────────────────────────────────────────────────
-    def save_intents(self, profile_id: str, intents_data: List[Dict[str, Any]]) -> List[UserIntent]:
+    def save_intents(
+        self, profile_id: str, intents_data: List[Dict[str, Any]]
+    ) -> List[UserIntent]:
         # Delete existing intents for profile
         self.db.query(UserIntent).filter(UserIntent.profile_id == profile_id).delete()
         created = []
@@ -120,14 +131,25 @@ class DiscoveryRepository:
         return created
 
     # ── Career Challenges ───────────────────────────────────────────────────
-    def save_career_challenge(self, profile_id: str, data: Dict[str, Any]) -> CareerChallenge:
-        challenge = self.db.query(CareerChallenge).filter(CareerChallenge.profile_id == profile_id).first()
+    def save_career_challenge(
+        self, profile_id: str, data: Dict[str, Any]
+    ) -> CareerChallenge:
+        challenge = (
+            self.db.query(CareerChallenge)
+            .filter(CareerChallenge.profile_id == profile_id)
+            .first()
+        )
         if not challenge:
             challenge = CareerChallenge(profile_id=profile_id)
             self.db.add(challenge)
 
         for key, val in data.items():
-            if hasattr(challenge, key) and key not in ("id", "profile_id", "created_at", "updated_at"):
+            if hasattr(challenge, key) and key not in (
+                "id",
+                "profile_id",
+                "created_at",
+                "updated_at",
+            ):
                 setattr(challenge, key, val)
 
         self.db.commit()
@@ -135,19 +157,28 @@ class DiscoveryRepository:
         return challenge
 
     # ── Feature Feedback ────────────────────────────────────────────────────
-    def save_feature_feedbacks(self, profile_id: str, items: List[Dict[str, Any]]) -> List[FeatureFeedback]:
+    def save_feature_feedbacks(
+        self, profile_id: str, items: List[Dict[str, Any]]
+    ) -> List[FeatureFeedback]:
         res = []
         for item in items:
             fid = item.get("feature_id")
             existing = (
                 self.db.query(FeatureFeedback)
-                .filter(FeatureFeedback.profile_id == profile_id, FeatureFeedback.feature_id == fid)
+                .filter(
+                    FeatureFeedback.profile_id == profile_id,
+                    FeatureFeedback.feature_id == fid,
+                )
                 .first()
             )
             if existing:
                 existing.rating = item.get("rating", existing.rating)
-                existing.is_most_valuable = item.get("is_most_valuable", existing.is_most_valuable)
-                existing.is_least_valuable = item.get("is_least_valuable", existing.is_least_valuable)
+                existing.is_most_valuable = item.get(
+                    "is_most_valuable", existing.is_most_valuable
+                )
+                existing.is_least_valuable = item.get(
+                    "is_least_valuable", existing.is_least_valuable
+                )
                 existing.is_missing = item.get("is_missing", existing.is_missing)
                 existing.is_want_next = item.get("is_want_next", existing.is_want_next)
                 existing.comment = item.get("comment", existing.comment)
@@ -171,14 +202,25 @@ class DiscoveryRepository:
         return res
 
     # ── Product Feedback ────────────────────────────────────────────────────
-    def save_product_feedback(self, profile_id: str, data: Dict[str, Any]) -> ProductFeedback:
-        pf = self.db.query(ProductFeedback).filter(ProductFeedback.profile_id == profile_id).first()
+    def save_product_feedback(
+        self, profile_id: str, data: Dict[str, Any]
+    ) -> ProductFeedback:
+        pf = (
+            self.db.query(ProductFeedback)
+            .filter(ProductFeedback.profile_id == profile_id)
+            .first()
+        )
         if not pf:
             pf = ProductFeedback(profile_id=profile_id)
             self.db.add(pf)
 
         for key, val in data.items():
-            if hasattr(pf, key) and key not in ("id", "profile_id", "created_at", "updated_at"):
+            if hasattr(pf, key) and key not in (
+                "id",
+                "profile_id",
+                "created_at",
+                "updated_at",
+            ):
                 setattr(pf, key, val)
 
         self.db.commit()
@@ -186,7 +228,9 @@ class DiscoveryRepository:
         return pf
 
     # ── Opportunity Signal ──────────────────────────────────────────────────
-    def create_opportunity_signal(self, data: Dict[str, Any], profile_id: Optional[str] = None) -> OpportunitySignal:
+    def create_opportunity_signal(
+        self, data: Dict[str, Any], profile_id: Optional[str] = None
+    ) -> OpportunitySignal:
         sig = OpportunitySignal(
             profile_id=profile_id,
             public_job_url=data.get("public_job_url"),
@@ -204,7 +248,9 @@ class DiscoveryRepository:
         return sig
 
     # ── Company & Hiring ────────────────────────────────────────────────────
-    def create_company_profile(self, data: Dict[str, Any], profile_id: Optional[str] = None) -> CompanyProfile:
+    def create_company_profile(
+        self, data: Dict[str, Any], profile_id: Optional[str] = None
+    ) -> CompanyProfile:
         cp = CompanyProfile(
             profile_id=profile_id,
             company_name=data.get("company_name"),
@@ -221,7 +267,9 @@ class DiscoveryRepository:
         self.db.refresh(cp)
         return cp
 
-    def create_hiring_signal(self, company_profile_id: str, data: Dict[str, Any]) -> HiringSignal:
+    def create_hiring_signal(
+        self, company_profile_id: str, data: Dict[str, Any]
+    ) -> HiringSignal:
         hs = HiringSignal(
             company_profile_id=company_profile_id,
             roles_hiring_for=data.get("roles_hiring_for"),
@@ -235,7 +283,9 @@ class DiscoveryRepository:
         self.db.refresh(hs)
         return hs
 
-    def create_job_submission(self, data: Dict[str, Any], company_profile_id: Optional[str] = None) -> JobSubmission:
+    def create_job_submission(
+        self, data: Dict[str, Any], company_profile_id: Optional[str] = None
+    ) -> JobSubmission:
         js = JobSubmission(
             company_profile_id=company_profile_id,
             title=data.get("title"),
@@ -250,7 +300,9 @@ class DiscoveryRepository:
         return js
 
     # ── Contact Request ─────────────────────────────────────────────────────
-    def create_contact_request(self, data: Dict[str, Any], user_id: Optional[int] = None) -> ContactRequest:
+    def create_contact_request(
+        self, data: Dict[str, Any], user_id: Optional[int] = None
+    ) -> ContactRequest:
         cr = ContactRequest(
             session_id=data.get("session_id"),
             user_id=user_id,
@@ -269,7 +321,14 @@ class DiscoveryRepository:
         return cr
 
     # ── Feedback Event ──────────────────────────────────────────────────────
-    def log_event(self, event_type: str, entity_id: Optional[str] = None, session_id: Optional[str] = None, user_id: Optional[int] = None, payload_json: Optional[str] = None) -> FeedbackEvent:
+    def log_event(
+        self,
+        event_type: str,
+        entity_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        user_id: Optional[int] = None,
+        payload_json: Optional[str] = None,
+    ) -> FeedbackEvent:
         evt = FeedbackEvent(
             event_type=event_type,
             entity_id=entity_id,
@@ -283,15 +342,21 @@ class DiscoveryRepository:
 
     # ── Admin Stats ─────────────────────────────────────────────────────────
     def get_discovery_stats(self) -> Dict[str, Any]:
-        total_profiles = self.db.query(func.count(UserDiscoveryProfile.id)).scalar() or 0
+        total_profiles = (
+            self.db.query(func.count(UserDiscoveryProfile.id)).scalar() or 0
+        )
         total_feedbacks = self.db.query(func.count(FeatureFeedback.id)).scalar() or 0
-        total_opportunities = self.db.query(func.count(OpportunitySignal.id)).scalar() or 0
+        total_opportunities = (
+            self.db.query(func.count(OpportunitySignal.id)).scalar() or 0
+        )
         total_contacts = self.db.query(func.count(ContactRequest.id)).scalar() or 0
         total_companies = self.db.query(func.count(CompanyProfile.id)).scalar() or 0
 
         # User type breakdown
         type_counts = (
-            self.db.query(UserDiscoveryProfile.user_type, func.count(UserDiscoveryProfile.id))
+            self.db.query(
+                UserDiscoveryProfile.user_type, func.count(UserDiscoveryProfile.id)
+            )
             .group_by(UserDiscoveryProfile.user_type)
             .all()
         )

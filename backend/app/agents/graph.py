@@ -9,33 +9,39 @@ from app.ai.llm import generate_response_stream_async
 
 logger = logging.getLogger(__name__)
 
+
 class AgentState(TypedDict):
     messages: Sequence[BaseMessage]
     next_agent: str
+
 
 def router_node(state: AgentState):
     """
     Analyzes the user's latest message and decides which agent should handle it.
     """
     last_message = state["messages"][-1].content.lower()
-    
+
     # Simple keyword-based routing for MVP (In production, use an LLM classifier)
     if any(keyword in last_message for keyword in ["resume", "ats", "cv"]):
         return {"next_agent": "career"}
     elif any(keyword in last_message for keyword in ["interview", "mock", "question"]):
         return {"next_agent": "interview"}
-    elif any(keyword in last_message for keyword in ["learn", "roadmap", "study", "guide"]):
+    elif any(
+        keyword in last_message for keyword in ["learn", "roadmap", "study", "guide"]
+    ):
         return {"next_agent": "learning"}
     else:
         return {"next_agent": "default"}
 
+
 async def execute_agent_node(state: AgentState):
     """
-    We don't actually block here. In our architecture, the FastAPI endpoint 
-    will use the `next_agent` value determined by the graph to instantiate 
+    We don't actually block here. In our architecture, the FastAPI endpoint
+    will use the `next_agent` value determined by the graph to instantiate
     our custom `generate_response_stream_async` generator, preserving SSE streaming.
     """
     return state
+
 
 # Build the Graph
 workflow = StateGraph(AgentState)
@@ -48,6 +54,7 @@ workflow.add_edge("router", "execute_agent")
 workflow.add_edge("execute_agent", END)
 
 app = workflow.compile()
+
 
 async def determine_agent(message: str) -> str:
     """

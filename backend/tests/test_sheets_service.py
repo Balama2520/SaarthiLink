@@ -3,6 +3,7 @@ Comprehensive tests for the Google Sheets Integration Service and Seeding Pipeli
 All tests mock gspread / google-auth — NO live Google API calls.
 Covers Steps 2-9 of the verification specification.
 """
+
 import json
 import pytest
 from unittest.mock import MagicMock, patch, call
@@ -27,19 +28,20 @@ from app.services.sheets_service import (
     _sanitise_error,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-FAKE_CRED_JSON = json.dumps({
-    "type": "service_account",
-    "project_id": "test-saarthi",
-    "private_key_id": "abc123",
-    "private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA\n-----END RSA PRIVATE KEY-----\n",
-    "client_email": "test@proj.iam.gserviceaccount.com",
-    "client_id": "123456",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-})
+FAKE_CRED_JSON = json.dumps(
+    {
+        "type": "service_account",
+        "project_id": "test-saarthi",
+        "private_key_id": "abc123",
+        "private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA\n-----END RSA PRIVATE KEY-----\n",
+        "client_email": "test@proj.iam.gserviceaccount.com",
+        "client_id": "123456",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+    }
+)
 
 
 def _mock_settings(spreadsheet_id: str = "", cred_json: str = ""):
@@ -66,52 +68,67 @@ def _make_svc_with_client(records=None) -> tuple:
 # STEP 2 — AUTHENTICATION & CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestAuthentication:
 
     def test_not_configured_missing_spreadsheet_id(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("", FAKE_CRED_JSON)):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("", FAKE_CRED_JSON),
+        ):
             assert svc.is_configured() is False
 
     def test_not_configured_missing_credential_json(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", "")):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", ""),
+        ):
             assert svc.is_configured() is False
 
     def test_not_configured_both_missing(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("", "")):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("", ""),
+        ):
             assert svc.is_configured() is False
 
     def test_configured_when_both_set(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", FAKE_CRED_JSON)):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", FAKE_CRED_JSON),
+        ):
             assert svc.is_configured() is True
 
     def test_status_returns_config_required_no_id(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("", "")):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("", ""),
+        ):
             result = svc.status()
             assert result["status"] == "config_required"
             assert "GOOGLE_SHEETS_SPREADSHEET_ID" in result["detail"]
 
     def test_status_returns_config_required_no_cred(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", "")):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", ""),
+        ):
             result = svc.status()
             assert result["status"] == "config_required"
             assert "GOOGLE_SERVICE_ACCOUNT_JSON" in result["detail"]
 
     def test_status_configured_truncates_spreadsheet_id(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sheet123ABCDEF", FAKE_CRED_JSON)):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sheet123ABCDEF", FAKE_CRED_JSON),
+        ):
             result = svc.status()
             assert result["status"] == "configured"
             prefix = result.get("spreadsheet_id_prefix", "")
@@ -121,31 +138,46 @@ class TestAuthentication:
 
     def test_get_client_raises_service_error_when_unconfigured(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("", "")):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("", ""),
+        ):
             with pytest.raises(SheetsServiceError):
                 svc._get_client()
 
     def test_get_client_raises_auth_error_on_invalid_credentials(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", FAKE_CRED_JSON)):
-            with patch("gspread.authorize", side_effect=Exception("Invalid credentials")):
-                with patch("google.oauth2.service_account.Credentials.from_service_account_info"):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", FAKE_CRED_JSON),
+        ):
+            with patch(
+                "gspread.authorize", side_effect=Exception("Invalid credentials")
+            ):
+                with patch(
+                    "google.oauth2.service_account.Credentials.from_service_account_info"
+                ):
                     with pytest.raises(SheetsAuthError):
                         svc._get_client()
 
     def test_auth_error_message_sanitised_no_private_key_exposed(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", FAKE_CRED_JSON)):
-            with patch("gspread.authorize", side_effect=Exception("private_key invalid")):
-                with patch("google.oauth2.service_account.Credentials.from_service_account_info"):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", FAKE_CRED_JSON),
+        ):
+            with patch(
+                "gspread.authorize", side_effect=Exception("private_key invalid")
+            ):
+                with patch(
+                    "google.oauth2.service_account.Credentials.from_service_account_info"
+                ):
                     with pytest.raises(SheetsAuthError) as exc_info:
                         svc._get_client()
                     # Private key value must not appear in the error message
-                    assert "private_key" not in str(exc_info.value).lower() or \
-                        "Authentication failed" in str(exc_info.value)
+                    assert "private_key" not in str(
+                        exc_info.value
+                    ).lower() or "Authentication failed" in str(exc_info.value)
 
     def test_credentials_not_hardcoded_in_source(self):
         """Verify FAKE_CRED_JSON is a mock fixture, not a real credential."""
@@ -159,17 +191,29 @@ class TestAuthentication:
 # TAB STRUCTURE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestTabStructure:
 
     def test_all_14_tabs_present(self):
         required = {
-            "01_SOURCES", "02_COMPANIES", "03_ROLE_RULES", "04_LOCATION_RULES",
-            "05_SKILLS", "06_INCLUDE_RULES", "07_EXCLUDE_RULES", "08_SEED_CONFIG",
-            "09_JOBS_STAGING", "10_SEED_RUNS", "11_SYNC_LOGS", "12_SOURCE_ERRORS",
-            "13_DASHBOARD", "14_API_CONFIG",
+            "01_SOURCES",
+            "02_COMPANIES",
+            "03_ROLE_RULES",
+            "04_LOCATION_RULES",
+            "05_SKILLS",
+            "06_INCLUDE_RULES",
+            "07_EXCLUDE_RULES",
+            "08_SEED_CONFIG",
+            "09_JOBS_STAGING",
+            "10_SEED_RUNS",
+            "11_SYNC_LOGS",
+            "12_SOURCE_ERRORS",
+            "13_DASHBOARD",
+            "14_API_CONFIG",
         }
-        assert required == set(SHEET_TABS.values()), \
-            f"Tab mismatch: missing={required - set(SHEET_TABS.values())}"
+        assert required == set(
+            SHEET_TABS.values()
+        ), f"Tab mismatch: missing={required - set(SHEET_TABS.values())}"
 
     def test_exact_tab_key_to_name_mapping(self):
         assert SHEET_TABS["sources"] == "01_SOURCES"
@@ -191,6 +235,7 @@ class TestTabStructure:
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 3 — READ TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestReadMethods:
 
@@ -245,27 +290,47 @@ class TestReadMethods:
 # STEP 4 — WRITE TESTS
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestWriteMethods:
 
     def test_append_seed_run_calls_correct_worksheet(self):
         svc, mock_ws, mock_wb = _make_svc_with_client()
-        svc.append_seed_run({"run_id": "abc", "timestamp": "t", "source": "sheets",
-                             "total": 1, "synced": 1, "failed": 0, "duplicate": 0,
-                             "server_error": 0, "dry_run": "NO"})
+        svc.append_seed_run(
+            {
+                "run_id": "abc",
+                "timestamp": "t",
+                "source": "sheets",
+                "total": 1,
+                "synced": 1,
+                "failed": 0,
+                "duplicate": 0,
+                "server_error": 0,
+                "dry_run": "NO",
+            }
+        )
         mock_wb.worksheet.assert_called_with("10_SEED_RUNS")
         mock_ws.append_row.assert_called_once()
 
     def test_append_sync_log_calls_correct_worksheet(self):
         svc, mock_ws, mock_wb = _make_svc_with_client()
-        svc.append_sync_log({"run_id": "abc", "timestamp": "t", "job": "SDE",
-                              "status": "SYNCED", "detail": "", "dry_run": "NO"})
+        svc.append_sync_log(
+            {
+                "run_id": "abc",
+                "timestamp": "t",
+                "job": "SDE",
+                "status": "SYNCED",
+                "detail": "",
+                "dry_run": "NO",
+            }
+        )
         mock_wb.worksheet.assert_called_with("11_SYNC_LOGS")
         mock_ws.append_row.assert_called_once()
 
     def test_append_source_error_calls_correct_worksheet(self):
         svc, mock_ws, mock_wb = _make_svc_with_client()
-        svc.append_source_error({"run_id": "abc", "timestamp": "t",
-                                  "source": "sheets", "error": "timeout"})
+        svc.append_source_error(
+            {"run_id": "abc", "timestamp": "t", "source": "sheets", "error": "timeout"}
+        )
         mock_wb.worksheet.assert_called_with("12_SOURCE_ERRORS")
         mock_ws.append_row.assert_called_once()
 
@@ -298,6 +363,7 @@ class TestWriteMethods:
 # STEP 5 — JOB PIPELINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestJobPipeline:
 
     def _make_pipeline(self, records=None, dry_run=False):
@@ -307,8 +373,12 @@ class TestJobPipeline:
 
     def test_normalize_job_extracts_fields(self):
         pipeline, _, _ = self._make_pipeline()
-        raw = {"company": "Acme", "title": "SDE I", "location": "Bangalore",
-               "apply_url": "https://acme.com/apply"}
+        raw = {
+            "company": "Acme",
+            "title": "SDE I",
+            "location": "Bangalore",
+            "apply_url": "https://acme.com/apply",
+        }
         job = pipeline.normalize_job(raw)
         assert job["company"] == "Acme"
         assert job["title"] == "SDE I"
@@ -380,12 +450,22 @@ class TestJobPipeline:
     def test_pipeline_deduplicates_jobs(self):
         pipeline, _, _ = self._make_pipeline()
         jobs = [
-            {"company": "Acme", "title": "SDE", "location": "Bangalore",
-             "apply_url": "https://acme.com/1", "dedup_hash": _dedup_hash("Acme", "SDE", "Bangalore"),
-             "source": "sheets"},
-            {"company": "Acme", "title": "SDE", "location": "Bangalore",
-             "apply_url": "https://acme.com/2", "dedup_hash": _dedup_hash("Acme", "SDE", "Bangalore"),
-             "source": "sheets"},
+            {
+                "company": "Acme",
+                "title": "SDE",
+                "location": "Bangalore",
+                "apply_url": "https://acme.com/1",
+                "dedup_hash": _dedup_hash("Acme", "SDE", "Bangalore"),
+                "source": "sheets",
+            },
+            {
+                "company": "Acme",
+                "title": "SDE",
+                "location": "Bangalore",
+                "apply_url": "https://acme.com/2",
+                "dedup_hash": _dedup_hash("Acme", "SDE", "Bangalore"),
+                "source": "sheets",
+            },
         ]
         seen = set()
         result = []
@@ -401,14 +481,22 @@ class TestJobPipeline:
 # STEP 6 — HTTP STATUS HANDLING
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestHTTPStatusHandling:
 
     def _make_pipeline_with_jobs(self):
         svc, _, _ = _make_svc_with_client()
         pipeline = SeedingPipeline(sheets=svc, dry_run=False)
-        jobs = [{"company": "Acme", "title": f"SDE {i}", "location": "BLR",
-                 "apply_url": "https://acme.com", "source": "sheets"}
-                for i in range(3)]
+        jobs = [
+            {
+                "company": "Acme",
+                "title": f"SDE {i}",
+                "location": "BLR",
+                "apply_url": "https://acme.com",
+                "source": "sheets",
+            }
+            for i in range(3)
+        ]
         return pipeline, jobs
 
     def _make_resp(self, status_code, headers=None, text=""):
@@ -441,7 +529,9 @@ class TestHTTPStatusHandling:
             return self._make_resp(400, text="Bad schema")
 
         with patch("httpx.post", side_effect=post_400):
-            result = pipeline.sync_jobs_to_backend(jobs[:1], "http://backend/jobs", "token")
+            result = pipeline.sync_jobs_to_backend(
+                jobs[:1], "http://backend/jobs", "token"
+            )
         assert result["failed_validation"] == 1
         assert call_count == 1  # No retries on 400
 
@@ -457,7 +547,9 @@ class TestHTTPStatusHandling:
     def test_403_same_as_401(self):
         pipeline, jobs = self._make_pipeline_with_jobs()
         with patch("httpx.post", return_value=self._make_resp(403)):
-            result = pipeline.sync_jobs_to_backend(jobs[:1], "http://backend/jobs", "token")
+            result = pipeline.sync_jobs_to_backend(
+                jobs[:1], "http://backend/jobs", "token"
+            )
         assert result["auth_failure"] == 1
 
     def test_409_maps_to_duplicate_continues(self):
@@ -477,7 +569,9 @@ class TestHTTPStatusHandling:
 
         with patch("httpx.post", side_effect=post_429):
             with patch("time.sleep"):  # Skip actual sleep in tests
-                result = pipeline.sync_jobs_to_backend(jobs[:1], "http://backend/jobs", "token")
+                result = pipeline.sync_jobs_to_backend(
+                    jobs[:1], "http://backend/jobs", "token"
+                )
 
         # Should retry MAX_RETRIES times then give up
         assert call_count == 4  # 1 initial + 3 retries
@@ -494,7 +588,9 @@ class TestHTTPStatusHandling:
 
         with patch("httpx.post", side_effect=post_500):
             with patch("time.sleep"):
-                result = pipeline.sync_jobs_to_backend(jobs[:1], "http://backend/jobs", "token")
+                result = pipeline.sync_jobs_to_backend(
+                    jobs[:1], "http://backend/jobs", "token"
+                )
 
         assert call_count == 4  # 1 + 3 retries
         statuses = [r["status"] for r in result["results"]]
@@ -507,7 +603,9 @@ class TestHTTPStatusHandling:
 
         with patch("httpx.post", side_effect=responses):
             with patch("time.sleep"):
-                result = pipeline.sync_jobs_to_backend(jobs[:1], "http://backend/jobs", "token")
+                result = pipeline.sync_jobs_to_backend(
+                    jobs[:1], "http://backend/jobs", "token"
+                )
 
         assert result["synced"] == 1
 
@@ -516,13 +614,21 @@ class TestHTTPStatusHandling:
 # STEP 7 — DRY RUN PROTECTION
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestDryRunProtection:
 
     def test_dry_run_never_calls_httpx(self):
         svc, _, _ = _make_svc_with_client()
         pipeline = SeedingPipeline(sheets=svc, dry_run=True)
-        jobs = [{"company": "Acme", "title": "SDE", "location": "BLR",
-                 "apply_url": "https://acme.com", "source": "sheets"}]
+        jobs = [
+            {
+                "company": "Acme",
+                "title": "SDE",
+                "location": "BLR",
+                "apply_url": "https://acme.com",
+                "source": "sheets",
+            }
+        ]
 
         with patch("httpx.post") as mock_post:
             result = pipeline.sync_jobs_to_backend(jobs, "http://backend/jobs", "token")
@@ -533,8 +639,15 @@ class TestDryRunProtection:
     def test_dry_run_status_is_dry_run_skipped(self):
         svc, _, _ = _make_svc_with_client()
         pipeline = SeedingPipeline(sheets=svc, dry_run=True)
-        jobs = [{"company": "Acme", "title": "SDE", "location": "BLR",
-                 "apply_url": "https://acme.com", "source": "sheets"}]
+        jobs = [
+            {
+                "company": "Acme",
+                "title": "SDE",
+                "location": "BLR",
+                "apply_url": "https://acme.com",
+                "source": "sheets",
+            }
+        ]
 
         result = pipeline.sync_jobs_to_backend(jobs, "http://backend/jobs", "token")
         assert all(r["status"] == SYNC_STATUS_DRY_RUN for r in result["results"])
@@ -542,7 +655,9 @@ class TestDryRunProtection:
     def test_dry_run_synced_count_is_zero(self):
         svc, _, _ = _make_svc_with_client()
         pipeline = SeedingPipeline(sheets=svc, dry_run=True)
-        jobs = [{"company": "Acme", "title": "SDE", "location": "BLR", "source": "sheets"}]
+        jobs = [
+            {"company": "Acme", "title": "SDE", "location": "BLR", "source": "sheets"}
+        ]
         result = pipeline.sync_jobs_to_backend(jobs, "http://backend/jobs", "token")
         assert result["synced"] == 0
 
@@ -550,8 +665,13 @@ class TestDryRunProtection:
         svc, mock_ws, mock_wb = _make_svc_with_client()
         pipeline = SeedingPipeline(sheets=svc, dry_run=True)
         summary = {
-            "dry_run": True, "total": 1, "synced": 0, "failed_validation": 0,
-            "duplicate": 0, "server_error": 0, "skipped": 1,
+            "dry_run": True,
+            "total": 1,
+            "synced": 0,
+            "failed_validation": 0,
+            "duplicate": 0,
+            "server_error": 0,
+            "skipped": 1,
             "results": [{"job": "SDE", "status": SYNC_STATUS_DRY_RUN}],
         }
         pipeline.log_sync_results(run_id="test123", summary=summary)
@@ -567,8 +687,13 @@ class TestDryRunProtection:
         svc, mock_ws, mock_wb = _make_svc_with_client()
         pipeline = SeedingPipeline(sheets=svc, dry_run=False)
         summary = {
-            "dry_run": False, "total": 1, "synced": 1, "failed_validation": 0,
-            "duplicate": 0, "server_error": 0, "skipped": 0,
+            "dry_run": False,
+            "total": 1,
+            "synced": 1,
+            "failed_validation": 0,
+            "duplicate": 0,
+            "server_error": 0,
+            "skipped": 0,
             "results": [{"job": "SDE", "status": SYNC_STATUS_SYNCED}],
         }
         pipeline.log_sync_results(run_id="live123", summary=summary)
@@ -581,20 +706,27 @@ class TestDryRunProtection:
 # STEP 8 — CONNECTIVITY CHECK
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestConnectivityCheck:
 
     def test_config_required_when_not_configured(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("", "")):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("", ""),
+        ):
             result = svc.connectivity_check()
             assert result["status"] == "config_required"
 
     def test_error_on_auth_failure(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", FAKE_CRED_JSON)):
-            with patch.object(svc, "_get_client", side_effect=SheetsAuthError("auth failed")):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", FAKE_CRED_JSON),
+        ):
+            with patch.object(
+                svc, "_get_client", side_effect=SheetsAuthError("auth failed")
+            ):
                 result = svc.connectivity_check()
                 assert result["status"] == "error"
                 # Must not expose credential info
@@ -611,8 +743,10 @@ class TestConnectivityCheck:
 
     def test_response_never_exposes_credentials(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", FAKE_CRED_JSON)):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", FAKE_CRED_JSON),
+        ):
             with patch.object(svc, "_get_client", side_effect=SheetsAuthError("error")):
                 result = svc.connectivity_check()
                 result_str = json.dumps(result)
@@ -624,6 +758,7 @@ class TestConnectivityCheck:
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 9 — SECURITY
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestSecurity:
 
@@ -650,8 +785,10 @@ class TestSecurity:
     def test_spreadsheet_id_never_fully_exposed_in_status(self):
         svc = GoogleSheetsService()
         full_id = "abc1234567890FULLID"
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings(full_id, FAKE_CRED_JSON)):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings(full_id, FAKE_CRED_JSON),
+        ):
             result = svc.status()
             # Should contain only prefix, not full ID
             assert full_id not in result.get("spreadsheet_id_prefix", "")
@@ -666,8 +803,10 @@ class TestSecurity:
 
     def test_status_response_never_contains_cred_json(self):
         svc = GoogleSheetsService()
-        with patch("app.services.sheets_service.get_settings",
-                   return_value=_mock_settings("sid", FAKE_CRED_JSON)):
+        with patch(
+            "app.services.sheets_service.get_settings",
+            return_value=_mock_settings("sid", FAKE_CRED_JSON),
+        ):
             result = svc.status()
             result_str = json.dumps(result)
             assert "private_key" not in result_str

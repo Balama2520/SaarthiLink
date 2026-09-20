@@ -13,6 +13,7 @@ Principles:
 - We never write permanent files to the backend filesystem. All file bytes
   flow through memory only.
 """
+
 from __future__ import annotations
 
 import logging
@@ -28,8 +29,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class StorageResult:
     success: bool
-    storage_path: str  # bucket-relative object path, e.g. "resumes/user-42/resume-uuid.pdf"
-    reference: str  # opaque reference stored in Resume.file_path (never a local fs path)
+    storage_path: (
+        str  # bucket-relative object path, e.g. "resumes/user-42/resume-uuid.pdf"
+    )
+    reference: (
+        str  # opaque reference stored in Resume.file_path (never a local fs path)
+    )
     error: Optional[str] = None
 
 
@@ -57,6 +62,7 @@ class SupabaseStorageService:
 
         try:
             from supabase import create_client, Client
+
             self._client: Optional[Client] = create_client(url, key)
             # Ensure bucket reference is known; we don't auto-create the bucket
             # because that's an admin step the operator does via Supabase dashboard.
@@ -120,7 +126,11 @@ class SupabaseStorageService:
                 res = client.upload(object_key, file_bytes)
 
             # Many versions return a requests.Response or dict-like
-            ok = getattr(res, "status_code", 200) < 300 if hasattr(res, "status_code") else True
+            ok = (
+                getattr(res, "status_code", 200) < 300
+                if hasattr(res, "status_code")
+                else True
+            )
             if not ok:
                 text = getattr(res, "text", str(res))[:200]
                 raise RuntimeError(f"storage upload returned non-2xx: {text}")
@@ -129,14 +139,20 @@ class SupabaseStorageService:
             reference = f"supabase://{self._bucket}/{object_key}"
             logger.info(
                 "Resume stored in Supabase Storage: user_id=%s resume_id=%s size=%dB",
-                user_id, resume_id, len(file_bytes),
+                user_id,
+                resume_id,
+                len(file_bytes),
             )
-            return StorageResult(success=True, storage_path=object_key, reference=reference)
+            return StorageResult(
+                success=True, storage_path=object_key, reference=reference
+            )
         except Exception as exc:
             logger.warning(
                 "Supabase Storage upload failed (non-fatal); Resume DB row still saved. "
                 "user_id=%s resume_id=%s error=%s",
-                user_id, resume_id, exc,
+                user_id,
+                resume_id,
+                exc,
             )
             return StorageResult(
                 success=False,
@@ -160,7 +176,7 @@ class SupabaseStorageService:
             return None
 
         try:
-            without_scheme = storage_reference[len("supabase://"):]
+            without_scheme = storage_reference[len("supabase://") :]
             bucket, _, key = without_scheme.partition("/")
             client = self._client.storage.from_(bucket)
             data = client.download(key)
@@ -168,7 +184,11 @@ class SupabaseStorageService:
                 return data
             return bytes(data) if data else None
         except Exception as exc:
-            logger.error("Failed to download resume from storage: ref=%s err=%s", storage_reference, exc)
+            logger.error(
+                "Failed to download resume from storage: ref=%s err=%s",
+                storage_reference,
+                exc,
+            )
             return None
 
 

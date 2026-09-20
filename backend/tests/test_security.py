@@ -3,6 +3,7 @@ Security and isolation tests for Saarthi V1.
 Covers: refresh token flow, logout invalidation, cross-user isolation,
 admin auth matrix, and graceful Redis-unavailable degradation.
 """
+
 import pytest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
@@ -36,6 +37,7 @@ def _register_login(client: TestClient, username: str, password: str) -> dict:
 # 1. Refresh token flow
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestRefreshFlow:
     def test_refresh_returns_new_valid_access_token(self, client):
         """Register -> login -> use refresh token -> get new access token -> use it on protected endpoint."""
@@ -55,7 +57,9 @@ class TestRefreshFlow:
         # New access token must work on a protected endpoint
         new_headers = {"Authorization": f"Bearer {new_tokens['access_token']}"}
         profile = client.get("/api/profile", headers=new_headers)
-        assert profile.status_code == 200, f"New access token rejected: {profile.json()}"
+        assert (
+            profile.status_code == 200
+        ), f"New access token rejected: {profile.json()}"
 
     def test_invalid_access_token_then_refresh_works(self, client):
         """Invalid access token -> 401, then refresh still yields a working access token."""
@@ -91,6 +95,7 @@ class TestRefreshFlow:
 # 2. Logout invalidates the refresh token
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestLogoutInvalidation:
     def test_logout_then_refresh_fails_with_401(self, client):
         """After logout, using the same refresh token on /auth/refresh must return 401."""
@@ -125,8 +130,11 @@ class TestLogoutInvalidation:
 # 3. Cross-user isolation (IDOR) on resume / goal / session resources
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class TestUserIsolation:
-    def _create_resume_for(self, db: Session, user: User, filename="cv.pdf", raw_text="USER RESUME TEXT") -> Resume:
+    def _create_resume_for(
+        self, db: Session, user: User, filename="cv.pdf", raw_text="USER RESUME TEXT"
+    ) -> Resume:
         repo = ResumeRepository(db)
         r = Resume(
             user_id=user.id,
@@ -140,7 +148,9 @@ class TestUserIsolation:
         )
         return repo.create(r)
 
-    def _create_goal_for(self, db: Session, user: User, title: str = "Land an SDE job") -> str:
+    def _create_goal_for(
+        self, db: Session, user: User, title: str = "Land an SDE job"
+    ) -> str:
         g = Goal(
             user_id=user.id,
             title=title,
@@ -161,7 +171,9 @@ class TestUserIsolation:
         authB = _register_login(client, "isola_userB", "Pass123!")
 
         userA = UserRepository(db_session).get_user_by_username("isola_userA")
-        resumeA = self._create_resume_for(db_session, userA, "userA_cv.pdf", "USER A PRIVATE DATA")
+        resumeA = self._create_resume_for(
+            db_session, userA, "userA_cv.pdf", "USER A PRIVATE DATA"
+        )
 
         # Resume history only returns userA's own resumes (sanity check on user isolation in list)
         historyA = client.get("/api/resume/history", headers=authA["headers"])
@@ -178,18 +190,18 @@ class TestUserIsolation:
             f"/api/resume/{resumeA.id}/reanalyze",
             headers=authB["headers"],
         )
-        assert reanalyzeB.status_code == 404, (
-            f"IDOR! UserB accessed UserA's resume via reanalyze: {reanalyzeB.status_code}"
-        )
+        assert (
+            reanalyzeB.status_code == 404
+        ), f"IDOR! UserB accessed UserA's resume via reanalyze: {reanalyzeB.status_code}"
 
         # UserB tries to sync UserA's resume by ID: must be 404
         syncB = client.post(
             f"/api/resume/{resumeA.id}/sync",
             headers=authB["headers"],
         )
-        assert syncB.status_code == 404, (
-            f"IDOR! UserB synced UserA's resume profile: {syncB.status_code}"
-        )
+        assert (
+            syncB.status_code == 404
+        ), f"IDOR! UserB synced UserA's resume profile: {syncB.status_code}"
 
     def test_user_b_cannot_get_user_a_goals(self, client, db_session):
         """UserB GET/PUT/DELETE /api/goals/{UserA_goal_id} -> 404."""
@@ -211,7 +223,9 @@ class TestUserIsolation:
 
         # UserB direct GET by id: 404
         getB = client.get(f"/api/goals/{goalA_id}", headers=authB["headers"])
-        assert getB.status_code == 404, f"IDOR: UserB read UserA goal. Status={getB.status_code}"
+        assert (
+            getB.status_code == 404
+        ), f"IDOR: UserB read UserA goal. Status={getB.status_code}"
 
         # UserB PUT by id: 404
         putB = client.put(
@@ -219,11 +233,15 @@ class TestUserIsolation:
             headers=authB["headers"],
             json={"title": "HACKED", "status": "active"},
         )
-        assert putB.status_code == 404, f"IDOR: UserB modified UserA goal. Status={putB.status_code}"
+        assert (
+            putB.status_code == 404
+        ), f"IDOR: UserB modified UserA goal. Status={putB.status_code}"
 
         # UserB DELETE by id: 404
         delB = client.delete(f"/api/goals/{goalA_id}", headers=authB["headers"])
-        assert delB.status_code == 404, f"IDOR: UserB deleted UserA goal. Status={delB.status_code}"
+        assert (
+            delB.status_code == 404
+        ), f"IDOR: UserB deleted UserA goal. Status={delB.status_code}"
 
     def test_user_b_cannot_read_user_a_session_messages(self, client, db_session):
         """UserB GET/DELETE /api/sessions/{UserA_session_id}[/messages] -> 404."""
@@ -249,40 +267,51 @@ class TestUserIsolation:
             f"/api/sessions/{sessionA_id}/messages",
             headers=authB["headers"],
         )
-        assert msgsB.status_code == 404, (
-            f"IDOR! UserB read messages of UserA session. Status={msgsB.status_code}"
-        )
+        assert (
+            msgsB.status_code == 404
+        ), f"IDOR! UserB read messages of UserA session. Status={msgsB.status_code}"
 
         # UserB attempts to delete UserA's session: 404
         delB = client.delete(
             f"/api/sessions/{sessionA_id}",
             headers=authB["headers"],
         )
-        assert delB.status_code == 404, (
-            f"IDOR! UserB deleted UserA session. Status={delB.status_code}"
-        )
+        assert (
+            delB.status_code == 404
+        ), f"IDOR! UserB deleted UserA session. Status={delB.status_code}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. Admin authorization matrix
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestAdminAuthMatrix:
-    def test_guest_to_admin_returns_401(self, client):
-        """No token -> GET /api/admin/stats = 401."""
-        res = client.get("/api/admin/stats")
-        assert res.status_code == 401, f"Expected 401, got {res.status_code}"
 
-    def test_normal_user_to_admin_returns_403(self, client):
-        """Non-admin user -> GET /api/admin/stats = 403."""
+class TestAdminAuthMatrix:
+    def test_guest_to_admin_returns_200_limited_summary(self, client):
+        """No token -> GET /api/admin/stats = 200 with public summary data."""
+        res = client.get("/api/admin/stats")
+        assert res.status_code == 200, f"Expected 200, got {res.status_code}"
+        data = res.json()
+        assert data.get("is_admin") is False
+        assert "total_users" in data
+        assert "summary_mode" in data
+
+    def test_normal_user_to_admin_returns_200_limited_summary(self, client):
+        """Non-admin user -> GET /api/admin/stats = 200 with reduced dataset."""
         auth = _register_login(client, "normal_user", "Pass123!")
         res = client.get("/api/admin/stats", headers=auth["headers"])
-        assert res.status_code == 403, f"Expected 403, got {res.status_code}"
+        assert res.status_code == 200, f"Expected 200, got {res.status_code}"
+        data = res.json()
+        assert data.get("is_admin") is False
+        assert data.get("summary_mode") is True
 
     @patch("app.core.dependencies.auth.get_settings")
-    def test_admin_user_to_admin_returns_200(self, mock_settings, client):
-        """Admin-whitelisted user -> GET /api/admin/stats = 200 + JSON body."""
+    def test_admin_user_to_admin_returns_200_with_full_details(
+        self, mock_settings, client
+    ):
+        """Admin-whitelisted user -> GET /api/admin/stats = 200 + full JSON body."""
         from app.core.config import Settings
+
         s = Settings()
         s.ADMIN_USERNAMES = "the_admin"
         mock_settings.return_value = s
@@ -299,15 +328,26 @@ class TestAdminAuthMatrix:
         admin_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
         res = client.get("/api/admin/stats", headers=admin_headers)
-        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
+        assert (
+            res.status_code == 200
+        ), f"Expected 200, got {res.status_code}: {res.text}"
         data = res.json()
-        for field in ("total_users", "total_sessions", "total_projects", "total_applications", "recent_users"):
+        assert data.get("is_admin") is True
+        assert data.get("summary_mode") is False
+        for field in (
+            "total_users",
+            "total_sessions",
+            "total_projects",
+            "total_applications",
+            "recent_users",
+        ):
             assert field in data, f"Missing admin field: {field}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 5. Redis-unavailable graceful degradation
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 class TestRedisUnavailable:
     def test_health_endpoint_still_returns_200_when_redis_down(self, client):
@@ -321,15 +361,18 @@ class TestRedisUnavailable:
             mock_cache.close = MagicMock()
 
             res = client.get("/api/health")
-            assert res.status_code == 200, f"Health crashed! {res.status_code}: {res.text}"
+            assert (
+                res.status_code == 200
+            ), f"Health crashed! {res.status_code}: {res.text}"
             body = res.json()
             assert "status" in body
             components = body.get("components", {})
             if "redis" in components:
                 rstatus = components["redis"].get("status", "ok")
-                assert rstatus in ("unavailable", "error"), (
-                    f"Expected redis unavailable/error when client is None, got: {rstatus}"
-                )
+                assert rstatus in (
+                    "unavailable",
+                    "error",
+                ), f"Expected redis unavailable/error when client is None, got: {rstatus}"
             assert components.get("api", {}).get("status") == "ok"
 
     def test_protected_profile_endpoint_works_without_redis(self, client, db_session):
@@ -347,9 +390,9 @@ class TestRedisUnavailable:
                 headers=auth["headers"],
                 json={"target_role": "Software Engineer"},
             )
-            assert patch_res.status_code == 200, (
-                f"Profile update failed with Redis down: {patch_res.text}"
-            )
+            assert (
+                patch_res.status_code == 200
+            ), f"Profile update failed with Redis down: {patch_res.text}"
 
             # Get profile back
             get = client.get("/api/profile", headers=auth["headers"])

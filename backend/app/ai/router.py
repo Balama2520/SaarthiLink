@@ -5,6 +5,7 @@ from app.ai.providers.huggingface import HuggingFaceSaarthiBrain
 
 logger = logging.getLogger(__name__)
 
+
 class AIRouter:
     def __init__(self):
         self.ollama = OllamaProvider()
@@ -23,5 +24,5 @@ class AIRouter:
         if current == "ollama":
             return self.gemini
         if current == "huggingface":
-            return self.gemini   # Fall back to Gemini if HF is unavailable
+            return self.gemini  # Fall back to Gemini if HF is unavailable
         return None

@@ -66,20 +66,20 @@ logger = logging.getLogger(__name__)
 
 # ── Tab registry (exact names — never rename these) ───────────────────────────
 SHEET_TABS = {
-    "sources":         "01_SOURCES",
-    "companies":       "02_COMPANIES",
-    "role_rules":      "03_ROLE_RULES",
-    "location_rules":  "04_LOCATION_RULES",
-    "skills":          "05_SKILLS",
-    "include_rules":   "06_INCLUDE_RULES",
-    "exclude_rules":   "07_EXCLUDE_RULES",
-    "seed_config":     "08_SEED_CONFIG",
-    "jobs_staging":    "09_JOBS_STAGING",
-    "seed_runs":       "10_SEED_RUNS",
-    "sync_logs":       "11_SYNC_LOGS",
-    "source_errors":   "12_SOURCE_ERRORS",
-    "dashboard":       "13_DASHBOARD",
-    "api_config":      "14_API_CONFIG",   # Never write; never expose values
+    "sources": "01_SOURCES",
+    "companies": "02_COMPANIES",
+    "role_rules": "03_ROLE_RULES",
+    "location_rules": "04_LOCATION_RULES",
+    "skills": "05_SKILLS",
+    "include_rules": "06_INCLUDE_RULES",
+    "exclude_rules": "07_EXCLUDE_RULES",
+    "seed_config": "08_SEED_CONFIG",
+    "jobs_staging": "09_JOBS_STAGING",
+    "seed_runs": "10_SEED_RUNS",
+    "sync_logs": "11_SYNC_LOGS",
+    "source_errors": "12_SOURCE_ERRORS",
+    "dashboard": "13_DASHBOARD",
+    "api_config": "14_API_CONFIG",  # Never write; never expose values
 }
 
 # Write-allowed tabs only (13_DASHBOARD and 14_API_CONFIG are protected)
@@ -91,13 +91,13 @@ SCOPES = [
 ]
 
 # Job sync result codes
-SYNC_STATUS_SYNCED          = "SYNCED"
-SYNC_STATUS_FAILED_VAL      = "FAILED_VALIDATION"
-SYNC_STATUS_DUPLICATE       = "DUPLICATE_BACKEND"
-SYNC_STATUS_AUTH_FAILURE    = "CRITICAL_AUTH_FAILURE"
-SYNC_STATUS_RATE_LIMITED    = "RATE_LIMITED"
-SYNC_STATUS_SERVER_ERROR    = "SERVER_ERROR"
-SYNC_STATUS_DRY_RUN         = "DRY_RUN_SKIPPED"
+SYNC_STATUS_SYNCED = "SYNCED"
+SYNC_STATUS_FAILED_VAL = "FAILED_VALIDATION"
+SYNC_STATUS_DUPLICATE = "DUPLICATE_BACKEND"
+SYNC_STATUS_AUTH_FAILURE = "CRITICAL_AUTH_FAILURE"
+SYNC_STATUS_RATE_LIMITED = "RATE_LIMITED"
+SYNC_STATUS_SERVER_ERROR = "SERVER_ERROR"
+SYNC_STATUS_DRY_RUN = "DRY_RUN_SKIPPED"
 
 MAX_RETRIES = 3
 BASE_BACKOFF_SECONDS = 2.0
@@ -122,18 +122,24 @@ class DryRunViolationError(Exception):
 def _sanitise_error(msg: str) -> str:
     """Strip credential fragments from error messages before logging."""
     lower = msg.lower()
-    if any(term in lower for term in ("private_key", "token", "client_email", "secret", "credential")):
+    if any(
+        term in lower
+        for term in ("private_key", "token", "client_email", "secret", "credential")
+    ):
         return "Authentication failed (credential error — check GOOGLE_SERVICE_ACCOUNT_JSON)"
     return msg[:200]
 
 
 def _dedup_hash(company: str, title: str, location: str) -> str:
     """sha256 deduplication hash matching existing Job model logic."""
-    raw = f"{(company or '').lower()}:{(title or '').lower()}:{(location or '').lower()}"
+    raw = (
+        f"{(company or '').lower()}:{(title or '').lower()}:{(location or '').lower()}"
+    )
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
 # ── Core Sheets Service ───────────────────────────────────────────────────────
+
 
 class GoogleSheetsService:
     """
@@ -148,7 +154,7 @@ class GoogleSheetsService:
     """
 
     def __init__(self) -> None:
-        self._client = None           # gspread Spreadsheet, lazily created
+        self._client = None  # gspread Spreadsheet, lazily created
         self._spreadsheet_id: str = ""
         self._credential_json: str = ""
         self._status: str = "config_required"
@@ -184,7 +190,10 @@ class GoogleSheetsService:
                 "status": "config_required",
                 "detail": "GOOGLE_SERVICE_ACCOUNT_JSON not configured",
             }
-        return {"status": "configured", "spreadsheet_id_prefix": self._spreadsheet_id[:8] + "…"}
+        return {
+            "status": "configured",
+            "spreadsheet_id_prefix": self._spreadsheet_id[:8] + "…",
+        }
 
     # ------------------------------------------------------------------
     # Internal: build client (lazy)
@@ -222,7 +231,9 @@ class GoogleSheetsService:
                 creds = Credentials.from_service_account_info(cred_info, scopes=SCOPES)
             else:
                 # It's a file path
-                creds = Credentials.from_service_account_file(cred_source, scopes=SCOPES)
+                creds = Credentials.from_service_account_file(
+                    cred_source, scopes=SCOPES
+                )
 
             gc = gspread.authorize(creds)
             self._client = gc.open_by_key(self._spreadsheet_id)
@@ -246,7 +257,9 @@ class GoogleSheetsService:
         try:
             return client.worksheet(tab_name)
         except Exception as exc:
-            raise SheetsServiceError(f"Worksheet '{tab_name}' not found: {exc}") from exc
+            raise SheetsServiceError(
+                f"Worksheet '{tab_name}' not found: {exc}"
+            ) from exc
 
     def _assert_write_allowed(self, tab_key: str) -> None:
         """Raise SheetsWriteProtectedError if tab is not write-allowed."""
@@ -291,7 +304,11 @@ class GoogleSheetsService:
                 results[name] = "FOUND"
             except Exception as exc:
                 err_str = str(exc).lower()
-                if "not found" in err_str or "no sheet" in err_str or "worksheet" in err_str:
+                if (
+                    "not found" in err_str
+                    or "no sheet" in err_str
+                    or "worksheet" in err_str
+                ):
                     results[name] = "NOT_FOUND"
                 else:
                     results[name] = "ACCESS_ERROR"
@@ -351,7 +368,12 @@ class GoogleSheetsService:
         rows = self.read_tab("dashboard")
         metrics: Dict[str, Any] = {}
         for row in rows:
-            key = row.get("Metric") or row.get("metric") or row.get("Key") or row.get("key")
+            key = (
+                row.get("Metric")
+                or row.get("metric")
+                or row.get("Key")
+                or row.get("key")
+            )
             val = row.get("Value") or row.get("value")
             if key:
                 metrics[str(key)] = val
@@ -413,6 +435,7 @@ class GoogleSheetsService:
 
 # ── Job Pipeline / Seeding Pipeline ──────────────────────────────────────────
 
+
 class SeedingPipeline:
     """
     Implements the complete Job Seeding pipeline:
@@ -464,9 +487,13 @@ class SeedingPipeline:
             "location": location,
             "description": str(raw.get("description") or raw.get("Description") or ""),
             "job_type": str(raw.get("job_type") or raw.get("JobType") or "Full-time"),
-            "employment_type": str(raw.get("employment_type") or raw.get("EmploymentType") or "On-site"),
+            "employment_type": str(
+                raw.get("employment_type") or raw.get("EmploymentType") or "On-site"
+            ),
             "apply_url": str(raw.get("apply_url") or raw.get("ApplyURL") or ""),
-            "experience_required": str(raw.get("experience_required") or raw.get("Experience") or ""),
+            "experience_required": str(
+                raw.get("experience_required") or raw.get("Experience") or ""
+            ),
             "source": "sheets",
             "dedup_hash": _dedup_hash(company, title, location),
         }
@@ -573,7 +600,9 @@ class SeedingPipeline:
         try:
             import httpx
         except ImportError as exc:
-            raise ImportError("httpx is required for backend sync. Run: pip install httpx") from exc
+            raise ImportError(
+                "httpx is required for backend sync. Run: pip install httpx"
+            ) from exc
 
         summary = {
             "dry_run": False,
@@ -606,11 +635,13 @@ class SeedingPipeline:
                     logger.error("Backend HTTP error: %s", str(exc)[:120])
                     for job in batch:
                         summary["server_error"] += 1
-                        summary["results"].append({
-                            "job": job.get("title", "?"),
-                            "status": SYNC_STATUS_SERVER_ERROR,
-                            "detail": "Network error",
-                        })
+                        summary["results"].append(
+                            {
+                                "job": job.get("title", "?"),
+                                "status": SYNC_STATUS_SERVER_ERROR,
+                                "detail": "Network error",
+                            }
+                        )
                     return
 
                 code = resp.status_code
@@ -618,32 +649,39 @@ class SeedingPipeline:
                 if code in (200, 201):
                     for job in batch:
                         summary["synced"] += 1
-                        summary["results"].append({
-                            "job": job.get("title", "?"),
-                            "status": SYNC_STATUS_SYNCED,
-                        })
+                        summary["results"].append(
+                            {
+                                "job": job.get("title", "?"),
+                                "status": SYNC_STATUS_SYNCED,
+                            }
+                        )
                     return
 
                 elif code == 400:
                     for job in batch:
                         summary["failed_validation"] += 1
-                        summary["results"].append({
-                            "job": job.get("title", "?"),
-                            "status": SYNC_STATUS_FAILED_VAL,
-                            "detail": resp.text[:200],
-                        })
+                        summary["results"].append(
+                            {
+                                "job": job.get("title", "?"),
+                                "status": SYNC_STATUS_FAILED_VAL,
+                                "detail": resp.text[:200],
+                            }
+                        )
                     return  # No retry
 
                 elif code in (401, 403):
                     logger.critical(
-                        "CRITICAL_AUTH_FAILURE from backend (HTTP %d). Aborting pipeline.", code
+                        "CRITICAL_AUTH_FAILURE from backend (HTTP %d). Aborting pipeline.",
+                        code,
                     )
                     for job in batch:
                         summary["auth_failure"] += 1
-                        summary["results"].append({
-                            "job": job.get("title", "?"),
-                            "status": SYNC_STATUS_AUTH_FAILURE,
-                        })
+                        summary["results"].append(
+                            {
+                                "job": job.get("title", "?"),
+                                "status": SYNC_STATUS_AUTH_FAILURE,
+                            }
+                        )
                     raise SheetsAuthError(
                         f"Backend returned {code} — pipeline aborted. Check auth token."
                     )
@@ -651,39 +689,57 @@ class SeedingPipeline:
                 elif code == 409:
                     for job in batch:
                         summary["duplicate"] += 1
-                        summary["results"].append({
-                            "job": job.get("title", "?"),
-                            "status": SYNC_STATUS_DUPLICATE,
-                        })
+                        summary["results"].append(
+                            {
+                                "job": job.get("title", "?"),
+                                "status": SYNC_STATUS_DUPLICATE,
+                            }
+                        )
                     return  # Continue remaining jobs
 
                 elif code == 429:
-                    retry_after = float(resp.headers.get("Retry-After", BASE_BACKOFF_SECONDS))
-                    wait = retry_after if retries == 0 else retry_after * (2 ** retries)
-                    logger.warning("Rate limited (429). Waiting %.1fs before retry %d.", wait, retries + 1)
+                    retry_after = float(
+                        resp.headers.get("Retry-After", BASE_BACKOFF_SECONDS)
+                    )
+                    wait = retry_after if retries == 0 else retry_after * (2**retries)
+                    logger.warning(
+                        "Rate limited (429). Waiting %.1fs before retry %d.",
+                        wait,
+                        retries + 1,
+                    )
                     if retries >= MAX_RETRIES:
                         for job in batch:
                             summary["server_error"] += 1
-                            summary["results"].append({
-                                "job": job.get("title", "?"),
-                                "status": SYNC_STATUS_RATE_LIMITED,
-                                "detail": f"Max retries ({MAX_RETRIES}) exhausted",
-                            })
+                            summary["results"].append(
+                                {
+                                    "job": job.get("title", "?"),
+                                    "status": SYNC_STATUS_RATE_LIMITED,
+                                    "detail": f"Max retries ({MAX_RETRIES}) exhausted",
+                                }
+                            )
                         return
                     time.sleep(wait)
                     retries += 1
 
                 elif code >= 500:
-                    wait = BASE_BACKOFF_SECONDS * (2 ** retries)
-                    logger.warning("Server error %d. Retrying in %.1fs (attempt %d/%d).", code, wait, retries + 1, MAX_RETRIES)
+                    wait = BASE_BACKOFF_SECONDS * (2**retries)
+                    logger.warning(
+                        "Server error %d. Retrying in %.1fs (attempt %d/%d).",
+                        code,
+                        wait,
+                        retries + 1,
+                        MAX_RETRIES,
+                    )
                     if retries >= MAX_RETRIES:
                         for job in batch:
                             summary["server_error"] += 1
-                            summary["results"].append({
-                                "job": job.get("title", "?"),
-                                "status": SYNC_STATUS_SERVER_ERROR,
-                                "detail": f"HTTP {code} after {MAX_RETRIES} retries",
-                            })
+                            summary["results"].append(
+                                {
+                                    "job": job.get("title", "?"),
+                                    "status": SYNC_STATUS_SERVER_ERROR,
+                                    "detail": f"HTTP {code} after {MAX_RETRIES} retries",
+                                }
+                            )
                         return
                     time.sleep(wait)
                     retries += 1
@@ -692,27 +748,31 @@ class SeedingPipeline:
                     logger.error("Unexpected HTTP %d from backend.", code)
                     for job in batch:
                         summary["server_error"] += 1
-                        summary["results"].append({
-                            "job": job.get("title", "?"),
-                            "status": SYNC_STATUS_SERVER_ERROR,
-                            "detail": f"Unexpected HTTP {code}",
-                        })
+                        summary["results"].append(
+                            {
+                                "job": job.get("title", "?"),
+                                "status": SYNC_STATUS_SERVER_ERROR,
+                                "detail": f"Unexpected HTTP {code}",
+                            }
+                        )
                     return
 
         # Batch the jobs and send
         for i in range(0, len(jobs), batch_size):
-            batch = jobs[i:i + batch_size]
+            batch = jobs[i : i + batch_size]
             try:
                 _send_batch(batch)
             except SheetsAuthError:
                 # Pipeline aborted on auth failure — mark remaining as skipped
-                remaining = jobs[i + batch_size:]
+                remaining = jobs[i + batch_size :]
                 for job in remaining:
                     summary["skipped"] += 1
-                    summary["results"].append({
-                        "job": job.get("title", "?"),
-                        "status": "SKIPPED_AFTER_AUTH_FAILURE",
-                    })
+                    summary["results"].append(
+                        {
+                            "job": job.get("title", "?"),
+                            "status": "SKIPPED_AFTER_AUTH_FAILURE",
+                        }
+                    )
                 break
 
         return summary
@@ -746,7 +806,9 @@ class SeedingPipeline:
         try:
             self.sheets.append_seed_run(seed_run_row)
         except Exception as exc:
-            logger.warning("Could not write seed run log: %s", _sanitise_error(str(exc)))
+            logger.warning(
+                "Could not write seed run log: %s", _sanitise_error(str(exc))
+            )
 
         # 11_SYNC_LOGS individual job rows
         for result in summary.get("results", []):
@@ -761,7 +823,9 @@ class SeedingPipeline:
             try:
                 self.sheets.append_sync_log(log_row)
             except Exception as exc:
-                logger.warning("Could not write sync log: %s", _sanitise_error(str(exc)))
+                logger.warning(
+                    "Could not write sync log: %s", _sanitise_error(str(exc))
+                )
 
     def log_source_error(self, source: str, error: str, run_id: str = "") -> None:
         """Write an error entry to 12_SOURCE_ERRORS."""
@@ -774,7 +838,9 @@ class SeedingPipeline:
         try:
             self.sheets.append_source_error(row)
         except Exception as exc:
-            logger.warning("Could not write source error: %s", _sanitise_error(str(exc)))
+            logger.warning(
+                "Could not write source error: %s", _sanitise_error(str(exc))
+            )
 
     # ── Full pipeline run ───────────────────────────────────────────────────
 
@@ -797,10 +863,9 @@ class SeedingPipeline:
           8. Log results to 10/11/12 tabs
         """
         import uuid
+
         run_id = run_id or str(uuid.uuid4())[:8]
-        logger.info(
-            "SeedingPipeline run=%s dry_run=%s started.", run_id, self.dry_run
-        )
+        logger.info("SeedingPipeline run=%s dry_run=%s started.", run_id, self.dry_run)
 
         include_rules = self.load_include_rules()
         exclude_rules = self.load_exclude_rules()
@@ -835,7 +900,11 @@ class SeedingPipeline:
 
         logger.info(
             "Pipeline run=%s: raw=%d normalized=%d filtered=%d valid=%d",
-            run_id, len(raw_jobs), len(normalized), len(filtered), len(valid_jobs),
+            run_id,
+            len(raw_jobs),
+            len(normalized),
+            len(filtered),
+            len(valid_jobs),
         )
 
         # Sync

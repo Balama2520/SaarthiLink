@@ -10,10 +10,10 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl, ConfigDict
 
-
 # ---------------------------------------------------------------------------
 # Company Schemas
 # ---------------------------------------------------------------------------
+
 
 class CompanyBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -39,6 +39,7 @@ class CompanyOut(CompanyBase):
 # Job Skill Schemas
 # ---------------------------------------------------------------------------
 
+
 class JobSkillOut(BaseModel):
     skill_name: str
     is_required: bool
@@ -50,12 +51,13 @@ class JobSkillOut(BaseModel):
 # Job Schemas
 # ---------------------------------------------------------------------------
 
+
 class JobBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     location: Optional[str] = None
-    job_type: Optional[str] = None          # Internship, Full-time
-    employment_type: Optional[str] = None   # On-site, Remote, Hybrid
+    job_type: Optional[str] = None  # Internship, Full-time
+    employment_type: Optional[str] = None  # On-site, Remote, Hybrid
     remote_type: Optional[str] = None
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
@@ -77,6 +79,7 @@ class JobOut(JobBase):
 
 class JobListOut(BaseModel):
     """Lightweight list view — omits the long description."""
+
     id: str
     title: str
     location: Optional[str]
@@ -97,10 +100,14 @@ class JobListOut(BaseModel):
 # Recommendation Schemas
 # ---------------------------------------------------------------------------
 
+
 class JobRecommendationOut(BaseModel):
     """Extends JobListOut with a recommendation score."""
+
     job: JobListOut
-    match_score: int = Field(..., ge=0, le=100, description="0-100 skill match percentage")
+    match_score: int = Field(
+        ..., ge=0, le=100, description="0-100 skill match percentage"
+    )
     matched_skills: list[str] = []
     missing_skills: list[str] = []
 
@@ -109,8 +116,9 @@ class JobRecommendationOut(BaseModel):
 # Job Search
 # ---------------------------------------------------------------------------
 
+
 class JobSearchParams(BaseModel):
-    q: Optional[str] = None            # Free-text search on title
+    q: Optional[str] = None  # Free-text search on title
     location: Optional[str] = None
     job_type: Optional[str] = None
     remote_type: Optional[str] = None
@@ -121,6 +129,7 @@ class JobSearchParams(BaseModel):
 # ---------------------------------------------------------------------------
 # Saved Job Schemas
 # ---------------------------------------------------------------------------
+
 
 class SaveJobRequest(BaseModel):
     job_id: str = Field(..., min_length=1)

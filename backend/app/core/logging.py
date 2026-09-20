@@ -2,6 +2,7 @@
 Saarthi AI - Structured JSON Logging with standard Python logging.
 Replaces structlog. Propagates request_id via contextvars.
 """
+
 import logging
 import json
 import uuid
@@ -52,11 +53,30 @@ class JSONFormatter(logging.Formatter):
         # Extra fields passed via logger.info("msg", extra={...})
         for key, val in record.__dict__.items():
             if key not in (
-                "message", "asctime", "args", "created", "exc_info", "exc_text",
-                "filename", "funcName", "id", "levelname", "levelno", "lineno",
-                "module", "msecs", "msg", "name", "pathname", "process",
-                "processName", "relativeCreated", "stack_info", "thread",
-                "threadName", "taskName",
+                "message",
+                "asctime",
+                "args",
+                "created",
+                "exc_info",
+                "exc_text",
+                "filename",
+                "funcName",
+                "id",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "msg",
+                "name",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "stack_info",
+                "thread",
+                "threadName",
+                "taskName",
             ):
                 log_obj[key] = val
 
@@ -68,12 +88,13 @@ class JSONFormatter(logging.Formatter):
 
 class PrettyFormatter(logging.Formatter):
     """Human-readable colored formatter for development."""
+
     COLORS = {
-        "DEBUG":    "\033[36m",   # Cyan
-        "INFO":     "\033[32m",   # Green
-        "WARNING":  "\033[33m",   # Yellow
-        "ERROR":    "\033[31m",   # Red
-        "CRITICAL": "\033[35m",   # Magenta
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
+        "CRITICAL": "\033[35m",  # Magenta
     }
     RESET = "\033[0m"
 

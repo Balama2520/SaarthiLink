@@ -17,6 +17,7 @@ Status values reported in /api/health:
   unavailable     - Space unreachable / timeout
   error           - Unexpected response from Space
 """
+
 import asyncio
 import json
 import logging
@@ -70,11 +71,21 @@ class HuggingFaceSaarthiBrain(BaseProvider):
         if not base_url:
             return {"status": "config_required", "detail": "HF_SPACE_ID not configured"}
 
+        headers = {}
+        hf_token = self._get_hf_token()
+        if hf_token:
+            headers["Authorization"] = f"Bearer {hf_token}"
+
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 t0 = asyncio.get_event_loop().time()
-                r = await client.get(f"{base_url}/")
+                r = await client.get(f"{base_url}/", headers=headers)
                 latency_ms = round((asyncio.get_event_loop().time() - t0) * 1000, 1)
+                if r.status_code in (401, 403):
+                    return {
+                        "status": "config_required",
+                        "detail": "HF_API_TOKEN is missing or cannot access the private Space",
+                    }
                 if r.status_code < 500:
                     return {"status": "connected", "latency_ms": latency_ms}
                 return {"status": "error", "http_status": r.status_code}
@@ -98,30 +109,72 @@ class HuggingFaceSaarthiBrain(BaseProvider):
         if hf_token:
             headers["Authorization"] = f"Bearer {hf_token}"
 
-        payload = {
-            "data": [prompt, file_path],
-            "fn_index": 0,
-        }
-
         last_error: Optional[Exception] = None
 
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
                     resp = await client.post(
-                        f"{base_url}/run/predict",
-                        json=payload,
+                        f"{base_url}/gradio_api/call/{self._get_api_name()}",
+                        json={"data": [prompt, file_path]},
                         headers=headers,
                     )
 
                     if resp.status_code == 200:
                         body = resp.json()
-                        # Gradio returns {"data": [...], "duration": ..., ...}
-                        data = body.get("data", [])
-                        if data:
-                            result = data[0]
-                            return str(result) if result is not None else ""
-                        raise RuntimeError("Empty data array from Gradio Space")
+                        if body.get("data"):
+                            return (
+                                str(body["data"][0])
+                                if body["data"][0] is not None
+                                else ""
+                            )
+                        event_id = body.get("event_id")
+                        if not event_id:
+                            raise RuntimeError(
+                                "HF Space event API did not return an event_id"
+                            )
+                        async with client.stream(
+                            "GET",
+                            f"{base_url}/gradio_api/call/{self._get_api_name()}/{event_id}",
+                            headers=headers,
+                        ) as event_stream:
+                            if event_stream.status_code != 200:
+                                raise RuntimeError(
+                                    f"HF Space event stream returned HTTP {event_stream.status_code}"
+                                )
+                            result_parts = []
+                            async for line in event_stream.aiter_lines():
+                                if not line.startswith("data:"):
+                                    continue
+                                data = line[5:].strip()
+                                if data in ("", "[DONE]"):
+                                    continue
+                                try:
+                                    values = json.loads(data)
+                                except json.JSONDecodeError:
+                                    continue
+                                if isinstance(values, list):
+                                    result_parts.extend(
+                                        str(value)
+                                        for value in values
+                                        if value is not None
+                                    )
+                            if result_parts:
+                                return result_parts[-1]
+                        raise RuntimeError("Empty response from HF Space event API")
+
+                    if resp.status_code == 404:
+                        # Gradio 3/4 Spaces still expose the legacy endpoint.
+                        legacy_resp = await client.post(
+                            f"{base_url}/run/predict",
+                            json={"data": [prompt, file_path], "fn_index": 0},
+                            headers=headers,
+                        )
+                        if legacy_resp.status_code == 200:
+                            data = legacy_resp.json().get("data", [])
+                            if data:
+                                return str(data[0]) if data[0] is not None else ""
+                        resp = legacy_resp
 
                     is_retryable = resp.status_code in RETRYABLE_STATUS_CODES
                     error_text = resp.text[:200]
@@ -137,10 +190,13 @@ class HuggingFaceSaarthiBrain(BaseProvider):
                         )
 
                     if is_retryable and attempt < MAX_RETRIES:
-                        backoff = (1.5 ** attempt) + random.uniform(0.1, 0.4)
+                        backoff = (1.5**attempt) + random.uniform(0.1, 0.4)
                         logger.warning(
                             "HF Space returned %d on attempt %d/%d — retrying in %.1fs",
-                            resp.status_code, attempt, MAX_RETRIES, backoff,
+                            resp.status_code,
+                            attempt,
+                            MAX_RETRIES,
+                            backoff,
                         )
                         await asyncio.sleep(backoff)
                         continue
@@ -154,10 +210,13 @@ class HuggingFaceSaarthiBrain(BaseProvider):
             except (httpx.TimeoutException, httpx.ConnectError) as net_err:
                 last_error = net_err
                 if attempt < MAX_RETRIES:
-                    backoff = (1.5 ** attempt) + random.uniform(0.1, 0.3)
+                    backoff = (1.5**attempt) + random.uniform(0.1, 0.3)
                     logger.warning(
                         "HF Space network error on attempt %d/%d: %s — retrying in %.1fs",
-                        attempt, MAX_RETRIES, net_err, backoff,
+                        attempt,
+                        MAX_RETRIES,
+                        net_err,
+                        backoff,
                     )
                     await asyncio.sleep(backoff)
                 else:
@@ -192,62 +251,4 @@ class HuggingFaceSaarthiBrain(BaseProvider):
 
         prompt = "\n".join(prompt_parts)
         file_path = kwargs.get("file_path", None)
-
-        base_url = self._get_space_base_url()
-        if not base_url:
-            yield await self.generate(prompt, file_path=file_path)
-            return
-
-        headers: dict = {"Content-Type": "application/json"}
-        hf_token = self._get_hf_token()
-        if hf_token:
-            headers["Authorization"] = f"Bearer {hf_token}"
-
-        # Gradio 5+ removed /run/predict in favor of an event-based API.
-        api_name = self._get_api_name()
-        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
-            response = await client.post(
-                f"{base_url}/gradio_api/call/{api_name}",
-                json={"data": [prompt, file_path]},
-                headers=headers,
-            )
-            if response.status_code in (401, 403):
-                raise PermissionError(
-                    f"HF Space returned {response.status_code} — set HF_API_TOKEN for this private Space"
-                )
-            if response.status_code == 404:
-                # Keep support for older Spaces that still expose /run/predict.
-                yield await self.generate(prompt, file_path=file_path)
-                return
-            if response.status_code != 200:
-                raise RuntimeError(
-                    f"HF Space event API returned HTTP {response.status_code}: {response.text[:200]}"
-                )
-
-            event_id = response.json().get("event_id")
-            if not event_id:
-                raise RuntimeError("HF Space event API did not return an event_id")
-
-            async with client.stream(
-                "GET",
-                f"{base_url}/gradio_api/call/{api_name}/{event_id}",
-                headers=headers,
-            ) as event_stream:
-                if event_stream.status_code != 200:
-                    raise RuntimeError(
-                        f"HF Space event stream returned HTTP {event_stream.status_code}"
-                    )
-                async for line in event_stream.aiter_lines():
-                    if not line.startswith("data:"):
-                        continue
-                    data = line[5:].strip()
-                    if data in ("", "[DONE]"):
-                        continue
-                    try:
-                        values = json.loads(data)
-                    except json.JSONDecodeError:
-                        continue
-                    if isinstance(values, list):
-                        for value in values:
-                            if value is not None:
-                                yield str(value)
+        yield await self.generate(prompt, file_path=file_path)

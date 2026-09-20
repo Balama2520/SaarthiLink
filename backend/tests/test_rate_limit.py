@@ -4,6 +4,7 @@ Unit + integration tests for rate limiting (FR-13, FR-15).
 Sync test style (matches conftest.py / existing suite). Async limiter calls
 are wrapped with asyncio.run() inside the sync test functions.
 """
+
 import asyncio
 import pytest
 from unittest.mock import patch, AsyncMock
@@ -16,12 +17,20 @@ from app.core.config import get_settings
 def tiny_window():
     """Override settings to a small 3-req / 0.1s window so tests run in <1s."""
     s = get_settings()
-    prev = (s.RATE_LIMIT_ENABLED, s.RATE_LIMIT_REQUESTS_PER_MINUTE, s.RATE_LIMIT_WINDOW_SECONDS)
+    prev = (
+        s.RATE_LIMIT_ENABLED,
+        s.RATE_LIMIT_REQUESTS_PER_MINUTE,
+        s.RATE_LIMIT_WINDOW_SECONDS,
+    )
     s.RATE_LIMIT_ENABLED = True
     s.RATE_LIMIT_REQUESTS_PER_MINUTE = 3
     s.RATE_LIMIT_WINDOW_SECONDS = 0.1
     yield s
-    s.RATE_LIMIT_ENABLED, s.RATE_LIMIT_REQUESTS_PER_MINUTE, s.RATE_LIMIT_WINDOW_SECONDS = prev
+    (
+        s.RATE_LIMIT_ENABLED,
+        s.RATE_LIMIT_REQUESTS_PER_MINUTE,
+        s.RATE_LIMIT_WINDOW_SECONDS,
+    ) = prev
 
 
 def test_rate_limiter_under_limit_passes(tiny_window):
@@ -33,7 +42,9 @@ def test_rate_limiter_under_limit_passes(tiny_window):
     results = []
     for i in range(cap - 1):  # 2 calls
         results.append(asyncio.run(limiter.allow("client-under")))
-    assert all(results) is True, f"Expected every under-limit call to pass, got {results}"
+    assert (
+        all(results) is True
+    ), f"Expected every under-limit call to pass, got {results}"
 
 
 def test_rate_limiter_over_limit_blocks(tiny_window):
@@ -49,13 +60,18 @@ def test_rate_limiter_over_limit_blocks(tiny_window):
 
     # Request #4 inside the SAME 0.1s window — MUST block
     blocked = asyncio.run(limiter.allow("client-over"))
-    assert blocked is False, "Request N+1 inside the unexpired window must be rejected (False)"
+    assert (
+        blocked is False
+    ), "Request N+1 inside the unexpired window must be rejected (False)"
 
     # After window expires, allow again
     import time as _t
+
     _t.sleep(tiny_window.RATE_LIMIT_WINDOW_SECONDS + 0.02)
     allowed_after = asyncio.run(limiter.allow("client-over"))
-    assert allowed_after is True, "After rolling window elapses requests must pass again"
+    assert (
+        allowed_after is True
+    ), "After rolling window elapses requests must pass again"
 
 
 def test_rate_limiter_disabled_allow_all(tiny_window):
@@ -80,10 +96,14 @@ def test_429_response_shape_has_detail_and_request_id(client):
         mock_svc.allow = AsyncMock(return_value=False)
         # Any /api/* endpoint triggers the middleware branch (starts with /api)
         res = client.get("/api/health")
-    assert res.status_code == 429, f"Expected 429 when limiter blocks, got {res.status_code}"
+    assert (
+        res.status_code == 429
+    ), f"Expected 429 when limiter blocks, got {res.status_code}"
     body = res.json()
-    assert body.get("detail") == "Too many requests", (
-        f"429 response `detail` field must be 'Too many requests' for human-friendly UI; got {body.get('detail')!r}"
-    )
+    assert (
+        body.get("detail") == "Too many requests"
+    ), f"429 response `detail` field must be 'Too many requests' for human-friendly UI; got {body.get('detail')!r}"
     rid = body.get("request_id")
-    assert isinstance(rid, str) and len(rid) > 0, f"429 body must include non-empty request_id trace, got {rid!r}"
+    assert (
+        isinstance(rid, str) and len(rid) > 0
+    ), f"429 body must include non-empty request_id trace, got {rid!r}"

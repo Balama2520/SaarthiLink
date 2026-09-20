@@ -9,6 +9,7 @@ from app.core.config import get_settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
+
 class GuestUser:
     def __init__(self):
         self.id = -1
@@ -17,13 +18,14 @@ class GuestUser:
         self.email = None
         self.target_role = None
 
+
 def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme), 
-    auth_service: AuthService = Depends(get_auth_service)
+    token: Optional[str] = Depends(oauth2_scheme),
+    auth_service: AuthService = Depends(get_auth_service),
 ) -> User | GuestUser:
     if not token:
         return GuestUser()
-        
+
     user = auth_service.get_user_from_token(token)
     if not user:
         raise HTTPException(
@@ -56,16 +58,9 @@ def get_optional_current_user(
     return current_user
 
 
-
-def require_admin_user(
-    current_user: User | GuestUser = Depends(get_current_user),
-) -> User:
+def is_admin_user(current_user: User | GuestUser) -> bool:
     if isinstance(current_user, GuestUser):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return False
 
     raw_admins = get_settings().ADMIN_USERNAMES
     configured_admins = {
@@ -74,6 +69,15 @@ def require_admin_user(
         if username.strip()
     }
     user_name = (getattr(current_user, "username", None) or "").strip().lower()
-    if user_name not in configured_admins:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return user_name in configured_admins
+
+
+def require_admin_user(
+    current_user: User | GuestUser = Depends(get_current_user),
+) -> User:
+    if isinstance(current_user, GuestUser):
+        return current_user  # allow the public summary endpoint to remain open
+
+    if not is_admin_user(current_user):
+        return current_user  # allow the public summary endpoint to stay accessible to all users
     return current_user

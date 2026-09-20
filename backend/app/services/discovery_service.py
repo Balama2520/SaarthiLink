@@ -4,6 +4,7 @@ Discovery Service — Business Logic for Saarthi Discovery & Intelligence System
 Handles user discovery submissions, multi-step feedback ingestion, opportunity signal
 validation/deduplication, contact forms, consent logging, and feedback analytics.
 """
+
 import hashlib
 import json
 import logging
@@ -149,7 +150,12 @@ class DiscoveryService:
         }
 
     # ── Opportunity Ingestion Service ───────────────────────────────────────
-    def submit_opportunity(self, data: Dict[str, Any], session_id: Optional[str] = None, user_id: Optional[int] = None) -> Dict[str, Any]:
+    def submit_opportunity(
+        self,
+        data: Dict[str, Any],
+        session_id: Optional[str] = None,
+        user_id: Optional[int] = None,
+    ) -> Dict[str, Any]:
         dedup = _hash_str(
             f"{(data.get('company') or '').lower()}:{(data.get('role') or '').lower()}:{(data.get('public_job_url') or '').lower()}"
         )
@@ -157,7 +163,9 @@ class DiscoveryService:
 
         profile_id = None
         if session_id:
-            profile = self.repo.get_or_create_profile(session_id=session_id, user_id=user_id)
+            profile = self.repo.get_or_create_profile(
+                session_id=session_id, user_id=user_id
+            )
             profile_id = profile.id
 
         sig = self.repo.create_opportunity_signal(data, profile_id=profile_id)
@@ -175,7 +183,9 @@ class DiscoveryService:
         }
 
     # ── Contact Request Service ─────────────────────────────────────────────
-    def submit_contact_request(self, data: Dict[str, Any], user_id: Optional[int] = None) -> Dict[str, Any]:
+    def submit_contact_request(
+        self, data: Dict[str, Any], user_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         cr = self.repo.create_contact_request(data, user_id=user_id)
         self.repo.log_event(
             event_type="contact_submitted",
@@ -187,16 +197,23 @@ class DiscoveryService:
         # Sync to Google Sheets 11_SYNC_LOGS if Google Sheets is configured
         try:
             from app.services.sheets_service import GoogleSheetsService
+
             sheets = GoogleSheetsService()
             if sheets.is_configured():
-                sheets.append_sync_log({
-                    "run_id": f"CONTACT_{cr.id[:8]}",
-                    "timestamp": cr.created_at.isoformat() if hasattr(cr, 'created_at') and cr.created_at else "",
-                    "job": f"Contact: {cr.name} ({cr.email})",
-                    "status": f"ROLE: {cr.role_type or 'User'} | REASON: {cr.reason or 'General'}",
-                    "detail": (cr.message or "")[:200],
-                    "dry_run": "NO",
-                })
+                sheets.append_sync_log(
+                    {
+                        "run_id": f"CONTACT_{cr.id[:8]}",
+                        "timestamp": (
+                            cr.created_at.isoformat()
+                            if hasattr(cr, "created_at") and cr.created_at
+                            else ""
+                        ),
+                        "job": f"Contact: {cr.name} ({cr.email})",
+                        "status": f"ROLE: {cr.role_type or 'User'} | REASON: {cr.reason or 'General'}",
+                        "detail": (cr.message or "")[:200],
+                        "dry_run": "NO",
+                    }
+                )
         except Exception as exc:
             logger.warning("Could not sync contact request to Google Sheets: %s", exc)
 

@@ -37,40 +37,40 @@ class CareerService:
             return [
                 "SQL and data modeling",
                 "Python for analysis",
-                "Visualization and storytelling"
+                "Visualization and storytelling",
             ], [
                 "Build one dashboard project",
                 "Practice 10 SQL interview problems",
-                "Summarize insights from a dataset"
+                "Summarize insights from a dataset",
             ]
         if "software" in role or "engineer" in role or "developer" in role:
             return [
                 "DSA and problem solving",
                 "System design fundamentals",
-                "Backend and cloud basics"
+                "Backend and cloud basics",
             ], [
                 "Ship one backend or full-stack project",
                 "Practice 15 DSA problems",
-                "Document your architecture choices"
+                "Document your architecture choices",
             ]
         if "product" in role:
             return [
                 "User research",
                 "Requirements writing",
-                "Analytics and experimentation"
+                "Analytics and experimentation",
             ], [
                 "Create one product case study",
                 "Talk through a feature decision",
-                "Review one competitor teardown"
+                "Review one competitor teardown",
             ]
         return [
             "Core domain knowledge",
             "Project execution",
-            "Communication and storytelling"
+            "Communication and storytelling",
         ], [
             "Build a polished portfolio artifact",
             "Prepare one mock presentation",
-            "Collect feedback from mentors"
+            "Collect feedback from mentors",
         ]
 
     async def analyze_skill_gaps(self, user_id: int, target_role: str) -> dict:
@@ -78,7 +78,11 @@ class CareerService:
         skills = self.repo.get_user_skills(user_id)
         resume = self.repo.get_latest_resume(user_id)
         focus_areas, next_actions = self._role_focus(target_role)
-        strengths = [skill.skill_name for skill in skills[:3]] if skills else ["Foundational fundamentals"]
+        strengths = (
+            [skill.skill_name for skill in skills[:3]]
+            if skills
+            else ["Foundational fundamentals"]
+        )
 
         return {
             "target_role": target_role,
@@ -87,62 +91,79 @@ class CareerService:
             "gaps": focus_areas,
             "next_actions": next_actions,
             "resume_ready": bool(resume),
-            "profile_stage": profile.career_stage if profile else "unknown"
+            "profile_stage": profile.career_stage if profile else "unknown",
         }
 
-    async def generate_learning_plan(self, user_id: int, target_role: str, weeks: int = 4) -> dict:
+    async def generate_learning_plan(
+        self, user_id: int, target_role: str, weeks: int = 4
+    ) -> dict:
         focus_areas, next_actions = self._role_focus(target_role)
         plan = []
         for week in range(1, max(1, weeks) + 1):
             focus = focus_areas[(week - 1) % len(focus_areas)]
-            plan.append({
-                "week": week,
-                "theme": focus,
-                "focus": f"Deepen {focus.lower()} over the week",
-                "actions": [
-                    next_actions[(week - 1) % len(next_actions)],
-                    f"Review one resource related to {target_role}",
-                    "Write a short reflection at the end of the week"
-                ]
-            })
+            plan.append(
+                {
+                    "week": week,
+                    "theme": focus,
+                    "focus": f"Deepen {focus.lower()} over the week",
+                    "actions": [
+                        next_actions[(week - 1) % len(next_actions)],
+                        f"Review one resource related to {target_role}",
+                        "Write a short reflection at the end of the week",
+                    ],
+                }
+            )
 
-        return {
-            "target_role": target_role,
-            "weeks": weeks,
-            "plan": plan
-        }
+        return {"target_role": target_role, "weeks": weeks, "plan": plan}
 
     def get_dashboard_summary(self, user_id: int) -> dict:
         profile = self.repo.get_profile(user_id)
         all_goals = self.repo.get_goals(user_id, 10_000)
         goals = all_goals[:3]
         mission = self.get_mission_status(user_id)
-        applications, interviews, latest_resume = self.repo.get_dashboard_records(user_id)
-        
-        target_role = profile.target_role if profile and profile.target_role else "career"
-        career_stage = profile.career_stage if profile and profile.career_stage else "Growing"
-        
+        applications, interviews, latest_resume = self.repo.get_dashboard_records(
+            user_id
+        )
+
+        target_role = (
+            profile.target_role if profile and profile.target_role else "career"
+        )
+        career_stage = (
+            profile.career_stage if profile and profile.career_stage else "Growing"
+        )
+
         focus_areas, next_actions = self._role_focus(target_role)
-        
-        headline = f"{career_stage} toward {target_role}" if (profile and profile.target_role) else "Build momentum with a focused weekly plan"
-        
+
+        headline = (
+            f"{career_stage} toward {target_role}"
+            if (profile and profile.target_role)
+            else "Build momentum with a focused weekly plan"
+        )
+
         dynamic_actions = []
         if not profile or not profile.target_role:
-            dynamic_actions.append("Add a target role to your profile to get personalized AI insights")
+            dynamic_actions.append(
+                "Add a target role to your profile to get personalized AI insights"
+            )
         else:
-            dynamic_actions.append("Complete one mission task today to build your streak")
-            
+            dynamic_actions.append(
+                "Complete one mission task today to build your streak"
+            )
+
         if goals:
-            dynamic_actions.append(f"Update progress on your top goal: {goals[0].title}")
+            dynamic_actions.append(
+                f"Update progress on your top goal: {goals[0].title}"
+            )
         else:
             dynamic_actions.append("Set your first career goal in the Navigator")
-            
+
         # Fill the rest with role-specific actions
         for action in next_actions:
             if len(dynamic_actions) < 3:
                 dynamic_actions.append(action)
 
         from app.services.career_copilot_service import CareerCopilotService
+
         copilot_svc = CareerCopilotService(self.repo.db)
         next_best_action = copilot_svc.compute_next_best_action(user_id)
         career_health = copilot_svc.compute_career_health(user_id)
@@ -178,21 +199,31 @@ class CareerService:
                 "applications": len(applications),
                 "interviews": len(interviews),
                 "ats_score": latest_resume.ats_score if latest_resume else 0,
-                "goals_in_progress": sum(goal.status != "completed" for goal in all_goals),
+                "goals_in_progress": sum(
+                    goal.status != "completed" for goal in all_goals
+                ),
             },
             "activity": activity[:5],
         }
 
     def get_next_best_action(self, user_id: int) -> dict:
         from app.services.career_copilot_service import CareerCopilotService
+
         return CareerCopilotService(self.repo.db).compute_next_best_action(user_id)
 
     def get_career_health(self, user_id: int) -> dict:
         from app.services.career_copilot_service import CareerCopilotService
+
         return CareerCopilotService(self.repo.db).compute_career_health(user_id)
 
-    async def generate_star_bullets(self, project_or_exp: str, description: str) -> list[str]:
-        prompt = PromptManager.load("career/star_bullets", project_or_exp=project_or_exp, description=description)
+    async def generate_star_bullets(
+        self, project_or_exp: str, description: str
+    ) -> list[str]:
+        prompt = PromptManager.load(
+            "career/star_bullets",
+            project_or_exp=project_or_exp,
+            description=description,
+        )
         messages = [{"role": "user", "content": prompt}]
         stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
@@ -203,11 +234,13 @@ class CareerService:
             return [
                 f"Spearheaded optimization of {project_or_exp} code, boosting database retrieval speeds by 40%.",
                 f"Engineered key feature modules for {project_or_exp} using modern tech stacks, achieving 99.9% uptime.",
-                f"Collaborated on development sprints for {project_or_exp}, reducing customer onboarding flow from 5 steps to 2."
+                f"Collaborated on development sprints for {project_or_exp}, reducing customer onboarding flow from 5 steps to 2.",
             ]
 
     async def optimize_keywords(self, resume_text: str, job_title: str) -> dict:
-        prompt = PromptManager.load("career/keywords", job_title=job_title, resume_text=resume_text[:2000])
+        prompt = PromptManager.load(
+            "career/keywords", job_title=job_title, resume_text=resume_text[:2000]
+        )
         messages = [{"role": "user", "content": prompt}]
         stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
@@ -216,9 +249,14 @@ class CareerService:
             return json.loads(_strip_markdown_json(full_text))
         except Exception:
             return {
-                "missing_keywords": ["Scalability", "System Architecture", "Unit Testing", "CI/CD Platforms"],
+                "missing_keywords": [
+                    "Scalability",
+                    "System Architecture",
+                    "Unit Testing",
+                    "CI/CD Platforms",
+                ],
                 "critical_skills": ["AWS", "Docker", "Typescript", "PostgreSQL"],
-                "recommendation": "Add a dedicated Skills section highlighting system design keywords."
+                "recommendation": "Add a dedicated Skills section highlighting system design keywords.",
             }
 
     async def decode_company(self, company_name: str) -> dict:
@@ -232,17 +270,35 @@ class CareerService:
         except Exception:
             return {
                 "summary": f"{company_name} is a leading tech enterprise focused on digital transformation and cloud innovations.",
-                "tech_stack": ["React", "TypeScript", "Node.js", "Docker", "AWS Services"],
+                "tech_stack": [
+                    "React",
+                    "TypeScript",
+                    "Node.js",
+                    "Docker",
+                    "AWS Services",
+                ],
                 "products": ["Saarthi Portal", "Enterprise Analytics Manager"],
                 "culture": "Fast-paced, high autonomy, focus on ownership and execution.",
-                "interview_process": ["Online OA (2 coding questions)", "System Design Round", "Technical & Values Round"],
+                "interview_process": [
+                    "Online OA (2 coding questions)",
+                    "System Design Round",
+                    "Technical & Values Round",
+                ],
                 "salary_range": "INR 8 - 15 LPA for fresh graduates",
                 "hiring_trends": "Actively seeking full-stack and cloud DevOps engineers.",
-                "team_structure": "Agile squads composed of 5 developers, 1 QA, and 1 Product Manager."
+                "team_structure": "Agile squads composed of 5 developers, 1 QA, and 1 Product Manager.",
             }
 
-    async def coding_arena(self, problem_title: str, language: str, user_code: str, mode: str) -> dict:
-        prompt = PromptManager.load("career/coding_arena", problem_title=problem_title, mode=mode, language=language, user_code=user_code)
+    async def coding_arena(
+        self, problem_title: str, language: str, user_code: str, mode: str
+    ) -> dict:
+        prompt = PromptManager.load(
+            "career/coding_arena",
+            problem_title=problem_title,
+            mode=mode,
+            language=language,
+            user_code=user_code,
+        )
         messages = [{"role": "user", "content": prompt}]
         stream = AIGateway().generate_response_stream(messages, personality="learning")
         full_text = await _collect_stream(stream)
@@ -254,11 +310,18 @@ class CareerService:
                 "feedback": "Your logic is correct. Consider optimizing helper arrays.",
                 "complexity": "Time: O(N log N) | Space: O(N)",
                 "has_bugs": False,
-                "clean_code_suggestion": "Use built-in sorting libraries instead of custom sorting logic."
+                "clean_code_suggestion": "Use built-in sorting libraries instead of custom sorting logic.",
             }
 
-    async def build_network_outreach(self, person_type: str, company: str, user_context: str) -> dict:
-        prompt = PromptManager.load("career/network_outreach", person_type=person_type, company=company, user_context=user_context)
+    async def build_network_outreach(
+        self, person_type: str, company: str, user_context: str
+    ) -> dict:
+        prompt = PromptManager.load(
+            "career/network_outreach",
+            person_type=person_type,
+            company=company,
+            user_context=user_context,
+        )
         messages = [{"role": "user", "content": prompt}]
         stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
@@ -269,11 +332,13 @@ class CareerService:
             return {
                 "connection_request": f"Hi, saw your work at {company}. I'm a student developer interested in cloud engineering. Would love to connect!",
                 "outreach_message": f"Hello, I hope you are doing well. I noticed your background at {company} and would love to ask 3 brief questions about your team's culture. Best, Student.",
-                "referral_message": f"Hi! I recently applied to the software engineer role at {company}. Given my background in cloud applications, would you be open to sharing my resume with the team? Thank you!"
+                "referral_message": f"Hi! I recently applied to the software engineer role at {company}. Given my background in cloud applications, would you be open to sharing my resume with the team? Thank you!",
             }
 
     async def get_salary_insight(self, role: str, location: str) -> dict:
-        prompt = PromptManager.load("career/salary_insight", role=role, location=location)
+        prompt = PromptManager.load(
+            "career/salary_insight", role=role, location=location
+        )
         messages = [{"role": "user", "content": prompt}]
         stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
@@ -288,8 +353,8 @@ class CareerService:
                 "cost_of_living_ratio": "Medium/High (Rent costs take up ~25% of entry pay)",
                 "negotiation_tactics": [
                     "Negotiate base salary rather than variables or stock options.",
-                    "Mention average market rates from Glassdoor / AmbitionBox to back claims."
-                ]
+                    "Mention average market rates from Glassdoor / AmbitionBox to back claims.",
+                ],
             }
 
     async def get_global_path(self, country: str) -> dict:
@@ -304,9 +369,12 @@ class CareerService:
             return {
                 "visa_type": f"Post-Study Work Visa (typically 2-3 years) or High-Skilled Work Permit for {country}.",
                 "masters_prep": "Maintain CGPA > 8.0, secure 3 LORs, and draft an impactful SOP detailing core coding projects.",
-                "scholarships": [f"Government Global Scholarship for {country}", "University Merit Awards"],
+                "scholarships": [
+                    f"Government Global Scholarship for {country}",
+                    "University Merit Awards",
+                ],
                 "english_test_prep": "IELTS Academic: Overall 7.0 minimum | TOEFL iBT: 95 minimum",
-                "remote_job_potential": "Active support for remote talent hiring via global payrolls (EOR)."
+                "remote_job_potential": "Active support for remote talent hiring via global payrolls (EOR).",
             }
 
     async def get_opportunities(self) -> list:
@@ -324,29 +392,29 @@ class CareerService:
                     "title": "Smart India Hackathon",
                     "category": "Hackathon",
                     "deadline": "2026-09-15",
-                    "url": "https://sih.gov.in"
+                    "url": "https://sih.gov.in",
                 },
                 {
                     "id": "fallback-2",
                     "title": "Google Summer of Code",
                     "category": "Open Source",
                     "deadline": "2027-01-15",
-                    "url": "https://summerofcode.withgoogle.com"
+                    "url": "https://summerofcode.withgoogle.com",
                 },
                 {
                     "id": "fallback-3",
                     "title": "MLH Fellowship",
                     "category": "Fellowship",
                     "deadline": "2026-08-30",
-                    "url": "https://fellowship.mlh.io"
+                    "url": "https://fellowship.mlh.io",
                 },
                 {
                     "id": "fallback-4",
                     "title": "Women Techmakers Scholarship",
                     "category": "Scholarship",
                     "deadline": "2026-10-10",
-                    "url": "https://womentechmakers.com"
-                }
+                    "url": "https://womentechmakers.com",
+                },
             ]
 
     # Daily Mission Tracker Logic
@@ -367,7 +435,7 @@ class CareerService:
                 jobs_applied_completed=0,
                 course_completed=0,
                 mock_interview_completed=0,
-                streak=streak
+                streak=streak,
             )
             self.repo.create_mission(mission)
 
@@ -379,7 +447,7 @@ class CareerService:
             "jobs": mission.jobs_applied_completed,
             "course": mission.course_completed,
             "interview": mission.mock_interview_completed,
-            "streak": mission.streak
+            "streak": mission.streak,
         }
 
     def tick_mission_task(self, user_id: int, task_type: str) -> dict:
@@ -387,11 +455,7 @@ class CareerService:
         mission = self.repo.get_mission_by_date(user_id, today_str)
 
         if not mission:
-            mission = DailyMission(
-                user_id=user_id,
-                date=today_str,
-                streak=0
-            )
+            mission = DailyMission(user_id=user_id, date=today_str, streak=0)
             self.repo.create_mission(mission)
 
         if task_type == "dsa":
@@ -408,12 +472,12 @@ class CareerService:
             mission.mock_interview_completed = 1
 
         all_done = (
-            mission.dsa_goals_completed >= 2 and
-            mission.git_commits_completed >= 1 and
-            mission.linkedin_posts_completed >= 1 and
-            mission.jobs_applied_completed >= 3 and
-            mission.course_completed >= 1 and
-            mission.mock_interview_completed >= 1
+            mission.dsa_goals_completed >= 2
+            and mission.git_commits_completed >= 1
+            and mission.linkedin_posts_completed >= 1
+            and mission.jobs_applied_completed >= 3
+            and mission.course_completed >= 1
+            and mission.mock_interview_completed >= 1
         )
         if all_done and mission.streak == 0:
             mission.streak = 1
@@ -429,6 +493,6 @@ class CareerService:
                 "jobs": mission.jobs_applied_completed,
                 "course": mission.course_completed,
                 "interview": mission.mock_interview_completed,
-                "streak": mission.streak
-            }
+                "streak": mission.streak,
+            },
         }

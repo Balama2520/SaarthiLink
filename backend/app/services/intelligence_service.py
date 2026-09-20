@@ -57,7 +57,9 @@ class IntelligenceService:
                 ai_suggestion = self.ai_service.generate(prompt)
             except Exception as err:
                 logger.warning("AI generation failed in IntelligenceService: %s", err)
-                ai_suggestion = "Focus on acquiring missing skills through hands-on projects."
+                ai_suggestion = (
+                    "Focus on acquiring missing skills through hands-on projects."
+                )
         else:
             ai_suggestion = "Focus on acquiring missing skills through hands-on projects and online modules."
 
@@ -73,11 +75,17 @@ class IntelligenceService:
                 "match_percentage": match_pct,
                 "missing_skills": missing_skills,
                 "yoe_eligible": yoe_eligible,
-                "fit_level": "High" if match_pct >= 75 else ("Medium" if match_pct >= 40 else "Low"),
+                "fit_level": (
+                    "High"
+                    if match_pct >= 75
+                    else ("Medium" if match_pct >= 40 else "Low")
+                ),
             },
             "ai_suggestions": {
                 "recommendation": ai_suggestion,
-                "provider_used": "ai_gateway" if self.ai_service else "rule_engine_fallback",
+                "provider_used": (
+                    "ai_gateway" if self.ai_service else "rule_engine_fallback"
+                ),
             },
         }
 
@@ -118,6 +126,8 @@ class IntelligenceService:
             },
             "ai_suggestions": {
                 "guidance_plan": ai_guidance,
-                "provider_used": "ai_gateway" if self.ai_service else "rule_engine_fallback",
+                "provider_used": (
+                    "ai_gateway" if self.ai_service else "rule_engine_fallback"
+                ),
             },
         }

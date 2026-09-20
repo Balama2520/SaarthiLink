@@ -4,6 +4,7 @@ Contact API Router — Saarthi AI Official Contact & Inquiry Channel
 Endpoints for sending contact messages and connection requests to
 the Saarthi AI team (saarthi.ai.team@gmail.com).
 """
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 from typing import Any, Dict, Optional
@@ -20,11 +21,16 @@ router = APIRouter(prefix="/contact", tags=["contact"])
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
+
 class ContactRequestSchema(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     email: EmailStr
-    role_type: Optional[str] = Field(None, description="student | job_seeker | recruiter | hr | founder | other")
-    reason: Optional[str] = Field(None, description="general | feedback | partnership | hiring | support")
+    role_type: Optional[str] = Field(
+        None, description="student | job_seeker | recruiter | hr | founder | other"
+    )
+    reason: Optional[str] = Field(
+        None, description="general | feedback | partnership | hiring | support"
+    )
     message: str = Field(..., min_length=10, max_length=5000)
     consent_given: bool = True
     session_id: Optional[str] = None

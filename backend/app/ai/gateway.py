@@ -7,6 +7,7 @@ from app.ai.prompt_manager import PromptManager
 
 logger = logging.getLogger(__name__)
 
+
 class AIGateway:
     def __init__(self):
         self.router = AIRouter()
@@ -16,7 +17,7 @@ class AIGateway:
         messages: List[dict],
         model: str = None,
         image_data: Optional[str] = None,
-        personality: str = "default"
+        personality: str = "default",
     ) -> AsyncGenerator[str, None]:
 
         settings = get_settings()
@@ -38,7 +39,11 @@ class AIGateway:
                 del copy_msg["timestamp"]
             processed_messages.append(copy_msg)
 
-        if image_data and processed_messages and processed_messages[-1]["role"] == "user":
+        if (
+            image_data
+            and processed_messages
+            and processed_messages[-1]["role"] == "user"
+        ):
             processed_messages[-1]["images"] = [image_data]
 
         # Prefer the configured Hugging Face Space when available, then try
@@ -57,7 +62,9 @@ class AIGateway:
         for provider_name, provider_model in providers:
             provider = self.router.get_provider(provider_name)
             try:
-                async for chunk in provider.generate_stream(processed_messages, provider_model):
+                async for chunk in provider.generate_stream(
+                    processed_messages, provider_model
+                ):
                     yield chunk
                 return
             except Exception as error:
@@ -66,4 +73,3 @@ class AIGateway:
 
         logger.error("All configured AI providers failed")
         yield "AI is temporarily unavailable. Please check the provider configuration and try again."
-

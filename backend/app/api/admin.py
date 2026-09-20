@@ -1,12 +1,19 @@
-"""System-only administrative statistics endpoints."""
+"""Administrative statistics endpoints with public summary access."""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.dependencies.auth import require_admin_user
+from app.core.dependencies.auth import get_current_user, is_admin_user
 from app.core.config import get_settings
 from app.models.models import (
-    User, Job, UserDiscoveryProfile, FeatureFeedback, ProductFeedback,
-    ContactRequest, OpportunitySignal, CompanyProfile, ChatSession
+    User,
+    Job,
+    UserDiscoveryProfile,
+    FeatureFeedback,
+    ProductFeedback,
+    ContactRequest,
+    OpportunitySignal,
+    CompanyProfile,
 )
 from app.database.connection import get_db
 from app.repositories.admin_repository import AdminRepository
@@ -17,13 +24,32 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/stats")
 def get_stats(
-    current_user: User = Depends(require_admin_user),
+    current_user: User | object = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     repo = AdminRepository(db)
-    recent = repo.get_recent_users(5)
     settings = get_settings()
+    is_admin = is_admin_user(current_user)
 
+    if not is_admin:
+        return {
+            "is_admin": False,
+            "summary_mode": True,
+            "total_users": repo.count_users(),
+            "total_sessions": repo.count_chat_sessions(),
+            "total_projects": repo.count_projects(),
+            "total_applications": repo.count_applications(),
+            "recent_users": [
+                {"id": u.id, "username": u.username} for u in repo.get_recent_users(5)
+            ],
+            "platform_status": {
+                "name": settings.APP_NAME,
+                "environment": settings.ENVIRONMENT,
+                "api_prefix": settings.API_PREFIX,
+            },
+        }
+
+    recent = repo.get_recent_users(5)
     sheets_service = GoogleSheetsService()
     sheets_status_info = sheets_service.status()
 
@@ -31,10 +57,13 @@ def get_stats(
         "gemini_configured": bool(settings.GEMINI_API_KEY),
         "hf_configured": bool(settings.HF_SPACE_ID and settings.HF_API_TOKEN),
         "primary_provider": "gemini" if settings.GEMINI_API_KEY else "none",
-        "secondary_provider": "huggingface" if (settings.HF_SPACE_ID and settings.HF_API_TOKEN) else "none"
+        "secondary_provider": (
+            "huggingface"
+            if (settings.HF_SPACE_ID and settings.HF_API_TOKEN)
+            else "none"
+        ),
     }
 
-    # Safe counts for discovery & feedback entities
     total_jobs = db.query(Job).count() if db.query(Job) else 0
     total_discovery_profiles = db.query(UserDiscoveryProfile).count()
     total_feature_feedbacks = db.query(FeatureFeedback).count()
@@ -68,6 +97,8 @@ def get_stats(
     )
 
     return {
+        "is_admin": True,
+        "summary_mode": False,
         "total_users": repo.count_users(),
         "total_sessions": repo.count_chat_sessions(),
         "total_projects": repo.count_projects(),
@@ -80,10 +111,7 @@ def get_stats(
         "total_company_profiles": total_company_profiles,
         "sheets_status": sheets_status_info,
         "ai_status": ai_status,
-        "recent_users": [
-            {"id": u.id, "username": u.username}
-            for u in recent
-        ],
+        "recent_users": [{"id": u.id, "username": u.username} for u in recent],
         "recent_contact_requests": [
             {
                 "id": c.id,
@@ -128,4 +156,3 @@ def get_stats(
             for pf in recent_feedbacks
         ],
     }
-

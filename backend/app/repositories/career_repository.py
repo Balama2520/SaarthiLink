@@ -1,5 +1,13 @@
 from sqlalchemy.orm import Session
-from app.models.models import DailyMission, Goal, InterviewSession, JobApplication, Resume, UserProfile, UserSkill
+from app.models.models import (
+    DailyMission,
+    Goal,
+    InterviewSession,
+    JobApplication,
+    Resume,
+    UserProfile,
+    UserSkill,
+)
 from typing import List, Optional
 
 
@@ -35,7 +43,9 @@ class CareerRepository:
             .all()
         )
 
-    def get_dashboard_records(self, user_id: int) -> tuple[List[JobApplication], List[InterviewSession], Optional[Resume]]:
+    def get_dashboard_records(
+        self, user_id: int
+    ) -> tuple[List[JobApplication], List[InterviewSession], Optional[Resume]]:
         """Return the user-scoped records that power dashboard metrics and activity."""
         applications = (
             self.db.query(JobApplication)
@@ -51,16 +61,22 @@ class CareerRepository:
         )
         return applications, interviews, self.get_latest_resume(user_id)
 
-    def get_mission_by_date(self, user_id: int, date_str: str) -> Optional[DailyMission]:
-        return self.db.query(DailyMission).filter(
-            DailyMission.user_id == user_id,
-            DailyMission.date == date_str
-        ).first()
+    def get_mission_by_date(
+        self, user_id: int, date_str: str
+    ) -> Optional[DailyMission]:
+        return (
+            self.db.query(DailyMission)
+            .filter(DailyMission.user_id == user_id, DailyMission.date == date_str)
+            .first()
+        )
 
     def get_last_mission(self, user_id: int) -> Optional[DailyMission]:
-        return self.db.query(DailyMission).filter(
-            DailyMission.user_id == user_id
-        ).order_by(DailyMission.date.desc()).first()
+        return (
+            self.db.query(DailyMission)
+            .filter(DailyMission.user_id == user_id)
+            .order_by(DailyMission.date.desc())
+            .first()
+        )
 
     def create_mission(self, mission: DailyMission) -> DailyMission:
         self.db.add(mission)

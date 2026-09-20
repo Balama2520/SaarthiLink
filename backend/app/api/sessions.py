@@ -3,6 +3,7 @@ Sessions + Chat router.
 Manages ChatSession CRUD and the streaming /chat + /chat/local endpoints
 that the ChatCoach page consumes.
 """
+
 import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
@@ -24,10 +25,22 @@ chat_router = APIRouter(tags=["chat"])
 
 # ── Session management ────────────────────────────────────────────────────────
 
+
 @router.get("/sessions/")
-def list_sessions(current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
-    sessions = db.query(ChatSession).filter(ChatSession.user_id == current_user.id).order_by(ChatSession.created_at.desc()).all()
-    return [{"id": s.id, "title": s.title, "created_at": s.created_at.isoformat()} for s in sessions]
+def list_sessions(
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    sessions = (
+        db.query(ChatSession)
+        .filter(ChatSession.user_id == current_user.id)
+        .order_by(ChatSession.created_at.desc())
+        .all()
+    )
+    return [
+        {"id": s.id, "title": s.title, "created_at": s.created_at.isoformat()}
+        for s in sessions
+    ]
 
 
 class CreateSessionBody(BaseModel):
@@ -35,17 +48,33 @@ class CreateSessionBody(BaseModel):
 
 
 @router.post("/sessions/")
-def create_session(body: CreateSessionBody, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
+def create_session(
+    body: CreateSessionBody,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
     session = ChatSession(user_id=current_user.id, title=body.title)
     db.add(session)
     db.commit()
     db.refresh(session)
-    return {"id": session.id, "title": session.title, "created_at": session.created_at.isoformat()}
+    return {
+        "id": session.id,
+        "title": session.title,
+        "created_at": session.created_at.isoformat(),
+    }
 
 
 @router.delete("/sessions/{session_id}")
-def delete_session(session_id: str, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
-    session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.user_id == current_user.id).first()
+def delete_session(
+    session_id: str,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    session = (
+        db.query(ChatSession)
+        .filter(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     db.delete(session)
@@ -54,14 +83,26 @@ def delete_session(session_id: str, current_user: User = Depends(require_authent
 
 
 @router.get("/sessions/{session_id}/messages")
-def get_messages(session_id: str, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
-    session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.user_id == current_user.id).first()
+def get_messages(
+    session_id: str,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    session = (
+        db.query(ChatSession)
+        .filter(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
-    return [{"role": m.role, "content": m.content, "timestamp": m.timestamp.isoformat()} for m in session.messages]
+    return [
+        {"role": m.role, "content": m.content, "timestamp": m.timestamp.isoformat()}
+        for m in session.messages
+    ]
 
 
 # ── Chat endpoints ────────────────────────────────────────────────────────────
+
 
 class ChatBody(BaseModel):
     message: str = Field(..., min_length=1, max_length=10000)
@@ -71,31 +112,62 @@ class ChatBody(BaseModel):
 
 
 @chat_router.post("/chat")
-async def chat(body: ChatBody, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
+async def chat(
+    body: ChatBody,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
     system_prompt = PromptManager.load(f"system/{body.personality or 'default'}")
     messages = [{"role": "system", "content": system_prompt}]
 
     # Persist message to session
     if body.session_id and body.session_id != "default":
-        session = db.query(ChatSession).filter(ChatSession.id == body.session_id, ChatSession.user_id == current_user.id).first()
+        session = (
+            db.query(ChatSession)
+            .filter(
+                ChatSession.id == body.session_id,
+                ChatSession.user_id == current_user.id,
+            )
+            .first()
+        )
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
-        history = db.query(ChatMessage).filter(ChatMessage.session_id == session.id).order_by(ChatMessage.timestamp.desc()).limit(12).all()[::-1]
-        messages.extend({"role": item.role, "content": item.content} for item in history)
+        history = (
+            db.query(ChatMessage)
+            .filter(ChatMessage.session_id == session.id)
+            .order_by(ChatMessage.timestamp.desc())
+            .limit(12)
+            .all()[::-1]
+        )
+        messages.extend(
+            {"role": item.role, "content": item.content} for item in history
+        )
         user_msg = ChatMessage(session_id=session.id, role="user", content=body.message)
-        db.add(user_msg); db.commit()
+        db.add(user_msg)
+        db.commit()
     messages.append({"role": "user", "content": body.message})
 
     async def stream_gen():
         accumulated = ""
-        async for chunk in AIGateway().generate_response_stream(messages, body.model or "phi3", personality=body.personality or "default"):
+        async for chunk in AIGateway().generate_response_stream(
+            messages, body.model or "phi3", personality=body.personality or "default"
+        ):
             accumulated += chunk
             yield chunk.encode("utf-8")
         # Save assistant response
         if body.session_id and body.session_id != "default":
-            session = db.query(ChatSession).filter(ChatSession.id == body.session_id, ChatSession.user_id == current_user.id).first()
+            session = (
+                db.query(ChatSession)
+                .filter(
+                    ChatSession.id == body.session_id,
+                    ChatSession.user_id == current_user.id,
+                )
+                .first()
+            )
             if session:
-                ai_msg = ChatMessage(session_id=session.id, role="assistant", content=accumulated)
+                ai_msg = ChatMessage(
+                    session_id=session.id, role="assistant", content=accumulated
+                )
                 db.add(ai_msg)
                 db.commit()
 
@@ -120,12 +192,16 @@ async def chat_local(body: LocalChatBody):
     system_prompt = PromptManager.load(f"system/{body.personality or 'default'}")
     messages = [{"role": "system", "content": system_prompt + "\n" + profile_ctx}]
 
-    for h in (body.local_history or []):
-        messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+    for h in body.local_history or []:
+        messages.append(
+            {"role": h.get("role", "user"), "content": h.get("content", "")}
+        )
     messages.append({"role": "user", "content": body.message})
 
     async def stream_gen():
-        async for chunk in AIGateway().generate_response_stream(messages, body.model or "phi3", personality=body.personality or "default"):
+        async for chunk in AIGateway().generate_response_stream(
+            messages, body.model or "phi3", personality=body.personality or "default"
+        ):
             yield chunk.encode("utf-8")
 
     return StreamingResponse(stream_gen(), media_type="text/plain")
@@ -133,6 +209,7 @@ async def chat_local(body: LocalChatBody):
 
 from fastapi import UploadFile, File
 from app.services.voice_service import VoiceService
+
 
 @chat_router.post("/chat/voice-to-text")
 async def voice_to_text(file: UploadFile = File(...)):

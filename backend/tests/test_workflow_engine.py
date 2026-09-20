@@ -1,6 +1,7 @@
 """
 Unit tests for the WorkflowEngine and EventPublisher.
 """
+
 import json
 import pytest
 
@@ -52,9 +53,11 @@ class TestWorkflowEngine:
         wf = engine.start_workflow(1, "Flow", {})
         engine.complete_workflow(wf.id)
 
-        events = db_session.query(EventOutbox).filter(
-            EventOutbox.event_type == "WorkflowCompleted"
-        ).all()
+        events = (
+            db_session.query(EventOutbox)
+            .filter(EventOutbox.event_type == "WorkflowCompleted")
+            .all()
+        )
         assert len(events) == 1
 
     def test_get_active_workflow_returns_active_only(self, db_session):

@@ -115,6 +115,7 @@ async def get_current_user(
 
 # ── Anti-IDOR Security Enforcers ───────────────────────────────────────────────
 
+
 def enforce_resource_ownership(
     requested_user_id: str,
     current_user: AuthenticatedUser,

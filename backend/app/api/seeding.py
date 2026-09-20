@@ -3,12 +3,17 @@ Admin: Google Sheets Job Seeding Control Center API
 ====================================================
 All endpoints are admin-only. Credentials never appear in responses.
 """
+
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Any, Dict, List
 
 from app.core.dependencies.auth import require_admin_user
 from app.models.models import User
-from app.services.sheets_service import sheets_service, SheetsServiceError, SheetsAuthError
+from app.services.sheets_service import (
+    sheets_service,
+    SheetsServiceError,
+    SheetsAuthError,
+)
 
 router = APIRouter(prefix="/admin/sheets", tags=["admin-sheets"])
 
@@ -159,6 +164,7 @@ def run_seeding_pipeline(
     """
     try:
         from app.services.sheets_service import SeedingPipeline
+
         pipeline = SeedingPipeline(sheets=sheets_service, dry_run=dry_run)
         include_rules = pipeline.load_include_rules()
         exclude_rules = pipeline.load_exclude_rules()
@@ -172,8 +178,7 @@ def run_seeding_pipeline(
             "dry_run": dry_run,
             "total_staging_jobs": len(staging_jobs),
             "accepted_jobs": len(filtered),
-            "details": f"Processed {len(staging_jobs)} staging jobs under dry_run={dry_run}."
+            "details": f"Processed {len(staging_jobs)} staging jobs under dry_run={dry_run}.",
         }
     except (SheetsServiceError, SheetsAuthError) as e:
         raise HTTPException(status_code=503, detail=str(e))
-

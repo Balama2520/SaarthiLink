@@ -5,6 +5,7 @@ from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
+
 class VoiceService:
     def __init__(self):
         self.recognizer = sr.Recognizer()
@@ -33,5 +34,6 @@ class VoiceService:
         except Exception as e:
             logger.error(f"Transcription error: {e}")
             return f"⚠️ Voice processing fault: {str(e)}"
+
 
 voice_service = VoiceService()

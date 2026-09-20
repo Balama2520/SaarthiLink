@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.models import LiteraturePaper
 from typing import List
 
+
 class ResearchRepository:
     def __init__(self, db: Session):
         self.db = db

@@ -2,6 +2,7 @@
 Tests for the Profile API endpoints.
 Uses the shared conftest fixtures: client, auth_headers.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 

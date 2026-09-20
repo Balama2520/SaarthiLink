@@ -1,13 +1,13 @@
 """
 Unit tests for the DecisionEngine — heuristics + logging.
 """
+
 import json
 import pytest
 from unittest.mock import patch
 
 from app.engine.decision import DecisionEngine
 from app.models.models import DecisionLog
-
 
 SYSTEM_STATE_WITH_WORKFLOW = (
     "--- CORE MEMORIES ---\n"
@@ -16,8 +16,7 @@ SYSTEM_STATE_WITH_WORKFLOW = (
 )
 
 SYSTEM_STATE_WITH_BLOCKER = (
-    "--- PLANNING STATE ---\n"
-    '{"recommended_next_action": "RESOLVE_BLOCKER"}\n'
+    "--- PLANNING STATE ---\n" '{"recommended_next_action": "RESOLVE_BLOCKER"}\n'
 )
 
 SYSTEM_STATE_PLAIN = "--- CORE MEMORIES ---\nNo historical memory found."

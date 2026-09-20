@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 REDIS_URL = os.getenv("REDIS_URL", "")
 
+
 class RedisMemory:
     def __init__(self):
         self.client = None
@@ -23,7 +24,9 @@ class RedisMemory:
             )
             logger.info("Redis client configured; availability will be checked on use.")
         except Exception as e:
-            logger.warning(f"Redis not available: {e}. Falling back to DB for short-term memory.")
+            logger.warning(
+                f"Redis not available: {e}. Falling back to DB for short-term memory."
+            )
             self.client = None
 
     def save_session_context(self, session_id: str, context: list):
@@ -71,5 +74,6 @@ class RedisMemory:
             self.client.delete(key)
         except Exception as e:
             logger.error(f"Redis invalidate cache error: {e}")
+
 
 redis_memory = RedisMemory()

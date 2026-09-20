@@ -120,7 +120,11 @@ async def upload_resume(
         logger.warning(
             "Storage upload exception (non-fatal); DB row + raw_text preserved: %s",
             storage_exc,
-            extra={"user_id": current_user.id, "resume_id": db_resume.id, "request_id": get_request_id()},
+            extra={
+                "user_id": current_user.id,
+                "resume_id": db_resume.id,
+                "request_id": get_request_id(),
+            },
         )
 
     # Stage 4: Run AI analysis
@@ -206,7 +210,9 @@ async def reanalyze_resume(
         raise HTTPException(status_code=404, detail="Resume not found.")
 
     if not resume.raw_text:
-        raise HTTPException(status_code=400, detail="Resume has no extracted text to analyze.")
+        raise HTTPException(
+            status_code=400, detail="Resume has no extracted text to analyze."
+        )
 
     pipeline = ResumeIntelligencePipeline()
     try:
@@ -235,7 +241,10 @@ async def reanalyze_resume(
         logger.error("Resume re-analysis failed: %s", exc)
         resume.parsing_status = "failed"
         db.commit()
-        raise HTTPException(status_code=502, detail="AI analysis failed during retry. Please try again later.")
+        raise HTTPException(
+            status_code=502,
+            detail="AI analysis failed during retry. Please try again later.",
+        )
 
 
 @router.post("/{resume_id}/sync")

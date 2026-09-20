@@ -39,15 +39,29 @@ class JobsService:
     def list_jobs(self, skip: int = 0, limit: int = 20) -> List[Job]:
         return self.repo.list_jobs(skip, limit)
 
-    def search_jobs(self, q: Optional[str] = None, location: Optional[str] = None, job_type: Optional[str] = None, remote_type: Optional[str] = None, skip: int = 0, limit: int = 20) -> List[Job]:
+    def search_jobs(
+        self,
+        q: Optional[str] = None,
+        location: Optional[str] = None,
+        job_type: Optional[str] = None,
+        remote_type: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> List[Job]:
         return self.repo.search_jobs(q, location, job_type, remote_type, skip, limit)
 
-    def get_recommended_jobs(self, user_id: int, skip: int = 0, limit: int = 20) -> List[JobRecommendationOut]:
+    def get_recommended_jobs(
+        self, user_id: int, skip: int = 0, limit: int = 20
+    ) -> List[JobRecommendationOut]:
         from app.models.models import UserProfile
         import json
-        
+
         # 1. Fetch user profile preferences
-        profile = self.repo.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+        profile = (
+            self.repo.db.query(UserProfile)
+            .filter(UserProfile.user_id == user_id)
+            .first()
+        )
         pref_locations = set()
         work_prefs = set()
         if profile:
@@ -55,10 +69,12 @@ class JobsService:
                 if profile.preferred_locations_json:
                     pref_locations = set(json.loads(profile.preferred_locations_json))
                 if profile.work_preferences_json:
-                    work_prefs = set([p.lower() for p in json.loads(profile.work_preferences_json)])
+                    work_prefs = set(
+                        [p.lower() for p in json.loads(profile.work_preferences_json)]
+                    )
             except:
                 pass
-                
+
         # 2. Fetch user skills
         user_skills_db = self.repo.get_user_skills(user_id)
         user_skill_names = {s.skill_name.lower() for s in user_skills_db}
@@ -71,39 +87,43 @@ class JobsService:
         for job in active_jobs:
             # Filter by work preferences if strictly specified
             job_remote = job.remote_type.lower() if job.remote_type else ""
-            if work_prefs and ("remote" in work_prefs or "hybrid" in work_prefs or "onsite" in work_prefs):
+            if work_prefs and (
+                "remote" in work_prefs
+                or "hybrid" in work_prefs
+                or "onsite" in work_prefs
+            ):
                 # Basic preference check (soft filter, we'll just penalize score if mismatch)
-                pass 
-                
+                pass
+
             job_skills = {s.skill_name.lower() for s in job.skills}
-            
+
             matched = job_skills.intersection(user_skill_names)
             missing = job_skills.difference(user_skill_names)
-            
+
             match_score = 0
             if job_skills:
                 match_score = int((len(matched) / len(job_skills)) * 100)
             else:
                 match_score = 50
-                
+
             # Bonus points for location match
             if pref_locations and job.location and job.location in pref_locations:
                 match_score = min(100, match_score + 10)
-                
+
             # Bonus points for work preference match
             if work_prefs and job_remote in work_prefs:
                 match_score = min(100, match_score + 10)
-            
+
             job_list_out = JobListOut.model_validate(job)
-            
+
             rec = JobRecommendationOut(
                 job=job_list_out,
                 match_score=match_score,
                 matched_skills=list(matched),
-                missing_skills=list(missing)
+                missing_skills=list(missing),
             )
             recommendations.append(rec)
-            
+
         # 5. Sort by score descending and apply pagination
         recommendations.sort(key=lambda r: r.match_score, reverse=True)
         return recommendations[skip : skip + limit]
@@ -153,8 +173,21 @@ class JobsService:
         self.repo.db.refresh(application)
         return application
 
-    async def match_job(self, user_id: int, resume_text: str, job_description: str, company_name: str, job_title: str) -> dict:
-        prompt = PromptManager.load("jobs/match_job", job_title=job_title, company_name=company_name, resume_text=resume_text[:3000], job_description=job_description[:3000])
+    async def match_job(
+        self,
+        user_id: int,
+        resume_text: str,
+        job_description: str,
+        company_name: str,
+        job_title: str,
+    ) -> dict:
+        prompt = PromptManager.load(
+            "jobs/match_job",
+            job_title=job_title,
+            company_name=company_name,
+            resume_text=resume_text[:3000],
+            job_description=job_description[:3000],
+        )
         messages = [{"role": "user", "content": prompt}]
         stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
@@ -171,7 +204,7 @@ class JobsService:
                     job_title=job_title,
                     match_percentage=parsed_data.get("match_percentage", 0),
                     missing_skills=json.dumps(parsed_data.get("missing_skills", [])),
-                    status="analyzed"
+                    status="analyzed",
                 )
                 self.repo.db.add(db_job)
                 self.repo.db.commit()
@@ -180,4 +213,6 @@ class JobsService:
 
         except json.JSONDecodeError:
             logger.error(f"Failed to decode LLM JSON. Raw output: {full_text}")
-            raise HTTPException(status_code=500, detail="Failed to match job. Please try again.")
+            raise HTTPException(
+                status_code=500, detail="Failed to match job. Please try again."
+            )

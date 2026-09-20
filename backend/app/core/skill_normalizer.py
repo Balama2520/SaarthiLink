@@ -28,7 +28,6 @@ SKILL_ALIASES: dict[str, str] = {
     "c plus plus": "cpp",
     "cplusplus": "cpp",
     "c/c++": "cpp",
-
     # JavaScript ecosystem
     "javascript": "javascript",
     "js": "javascript",
@@ -44,12 +43,10 @@ SKILL_ALIASES: dict[str, str] = {
     "angularjs": "angular",
     "next.js": "nextjs",
     "nextjs": "nextjs",
-
     # Python
     "python3": "python",
     "python 3": "python",
     "py": "python",
-
     # Machine Learning
     "ml": "machine learning",
     "machine-learning": "machine learning",
@@ -59,21 +56,18 @@ SKILL_ALIASES: dict[str, str] = {
     "natural-language-processing": "natural language processing",
     "cv": "computer vision",
     "computer-vision": "computer vision",
-
     # Cloud
     "aws": "amazon web services",
     "amazon web services": "amazon web services",
     "gcp": "google cloud platform",
     "google cloud": "google cloud platform",
     "azure": "microsoft azure",
-
     # Databases
     "postgresql": "postgresql",
     "postgres": "postgresql",
     "mysql": "mysql",
     "mongo": "mongodb",
     "mongo db": "mongodb",
-
     # Devops / Tools
     "ci/cd": "ci cd",
     "ci-cd": "ci cd",
@@ -81,7 +75,6 @@ SKILL_ALIASES: dict[str, str] = {
     "kubernetes": "kubernetes",
     "k8s": "kubernetes",
     "docker": "docker",
-
     # Java
     "java se": "java",
     "java ee": "java",

@@ -26,14 +26,15 @@ async def analyze_resume(
 
     if content_type not in allowed_types and not filename.endswith((".pdf", ".txt")):
         raise HTTPException(
-            status_code=400,
-            detail="Only PDF or TXT resumes are supported."
+            status_code=400, detail="Only PDF or TXT resumes are supported."
         )
 
     try:
         content = await file.read()
         if len(content) > 5 * 1024 * 1024:  # 5 MB limit
-            raise HTTPException(status_code=400, detail="File too large. Max size is 5 MB.")
+            raise HTTPException(
+                status_code=400, detail="File too large. Max size is 5 MB."
+            )
 
         result = resume_service.analyze_resume(content, filename, target_role)
 

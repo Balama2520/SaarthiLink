@@ -37,7 +37,7 @@ class InterviewFeedbackResponse(BaseModel):
 async def evaluate_interview(
     request: InterviewFeedbackRequest,
     current_user: User = Depends(require_authenticated_user),
-    interview_svc: InterviewService = Depends(get_interview_service)
+    interview_svc: InterviewService = Depends(get_interview_service),
 ):
     return await interview_svc.evaluate_interview(
         current_user.id, request.transcript, request.target_role
@@ -51,8 +51,15 @@ def create_interview_session(
     interview_svc: InterviewService = Depends(get_interview_service),
 ):
     """Create a persisted interview session with difficulty-tailored questions."""
-    session = interview_svc.create_session(current_user.id, request.role, request.company, request.difficulty)
-    return {"id": session.id, "role": session.role, "company": session.company, **json.loads(session.transcript_json or "{}")}
+    session = interview_svc.create_session(
+        current_user.id, request.role, request.company, request.difficulty
+    )
+    return {
+        "id": session.id,
+        "role": session.role,
+        "company": session.company,
+        **json.loads(session.transcript_json or "{}"),
+    }
 
 
 @router.get("/sessions")
@@ -62,7 +69,14 @@ def list_interview_sessions(
 ):
     """List persisted interview sessions for the current user."""
     return [
-        {"id": item.id, "role": item.role, "company": item.company, "score": item.score, "created_at": item.created_at, "feedback": json.loads(item.feedback) if item.feedback else None}
+        {
+            "id": item.id,
+            "role": item.role,
+            "company": item.company,
+            "score": item.score,
+            "created_at": item.created_at,
+            "feedback": json.loads(item.feedback) if item.feedback else None,
+        }
         for item in interview_svc.list_sessions(current_user.id)
     ]
 
@@ -75,6 +89,11 @@ async def answer_interview_session(
     interview_svc: InterviewService = Depends(get_interview_service),
 ):
     """Persist one answer and evaluate the session when its final question is answered."""
-    session = await interview_svc.answer_session(current_user.id, session_id, request.answer, request.question_index)
-    return {"id": session.id, "score": session.score, "feedback": json.loads(session.feedback) if session.feedback else None}
-
+    session = await interview_svc.answer_session(
+        current_user.id, session_id, request.answer, request.question_index
+    )
+    return {
+        "id": session.id,
+        "score": session.score,
+        "feedback": json.loads(session.feedback) if session.feedback else None,
+    }

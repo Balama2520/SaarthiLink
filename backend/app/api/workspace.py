@@ -78,12 +78,16 @@ def get_workspace_items(
     db: Session = Depends(get_db),
 ):
     file_repo = WorkspaceFileRepository(db)
-    resumes, docs, notes, jobs = file_repo.get_workspace_items(workspace_id, current_user.id)
+    resumes, docs, notes, jobs = file_repo.get_workspace_items(
+        workspace_id, current_user.id
+    )
     return {
         "resumes": [{"id": r.id, "filename": r.filename} for r in resumes],
         "docs": [{"id": d.id, "filename": d.filename} for d in docs],
         "notes": [{"id": n.id, "title": n.title} for n in notes],
-        "jobs": [{"id": j.id, "job_title": j.job_title, "company": j.company} for j in jobs],
+        "jobs": [
+            {"id": j.id, "job_title": j.job_title, "company": j.company} for j in jobs
+        ],
     }
 
 
@@ -104,5 +108,7 @@ async def workspace_chat(
     current_user: User = Depends(require_authenticated_user),
     svc: WorkspaceService = Depends(_get_service),
 ):
-    stream_gen = svc.chat_workspace(workspace_id, current_user.id, body.message, body.model or "phi3")
+    stream_gen = svc.chat_workspace(
+        workspace_id, current_user.id, body.message, body.model or "phi3"
+    )
     return StreamingResponse(stream_gen(), media_type="text/plain")

@@ -1,10 +1,22 @@
 import uuid
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Index, Boolean, Float, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Text,
+    Index,
+    Boolean,
+    Float,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship, backref
 from datetime import datetime, timezone
 from app.database import Base
 
 # --- SQLAlchemy Database Models ---
+
 
 class User(Base):
     __tablename__ = "users"
@@ -14,35 +26,78 @@ class User(Base):
     full_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
     target_role = Column(String, nullable=True)
-    persona = Column(String, default="undergrad")  # undergrad, mtech, phd, ms_abroad, professional
+    persona = Column(
+        String, default="undergrad"
+    )  # undergrad, mtech, phd, ms_abroad, professional
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
-    sessions = relationship("ChatSession", back_populates="owner", cascade="all, delete-orphan")
-    resumes = relationship("Resume", back_populates="owner", cascade="all, delete-orphan")
-    projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
-    documents = relationship("Document", back_populates="owner", cascade="all, delete-orphan")
-    job_applications = relationship("JobApplication", back_populates="owner", cascade="all, delete-orphan")
-    interview_sessions = relationship("InterviewSession", back_populates="owner", cascade="all, delete-orphan")
-    roadmaps = relationship("LearningRoadmap", back_populates="owner", cascade="all, delete-orphan")
-    notifications = relationship("Notification", back_populates="owner", cascade="all, delete-orphan")
-    workspaces = relationship("AIWorkspace", back_populates="owner", cascade="all, delete-orphan")
-    degree_trackers = relationship("DegreeTracker", back_populates="owner", cascade="all, delete-orphan")
-    certifications = relationship("CertificationPlanner", back_populates="owner", cascade="all, delete-orphan")
-    placements = relationship("PlacementTracker", back_populates="owner", cascade="all, delete-orphan")
-    daily_missions = relationship("DailyMission", back_populates="owner", cascade="all, delete-orphan")
-    thesis_projects = relationship("ThesisProject", back_populates="owner", cascade="all, delete-orphan")
-    literature_papers = relationship("LiteraturePaper", back_populates="owner", cascade="all, delete-orphan")
-    experiment_logs = relationship("ExperimentLog", back_populates="owner", cascade="all, delete-orphan")
-    publications = relationship("PublicationTracker", back_populates="owner", cascade="all, delete-orphan")
-    higher_edu_plans = relationship("HigherEducationPlan", back_populates="owner", cascade="all, delete-orphan")
+
+    sessions = relationship(
+        "ChatSession", back_populates="owner", cascade="all, delete-orphan"
+    )
+    resumes = relationship(
+        "Resume", back_populates="owner", cascade="all, delete-orphan"
+    )
+    projects = relationship(
+        "Project", back_populates="owner", cascade="all, delete-orphan"
+    )
+    documents = relationship(
+        "Document", back_populates="owner", cascade="all, delete-orphan"
+    )
+    job_applications = relationship(
+        "JobApplication", back_populates="owner", cascade="all, delete-orphan"
+    )
+    interview_sessions = relationship(
+        "InterviewSession", back_populates="owner", cascade="all, delete-orphan"
+    )
+    roadmaps = relationship(
+        "LearningRoadmap", back_populates="owner", cascade="all, delete-orphan"
+    )
+    notifications = relationship(
+        "Notification", back_populates="owner", cascade="all, delete-orphan"
+    )
+    workspaces = relationship(
+        "AIWorkspace", back_populates="owner", cascade="all, delete-orphan"
+    )
+    degree_trackers = relationship(
+        "DegreeTracker", back_populates="owner", cascade="all, delete-orphan"
+    )
+    certifications = relationship(
+        "CertificationPlanner", back_populates="owner", cascade="all, delete-orphan"
+    )
+    placements = relationship(
+        "PlacementTracker", back_populates="owner", cascade="all, delete-orphan"
+    )
+    daily_missions = relationship(
+        "DailyMission", back_populates="owner", cascade="all, delete-orphan"
+    )
+    thesis_projects = relationship(
+        "ThesisProject", back_populates="owner", cascade="all, delete-orphan"
+    )
+    literature_papers = relationship(
+        "LiteraturePaper", back_populates="owner", cascade="all, delete-orphan"
+    )
+    experiment_logs = relationship(
+        "ExperimentLog", back_populates="owner", cascade="all, delete-orphan"
+    )
+    publications = relationship(
+        "PublicationTracker", back_populates="owner", cascade="all, delete-orphan"
+    )
+    higher_edu_plans = relationship(
+        "HigherEducationPlan", back_populates="owner", cascade="all, delete-orphan"
+    )
     goals = relationship("Goal", back_populates="owner", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="owner", cascade="all, delete-orphan")
-    refresh_tokens = relationship("RefreshToken", back_populates="owner", cascade="all, delete-orphan")
+    refresh_tokens = relationship(
+        "RefreshToken", back_populates="owner", cascade="all, delete-orphan"
+    )
+
 
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     token = Column(String, unique=True, index=True, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -59,9 +114,15 @@ class AIWorkspace(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="workspaces")
-    resumes = relationship("Resume", back_populates="workspace", cascade="all, delete-orphan")
-    documents = relationship("Document", back_populates="workspace", cascade="all, delete-orphan")
-    job_applications = relationship("JobApplication", back_populates="workspace", cascade="all, delete-orphan")
+    resumes = relationship(
+        "Resume", back_populates="workspace", cascade="all, delete-orphan"
+    )
+    documents = relationship(
+        "Document", back_populates="workspace", cascade="all, delete-orphan"
+    )
+    job_applications = relationship(
+        "JobApplication", back_populates="workspace", cascade="all, delete-orphan"
+    )
 
 
 class Resume(Base):
@@ -76,7 +137,9 @@ class Resume(Base):
     parsing_status = Column(String, default="pending")  # pending, completed, failed
     ats_score = Column(Integer, default=0)
     raw_text = Column(Text, nullable=True)
-    parsed_json = Column(Text, nullable=True)  # Stores section analysis as stringified JSON
+    parsed_json = Column(
+        Text, nullable=True
+    )  # Stores section analysis as stringified JSON
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="resumes")
@@ -103,9 +166,11 @@ class ChatSession(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     title = Column(String, default="New Conversation")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     owner = relationship("User", back_populates="sessions")
-    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+    messages = relationship(
+        "ChatMessage", back_populates="session", cascade="all, delete-orphan"
+    )
 
 
 class ChatMessage(Base):
@@ -115,9 +180,11 @@ class ChatMessage(Base):
     role = Column(String)
     content = Column(Text)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
+
     session = relationship("ChatSession", back_populates="messages")
-    __table_args__ = (Index('ix_messages_session_timestamp', 'session_id', 'timestamp'),)
+    __table_args__ = (
+        Index("ix_messages_session_timestamp", "session_id", "timestamp"),
+    )
 
 
 class Document(Base):
@@ -144,7 +211,9 @@ class JobApplication(Base):
     description = Column(Text, nullable=True)
     match_percentage = Column(Integer, default=0)
     missing_skills = Column(String, nullable=True)
-    status = Column(String, default="matched")  # matched, applied, interviewing, offered, rejected
+    status = Column(
+        String, default="matched"
+    )  # matched, applied, interviewing, offered, rejected
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="job_applications")
@@ -298,7 +367,7 @@ class PublicationTracker(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     title = Column(String)
     venue = Column(String, nullable=True)
-    status = Column(String, default="submitted") # submitted, accepted, published
+    status = Column(String, default="submitted")  # submitted, accepted, published
     citations = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -336,12 +405,19 @@ class Goal(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="goals")
-    children = relationship("Goal", backref=backref("parent", remote_side="Goal.id"), cascade="all, delete-orphan")
+    children = relationship(
+        "Goal",
+        backref=backref("parent", remote_side="Goal.id"),
+        cascade="all, delete-orphan",
+    )
+
 
 class Note(Base):
     __tablename__ = "notes"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=True)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
@@ -354,13 +430,16 @@ class Note(Base):
 class UserData(Base):
     __tablename__ = "user_data"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
     key = Column(String, nullable=False)
     value = Column(Text, nullable=True)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
-
-
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class EventOutbox(Base):
@@ -405,14 +484,18 @@ class Memory(Base):
     importance = Column(Float, default=1.0)
     source = Column(String)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-    
+
     # Existing fields
     headline = Column(String, nullable=True)
     career_stage = Column(String, nullable=True)
@@ -437,7 +520,9 @@ class UserProfile(Base):
     preferred_locations_json = Column(Text, nullable=True, default="[]")
     salary_expectations = Column(String, nullable=True)
     work_authorization = Column(String, nullable=True)
-    work_preferences_json = Column(Text, nullable=True, default="[]")  # e.g., ["Remote", "Full-time"]
+    work_preferences_json = Column(
+        Text, nullable=True, default="[]"
+    )  # e.g., ["Remote", "Full-time"]
     notification_preferences_json = Column(Text, nullable=True, default="{}")
     timezone = Column(String, nullable=True)
 
@@ -447,7 +532,9 @@ class UserProfile(Base):
     certifications_json = Column(Text, nullable=True, default="[]")
 
     # New Resume Metadata
-    current_resume_id = Column(String, ForeignKey("resumes.id", ondelete="SET NULL"), nullable=True)
+    current_resume_id = Column(
+        String, ForeignKey("resumes.id", ondelete="SET NULL"), nullable=True
+    )
     resume_version = Column(Integer, default=1)
     resume_ats_score = Column(Integer, default=0)
     resume_last_parsed = Column(DateTime, nullable=True)
@@ -460,10 +547,17 @@ class UserProfile(Base):
     hackerrank_url = Column(String(512), nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
-    owner = relationship("User", backref=backref("profile", uselist=False, cascade="all, delete-orphan"))
+    owner = relationship(
+        "User", backref=backref("profile", uselist=False, cascade="all, delete-orphan")
+    )
     current_resume = relationship("Resume", foreign_keys=[current_resume_id])
+
 
 class WorkflowState(Base):
     __tablename__ = "workflow_states"
@@ -474,7 +568,11 @@ class WorkflowState(Base):
     status = Column(String)
     context_payload = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class GoalDependency(Base):
@@ -496,8 +594,10 @@ class GoalVersion(Base):
 
 # ── Job Ecosystem ──────────────────────────────────────────────────────────────
 
+
 class Company(Base):
     """Normalized company entity — shared across all jobs."""
+
     __tablename__ = "companies"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -505,7 +605,9 @@ class Company(Base):
     domain = Column(String(255), nullable=True)
     logo_url = Column(String(512), nullable=True)
     industry = Column(String(100), nullable=True)
-    company_size = Column(String(50), nullable=True)   # e.g. "1-50", "500-1000", "10000+"
+    company_size = Column(
+        String(50), nullable=True
+    )  # e.g. "1-50", "500-1000", "10000+"
     headquarters = Column(String(255), nullable=True)
     website = Column(String(512), nullable=True)
     careers_url = Column(String(512), nullable=True)
@@ -519,22 +621,27 @@ class Company(Base):
 
 class Job(Base):
     """A job posting. Status transitions: ACTIVE → EXPIRED."""
+
     __tablename__ = "jobs"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    company_id = Column(String, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(
+        String, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     location = Column(String(255), nullable=True)
-    job_type = Column(String(50), nullable=True)          # Internship, Full-time, Part-time
-    employment_type = Column(String(50), nullable=True)   # On-site, Remote, Hybrid
-    remote_type = Column(String(50), nullable=True)       # Fully Remote, Hybrid, On-site
+    job_type = Column(String(50), nullable=True)  # Internship, Full-time, Part-time
+    employment_type = Column(String(50), nullable=True)  # On-site, Remote, Hybrid
+    remote_type = Column(String(50), nullable=True)  # Fully Remote, Hybrid, On-site
     status = Column(String(20), nullable=False, default="ACTIVE")  # ACTIVE, EXPIRED
     salary_min = Column(Integer, nullable=True)
     salary_max = Column(Integer, nullable=True)
-    experience_required = Column(String(50), nullable=True)  # e.g. "0-1 years", "Fresher"
+    experience_required = Column(
+        String(50), nullable=True
+    )  # e.g. "0-1 years", "Fresher"
     apply_url = Column(String(512), nullable=True)
-    source = Column(String(100), nullable=True)           # "seed", "admin", "api"
+    source = Column(String(100), nullable=True)  # "seed", "admin", "api"
     # Duplicate detection hash: sha256(company_name + title + location)
     dedup_hash = Column(String(64), nullable=True, unique=True)
     posted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -547,8 +654,12 @@ class Job(Base):
     )
 
     company = relationship("Company", back_populates="jobs")
-    skills = relationship("JobSkill", back_populates="job", cascade="all, delete-orphan")
-    saved_by = relationship("SavedJob", back_populates="job", cascade="all, delete-orphan")
+    skills = relationship(
+        "JobSkill", back_populates="job", cascade="all, delete-orphan"
+    )
+    saved_by = relationship(
+        "SavedJob", back_populates="job", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("ix_jobs_status_expires", "status", "expires_at"),
@@ -560,34 +671,42 @@ class Job(Base):
 
 class JobSkill(Base):
     """Normalized skill required for a job. Skill names are canonicalized."""
+
     __tablename__ = "job_skills"
 
     job_id = Column(String, ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True)
-    skill_name = Column(String(100), primary_key=True)   # Always stored in canonical form
+    skill_name = Column(
+        String(100), primary_key=True
+    )  # Always stored in canonical form
     is_required = Column(Boolean, default=True)
 
     job = relationship("Job", back_populates="skills")
 
-    __table_args__ = (
-        Index("ix_job_skills_skill_name", "skill_name"),
-    )
+    __table_args__ = (Index("ix_job_skills_skill_name", "skill_name"),)
 
 
 class UserSkill(Base):
     """Skills extracted from a user's resume. Used for job matching."""
+
     __tablename__ = "user_skills"
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    skill_name = Column(String(100), primary_key=True)   # Canonical form
-    proficiency = Column(Integer, default=1)             # 1=Beginner … 5=Expert
-    source = Column(String(50), nullable=True, default="resume")  # resume, manual, ai_inferred
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    skill_name = Column(String(100), primary_key=True)  # Canonical form
+    proficiency = Column(Integer, default=1)  # 1=Beginner … 5=Expert
+    source = Column(
+        String(50), nullable=True, default="resume"
+    )  # resume, manual, ai_inferred
     updated_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    owner = relationship("User", backref=backref("user_skills", cascade="all, delete-orphan"))
+    owner = relationship(
+        "User", backref=backref("user_skills", cascade="all, delete-orphan")
+    )
 
     __table_args__ = (
         Index("ix_user_skills_user_id", "user_id"),
@@ -597,33 +716,46 @@ class UserSkill(Base):
 
 class SavedJob(Base):
     """A job bookmarked by a user. Composite PK ensures uniqueness."""
+
     __tablename__ = "saved_jobs"
 
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     job_id = Column(String, ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True)
     saved_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    owner = relationship("User", backref=backref("saved_jobs", cascade="all, delete-orphan"))
+    owner = relationship(
+        "User", backref=backref("saved_jobs", cascade="all, delete-orphan")
+    )
     job = relationship("Job", back_populates="saved_by")
 
 
 # ── Saarthi Discovery & Intelligence Models ────────────────────────────────────
 # All new models are append-only; existing tables above are untouched.
 
+
 class ConsentRecord(Base):
     """Records explicit user consent for data collection at the time of submission."""
+
     __tablename__ = "consent_records"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    session_id = Column(String, nullable=False, index=True)   # anonymous session token
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    session_id = Column(String, nullable=False, index=True)  # anonymous session token
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     consent_given = Column(Boolean, default=True)
     consent_version = Column(String(20), default="1.0")
-    ip_hash = Column(String(64), nullable=True)   # sha256(ip) — never raw IP
+    ip_hash = Column(String(64), nullable=True)  # sha256(ip) — never raw IP
     user_agent_hash = Column(String(64), nullable=True)
     status = Column(String(20), default="active")  # active, withdrawn
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 class UserDiscoveryProfile(Base):
@@ -631,11 +763,14 @@ class UserDiscoveryProfile(Base):
     Top-level discovery profile for a single user/company session.
     Links to all other discovery sub-entities.
     """
+
     __tablename__ = "user_discovery_profiles"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String, nullable=False, unique=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     consent_id = Column(String, ForeignKey("consent_records.id"), nullable=True)
 
     # User type (Student, Job Seeker, Working Professional, etc.)
@@ -644,47 +779,81 @@ class UserDiscoveryProfile(Base):
 
     # Source (web, discover_page, api)
     source = Column(String(50), default="discover_page")
-    status = Column(String(30), default="in_progress")  # in_progress, completed, partial
+    status = Column(
+        String(30), default="in_progress"
+    )  # in_progress, completed, partial
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # Relationships
-    intents = relationship("UserIntent", back_populates="profile", cascade="all, delete-orphan")
-    challenges = relationship("CareerChallenge", back_populates="profile", cascade="all, delete-orphan")
-    feature_feedbacks = relationship("FeatureFeedback", back_populates="profile", cascade="all, delete-orphan")
-    product_feedbacks = relationship("ProductFeedback", back_populates="profile", cascade="all, delete-orphan")
-    opportunity_signals = relationship("OpportunitySignal", back_populates="profile", cascade="all, delete-orphan")
+    intents = relationship(
+        "UserIntent", back_populates="profile", cascade="all, delete-orphan"
+    )
+    challenges = relationship(
+        "CareerChallenge", back_populates="profile", cascade="all, delete-orphan"
+    )
+    feature_feedbacks = relationship(
+        "FeatureFeedback", back_populates="profile", cascade="all, delete-orphan"
+    )
+    product_feedbacks = relationship(
+        "ProductFeedback", back_populates="profile", cascade="all, delete-orphan"
+    )
+    opportunity_signals = relationship(
+        "OpportunitySignal", back_populates="profile", cascade="all, delete-orphan"
+    )
 
 
 class UserIntent(Base):
     """What the user is trying to achieve (from the multi-select options)."""
+
     __tablename__ = "user_intents"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    profile_id = Column(String, ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id = Column(
+        String,
+        ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
-    intent_key = Column(String(100), nullable=False)    # e.g. "find_first_job", "improve_resume"
-    intent_label = Column(String(255), nullable=True)   # Human-readable label
-    is_primary = Column(Boolean, default=False)         # "Most important" flag
-    free_text = Column(Text, nullable=True)             # "Other" description
+    intent_key = Column(
+        String(100), nullable=False
+    )  # e.g. "find_first_job", "improve_resume"
+    intent_label = Column(String(255), nullable=True)  # Human-readable label
+    is_primary = Column(Boolean, default=False)  # "Most important" flag
+    free_text = Column(Text, nullable=True)  # "Other" description
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     profile = relationship("UserDiscoveryProfile", back_populates="intents")
 
 
 class CareerChallenge(Base):
     """Difficulty ratings across 10 career challenge areas (1-5 scale)."""
+
     __tablename__ = "career_challenges"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    profile_id = Column(String, ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id = Column(
+        String,
+        ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # 10 challenge areas
-    finding_relevant_jobs = Column(Integer, nullable=True)       # 1=Easy, 5=Very Hard
+    finding_relevant_jobs = Column(Integer, nullable=True)  # 1=Easy, 5=Very Hard
     finding_genuine_opportunities = Column(Integer, nullable=True)
     understanding_jds = Column(Integer, nullable=True)
     knowing_qualification = Column(Integer, nullable=True)
@@ -695,12 +864,18 @@ class CareerChallenge(Base):
     tracking_applications = Column(Integer, nullable=True)
     knowing_what_to_learn = Column(Integer, nullable=True)
 
-    biggest_difficulty = Column(Text, nullable=True)             # Free-text biggest challenge
-    one_problem_to_solve = Column(Text, nullable=True)           # "If Saarthi could solve ONE problem..."
+    biggest_difficulty = Column(Text, nullable=True)  # Free-text biggest challenge
+    one_problem_to_solve = Column(
+        Text, nullable=True
+    )  # "If Saarthi could solve ONE problem..."
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     profile = relationship("UserDiscoveryProfile", back_populates="challenges")
 
@@ -711,24 +886,34 @@ class FeatureFeedback(Base):
     Each feature gets its own row.
     Values: not_useful | somewhat_useful | useful | very_useful | extremely_valuable | not_sure
     """
+
     __tablename__ = "feature_feedbacks"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    profile_id = Column(String, ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id = Column(
+        String,
+        ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
-    feature_id = Column(Integer, nullable=False)         # 1–34
-    feature_key = Column(String(100), nullable=False)    # e.g. "job_discovery"
+    feature_id = Column(Integer, nullable=False)  # 1–34
+    feature_key = Column(String(100), nullable=False)  # e.g. "job_discovery"
     feature_label = Column(String(255), nullable=True)
-    rating = Column(String(30), nullable=False)          # not_useful | somewhat_useful | etc.
+    rating = Column(String(30), nullable=False)  # not_useful | somewhat_useful | etc.
     is_most_valuable = Column(Boolean, default=False)
     is_least_valuable = Column(Boolean, default=False)
-    is_missing = Column(Boolean, default=False)          # "I wish this existed"
-    is_want_next = Column(Boolean, default=False)        # "Feature I want next"
+    is_missing = Column(Boolean, default=False)  # "I wish this existed"
+    is_want_next = Column(Boolean, default=False)  # "Feature I want next"
     comment = Column(Text, nullable=True)
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     profile = relationship("UserDiscoveryProfile", back_populates="feature_feedbacks")
 
@@ -740,10 +925,16 @@ class FeatureFeedback(Base):
 
 class ProductFeedback(Base):
     """Open-ended product feedback from discovery questions."""
+
     __tablename__ = "product_feedbacks"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    profile_id = Column(String, ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id = Column(
+        String,
+        ForeignKey("user_discovery_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     what_you_like = Column(Text, nullable=True)
     what_you_dislike = Column(Text, nullable=True)
@@ -759,7 +950,11 @@ class ProductFeedback(Base):
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     profile = relationship("UserDiscoveryProfile", back_populates="product_feedbacks")
 
@@ -769,27 +964,43 @@ class OpportunitySignal(Base):
     User-submitted opportunity signal (public job URL, company, role, skills).
     Goes through validation + deduplication before being considered for ingestion.
     """
+
     __tablename__ = "opportunity_signals"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    profile_id = Column(String, ForeignKey("user_discovery_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+    profile_id = Column(
+        String,
+        ForeignKey("user_discovery_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     public_job_url = Column(String(2048), nullable=True)
     company = Column(String(255), nullable=True)
     role = Column(String(255), nullable=True)
     location = Column(String(255), nullable=True)
-    skills = Column(Text, nullable=True)            # Comma-separated or JSON
+    skills = Column(Text, nullable=True)  # Comma-separated or JSON
     additional_context = Column(Text, nullable=True)
-    submitter_email = Column(String(255), nullable=True)   # Optional, only if user consented
+    submitter_email = Column(
+        String(255), nullable=True
+    )  # Optional, only if user consented
 
     # Validation / ingestion lifecycle
-    validation_status = Column(String(30), default="pending")   # pending | valid | invalid | duplicate
-    ingestion_status = Column(String(30), default="pending")    # pending | staged | rejected
+    validation_status = Column(
+        String(30), default="pending"
+    )  # pending | valid | invalid | duplicate
+    ingestion_status = Column(
+        String(30), default="pending"
+    )  # pending | staged | rejected
     dedup_hash = Column(String(64), nullable=True, index=True)
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     profile = relationship("UserDiscoveryProfile", back_populates="opportunity_signals")
 
@@ -799,6 +1010,7 @@ class CompanyProfile(Base):
     Company/recruiter/HR discovery profile.
     Separate from the main Company job table — this is intelligence data, not a job record.
     """
+
     __tablename__ = "company_profiles"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -806,13 +1018,15 @@ class CompanyProfile(Base):
     consent_id = Column(String, ForeignKey("consent_records.id"), nullable=True)
 
     company_name = Column(String(255), nullable=True)
-    company_type = Column(String(100), nullable=True)      # startup, enterprise, agency, etc.
+    company_type = Column(
+        String(100), nullable=True
+    )  # startup, enterprise, agency, etc.
     industry = Column(String(100), nullable=True)
     company_size = Column(String(50), nullable=True)
-    hiring_locations = Column(Text, nullable=True)         # JSON array
-    roles_hired = Column(Text, nullable=True)              # JSON array
-    experience_levels = Column(Text, nullable=True)        # JSON array
-    skills_commonly_required = Column(Text, nullable=True) # JSON array
+    hiring_locations = Column(Text, nullable=True)  # JSON array
+    roles_hired = Column(Text, nullable=True)  # JSON array
+    experience_levels = Column(Text, nullable=True)  # JSON array
+    skills_commonly_required = Column(Text, nullable=True)  # JSON array
 
     contact_name = Column(String(255), nullable=True)
     contact_email = Column(String(255), nullable=True)
@@ -821,18 +1035,32 @@ class CompanyProfile(Base):
     status = Column(String(20), default="active")
     source = Column(String(50), default="discover_page")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
-    hiring_signals = relationship("HiringSignal", back_populates="company_profile", cascade="all, delete-orphan")
-    job_submissions = relationship("JobSubmission", back_populates="company_profile", cascade="all, delete-orphan")
+    hiring_signals = relationship(
+        "HiringSignal", back_populates="company_profile", cascade="all, delete-orphan"
+    )
+    job_submissions = relationship(
+        "JobSubmission", back_populates="company_profile", cascade="all, delete-orphan"
+    )
 
 
 class HiringSignal(Base):
     """Hiring challenge signals and needs from company/recruiter profiles."""
+
     __tablename__ = "hiring_signals"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    company_profile_id = Column(String, ForeignKey("company_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_profile_id = Column(
+        String,
+        ForeignKey("company_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Hiring challenges (multi-select)
     finding_qualified_candidates = Column(Boolean, default=False)
@@ -856,11 +1084,17 @@ class HiringSignal(Base):
     wants_candidate_recommendations = Column(Boolean, default=False)
     wants_hiring_intelligence = Column(Boolean, default=False)
 
-    what_platforms_miss = Column(Text, nullable=True)   # "What Saarthi should understand..."
+    what_platforms_miss = Column(
+        Text, nullable=True
+    )  # "What Saarthi should understand..."
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     company_profile = relationship("CompanyProfile", back_populates="hiring_signals")
 
@@ -870,33 +1104,47 @@ class JobSubmission(Base):
     Public job opportunity submitted by a company/recruiter.
     Enters a controlled validation + deduplication pipeline before staging.
     """
+
     __tablename__ = "job_submissions"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    company_profile_id = Column(String, ForeignKey("company_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+    company_profile_id = Column(
+        String,
+        ForeignKey("company_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     company = Column(String(255), nullable=True)
     role = Column(String(255), nullable=False)
     location = Column(String(255), nullable=True)
     experience_min = Column(Integer, nullable=True)
     experience_max = Column(Integer, nullable=True)
-    skills = Column(Text, nullable=True)               # Comma-separated or JSON
+    skills = Column(Text, nullable=True)  # Comma-separated or JSON
     public_job_url = Column(String(2048), nullable=False)
     source_url = Column(String(2048), nullable=True)
     optional_hiring_contact = Column(String(255), nullable=True)
     additional_information = Column(Text, nullable=True)
 
     # Pipeline lifecycle
-    validation_status = Column(String(30), default="pending")   # pending | valid | invalid
-    dedup_status = Column(String(30), default="pending")        # pending | unique | duplicate
-    sync_status = Column(String(30), default="pending")         # pending | staged | synced | rejected
-    validation_errors = Column(Text, nullable=True)             # JSON list
+    validation_status = Column(
+        String(30), default="pending"
+    )  # pending | valid | invalid
+    dedup_status = Column(String(30), default="pending")  # pending | unique | duplicate
+    sync_status = Column(
+        String(30), default="pending"
+    )  # pending | staged | synced | rejected
+    validation_errors = Column(Text, nullable=True)  # JSON list
 
     dedup_hash = Column(String(64), nullable=True, index=True)
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
     synced_at = Column(DateTime, nullable=True)
 
     company_profile = relationship("CompanyProfile", back_populates="job_submissions")
@@ -904,11 +1152,14 @@ class JobSubmission(Base):
 
 class ContactRequest(Base):
     """Contact form submission via 'Contact Saarthi'."""
+
     __tablename__ = "contact_requests"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String, nullable=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     consent_id = Column(String, ForeignKey("consent_records.id"), nullable=True)
 
     name = Column(String(255), nullable=False)
@@ -916,19 +1167,25 @@ class ContactRequest(Base):
     linkedin_url = Column(String(512), nullable=True)
     role_type = Column(String(100), nullable=True)
     reason = Column(String(100), nullable=True)
-    category = Column(String(100), nullable=True, default="general")    # product_feedback | job_opportunity | hiring | collaboration | partnership | early_user | other
+    category = Column(
+        String(100), nullable=True, default="general"
+    )  # product_feedback | job_opportunity | hiring | collaboration | partnership | early_user | other
     message = Column(Text, nullable=False)
     consent_given = Column(Boolean, default=True)
     target_email = Column(String(255), default="saarthi.ai.team@gmail.com")
     contact_permission = Column(Boolean, default=True)
 
     # Processing lifecycle
-    status = Column(String(30), default="new")   # new | reviewed | responded | archived
-    admin_notes = Column(Text, nullable=True)    # Internal only
+    status = Column(String(30), default="new")  # new | reviewed | responded | archived
+    admin_notes = Column(Text, nullable=True)  # Internal only
 
     source = Column(String(50), default="contact_page")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     __table_args__ = (
         Index("ix_contact_requests_category", "category"),
@@ -943,21 +1200,26 @@ class FeedbackEvent(Base):
     UserDiscoveryProfile, FeatureFeedback, ProductFeedback data.
     Never exposes one user's data to another.
     """
+
     __tablename__ = "feedback_events"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
 
-    event_type = Column(String(100), nullable=False, index=True)  # e.g. "feature_rating", "pain_point_identified"
-    entity_type = Column(String(80), nullable=True)   # which entity type this aggregates
-    entity_id = Column(String(100), nullable=True)    # feature_key, challenge_key, etc.
+    event_type = Column(
+        String(100), nullable=False, index=True
+    )  # e.g. "feature_rating", "pain_point_identified"
+    entity_type = Column(String(80), nullable=True)  # which entity type this aggregates
+    entity_id = Column(String(100), nullable=True)  # feature_key, challenge_key, etc.
 
     session_id = Column(String, nullable=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     payload_json = Column(Text, nullable=True)
 
     # Aggregated metrics
     count = Column(Integer, default=1)
-    score_sum = Column(Float, nullable=True)      # Sum of ratings for averaging
+    score_sum = Column(Float, nullable=True)  # Sum of ratings for averaging
     score_avg = Column(Float, nullable=True)
     score_count = Column(Integer, default=0)
 
@@ -965,13 +1227,17 @@ class FeedbackEvent(Base):
     ai_insight = Column(Text, nullable=True)
     ai_insight_generated_at = Column(DateTime, nullable=True)
 
-    period = Column(String(20), default="all_time")   # all_time | weekly | monthly
+    period = Column(String(20), default="all_time")  # all_time | weekly | monthly
     period_start = Column(DateTime, nullable=True)
     period_end = Column(DateTime, nullable=True)
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     __table_args__ = (
         Index("ix_feedback_events_type_entity", "event_type", "entity_id"),

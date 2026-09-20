@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.core.dependencies.auth import GuestUser, get_current_user, require_authenticated_user
+from app.core.dependencies.auth import (
+    GuestUser,
+    get_current_user,
+    require_authenticated_user,
+)
 from app.core.dependencies.services import get_career_service
 from app.models.models import ChatMessage, ChatSession, Note, User
 from app.services.career_service import CareerService
@@ -49,7 +53,11 @@ def career_dashboard(
     if _is_guest(current_user):
         return {
             "headline": "Sign in to connect your profile, resume, and goals",
-            "focus_areas": ["Complete your profile", "Upload a resume", "Set a target role"],
+            "focus_areas": [
+                "Complete your profile",
+                "Upload a resume",
+                "Set a target role",
+            ],
             "next_actions": [
                 "Create an account so Saarthi can use your career data",
                 "Add a target role on your profile",
@@ -79,7 +87,12 @@ def career_dashboard(
             },
             "mission_progress": 0,
             "goal_count": 0,
-            "stats": {"applications": 0, "interviews": 0, "ats_score": 0, "goals_in_progress": 0},
+            "stats": {
+                "applications": 0,
+                "interviews": 0,
+                "ats_score": 0,
+                "goals_in_progress": 0,
+            },
             "activity": [],
         }
     return service.get_dashboard_summary(current_user.id)
@@ -148,32 +161,82 @@ async def learning_plan(
 
 
 @router.post("/copilot/stream")
-async def copilot_stream(body: CopilotMessageRequest, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
+async def copilot_stream(
+    body: CopilotMessageRequest,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
     """Stream career guidance grounded in the current user's career data and recent conversation."""
     context = CareerCopilotService(db)._gather_user_context(current_user.id)
-    session = db.query(ChatSession).filter(ChatSession.id == body.session_id, ChatSession.user_id == current_user.id).first() if body.session_id else None
+    session = (
+        db.query(ChatSession)
+        .filter(
+            ChatSession.id == body.session_id, ChatSession.user_id == current_user.id
+        )
+        .first()
+        if body.session_id
+        else None
+    )
     if not session:
         session = ChatSession(user_id=current_user.id, title="Career Copilot")
-        db.add(session); db.commit(); db.refresh(session)
-    history = db.query(ChatMessage).filter(ChatMessage.session_id == session.id).order_by(ChatMessage.timestamp.desc()).limit(12).all()[::-1]
-    facts = {"target_role": context.get("target_role"), "skills": context.get("skills", [])[:20], "goals": [goal.title for goal in context.get("goals", [])[:5]], "resume_available": bool(context.get("resume"))}
-    messages = [{"role": "system", "content": f"You are Saarthi Career Copilot. Give concrete career advice grounded in: {facts}"}]
+        db.add(session)
+        db.commit()
+        db.refresh(session)
+    history = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.session_id == session.id)
+        .order_by(ChatMessage.timestamp.desc())
+        .limit(12)
+        .all()[::-1]
+    )
+    facts = {
+        "target_role": context.get("target_role"),
+        "skills": context.get("skills", [])[:20],
+        "goals": [goal.title for goal in context.get("goals", [])[:5]],
+        "resume_available": bool(context.get("resume")),
+    }
+    messages = [
+        {
+            "role": "system",
+            "content": f"You are Saarthi Career Copilot. Give concrete career advice grounded in: {facts}",
+        }
+    ]
     messages.extend({"role": item.role, "content": item.content} for item in history)
     messages.append({"role": "user", "content": body.message})
-    db.add(ChatMessage(session_id=session.id, role="user", content=body.message)); db.commit()
+    db.add(ChatMessage(session_id=session.id, role="user", content=body.message))
+    db.commit()
+
     async def stream():
         answer = ""
-        async for chunk in AIGateway().generate_response_stream(messages, personality="career"):
-            answer += chunk; yield chunk.encode("utf-8")
-        db.add(ChatMessage(session_id=session.id, role="assistant", content=answer)); db.commit()
-    return StreamingResponse(stream(), media_type="text/plain", headers={"X-Copilot-Session": session.id})
+        async for chunk in AIGateway().generate_response_stream(
+            messages, personality="career"
+        ):
+            answer += chunk
+            yield chunk.encode("utf-8")
+        db.add(ChatMessage(session_id=session.id, role="assistant", content=answer))
+        db.commit()
+
+    return StreamingResponse(
+        stream(), media_type="text/plain", headers={"X-Copilot-Session": session.id}
+    )
 
 
 @router.post("/copilot/insights")
-def save_copilot_insight(body: SaveInsightRequest, current_user: User = Depends(require_authenticated_user), db: Session = Depends(get_db)):
+def save_copilot_insight(
+    body: SaveInsightRequest,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
     """Save a selected Copilot answer as a searchable career note."""
-    note = Note(user_id=current_user.id, title=body.title, content=body.content, tags="copilot,career-insight")
-    db.add(note); db.commit(); db.refresh(note)
+    note = Note(
+        user_id=current_user.id,
+        title=body.title,
+        content=body.content,
+        tags="copilot,career-insight",
+    )
+    db.add(note)
+    db.commit()
+    db.refresh(note)
     return {"id": note.id, "title": note.title}
 
 
@@ -207,8 +270,13 @@ def mission_tick(
         return {
             "status": "guest",
             "mission": {
-                "dsa": 0, "git": 0, "linkedin": 0, "jobs": 0,
-                "course": 0, "interview": 0, "streak": 0,
+                "dsa": 0,
+                "git": 0,
+                "linkedin": 0,
+                "jobs": 0,
+                "course": 0,
+                "interview": 0,
+                "streak": 0,
             },
         }
     task = "job" if body.task_type in ("job", "jobs") else body.task_type

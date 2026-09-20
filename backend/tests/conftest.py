@@ -3,6 +3,7 @@ Shared test fixtures for the Saarthi backend test suite.
 All tests use an in-memory SQLite database so they run without any external services.
 The AI provider and Redis are mocked by default.
 """
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
@@ -42,6 +43,7 @@ def db_session():
 @pytest.fixture(scope="function")
 def client(db_session):
     """FastAPI TestClient wired to the in-memory database."""
+
     def override_get_db():
         try:
             yield db_session
@@ -99,6 +101,7 @@ def mock_ai_stream(request):
 def reset_rate_limiter():
     """Reset simple rate limiter before each test."""
     from app.core.rate_limit import rate_limiter
+
     rate_limiter.reset()
     yield
     rate_limiter.reset()
@@ -107,15 +110,14 @@ def reset_rate_limiter():
 @pytest.fixture(autouse=True)
 def mock_redis():
     """Keep ordinary tests deterministic when optional Redis is unavailable."""
-    with patch("app.memory.redis_client.redis_memory") as mock, \
-         patch("app.services.career_copilot_service.redis_memory", mock), \
-         patch("app.core.cache.cache.connect", new_callable=AsyncMock), \
-         patch("app.core.cache.cache.close", new_callable=AsyncMock):
+    with patch("app.memory.redis_client.redis_memory") as mock, patch(
+        "app.services.career_copilot_service.redis_memory", mock
+    ), patch("app.core.cache.cache.connect", new_callable=AsyncMock), patch(
+        "app.core.cache.cache.close", new_callable=AsyncMock
+    ):
         mock.add_message = MagicMock()
         mock.get_history = MagicMock(return_value=[])
         mock.invalidate_cache = MagicMock()
         mock.get_cache = MagicMock(return_value=None)
         mock.set_cache = MagicMock()
         yield mock
-
-

@@ -4,6 +4,7 @@ Discovery API Router — Saarthi Career & Hiring Intelligence Discovery
 Endpoints for multi-step career discovery, intent logging, challenge rating,
 and ecosystem contribution.
 """
+
 import uuid
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/discovery", tags=["discovery"])
 
 
 # ── Pydantic Request Models ──────────────────────────────────────────────────
+
 
 class UserIntentInput(BaseModel):
     intent_key: str
@@ -46,7 +48,10 @@ class FeatureFeedbackItemInput(BaseModel):
     feature_id: int = Field(..., ge=1, le=34)
     feature_key: str
     feature_label: Optional[str] = None
-    rating: str = Field(..., description="not_useful | somewhat_useful | useful | very_useful | extremely_valuable | not_sure")
+    rating: str = Field(
+        ...,
+        description="not_useful | somewhat_useful | useful | very_useful | extremely_valuable | not_sure",
+    )
     is_most_valuable: bool = False
     is_least_valuable: bool = False
     is_missing: bool = False
@@ -126,6 +131,7 @@ class DiscoverySubmissionRequest(BaseModel):
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
+
 @router.post("/submit")
 def submit_discovery(
     payload: DiscoverySubmissionRequest,
@@ -178,28 +184,79 @@ def get_discovery_options():
             {"key": "find_first_job", "label": "Find my first job or internship"},
             {"key": "switch_careers", "label": "Switch to a new career domain"},
             {"key": "improve_resume", "label": "Improve my resume and ATS score"},
-            {"key": "prepare_interviews", "label": "Prepare for technical & HR interviews"},
-            {"key": "identify_skills", "label": "Identify skill gaps and what to learn"},
-            {"key": "track_applications", "label": "Organize and track job applications"},
-            {"key": "discover_genuine_jobs", "label": "Discover genuine, verified job listings"},
+            {
+                "key": "prepare_interviews",
+                "label": "Prepare for technical & HR interviews",
+            },
+            {
+                "key": "identify_skills",
+                "label": "Identify skill gaps and what to learn",
+            },
+            {
+                "key": "track_applications",
+                "label": "Organize and track job applications",
+            },
+            {
+                "key": "discover_genuine_jobs",
+                "label": "Discover genuine, verified job listings",
+            },
             {"key": "hire_talent", "label": "Hire skilled candidates & freshers"},
             {"key": "post_job_opportunities", "label": "Post verified job openings"},
-            {"key": "understand_market_demand", "label": "Understand current hiring signals & market demand"},
-            {"key": "share_feedback", "label": "Share product feedback to help shape Saarthi AI"},
-            {"key": "explore_higher_studies", "label": "Explore higher education & graduate tools"},
+            {
+                "key": "understand_market_demand",
+                "label": "Understand current hiring signals & market demand",
+            },
+            {
+                "key": "share_feedback",
+                "label": "Share product feedback to help shape Saarthi AI",
+            },
+            {
+                "key": "explore_higher_studies",
+                "label": "Explore higher education & graduate tools",
+            },
             {"key": "other", "label": "Other career or hiring intent"},
         ],
         "challenge_areas": [
-            {"key": "finding_relevant_jobs", "label": "Finding relevant jobs matching my background"},
-            {"key": "finding_genuine_opportunities", "label": "Filtering genuine opportunities from ghost/spam posts"},
-            {"key": "understanding_jds", "label": "Understanding complex Job Descriptions"},
-            {"key": "knowing_qualification", "label": "Knowing if I am actually qualified before applying"},
-            {"key": "resume_improvement", "label": "Tailoring my resume for ATS screening"},
-            {"key": "skill_gap_identification", "label": "Identifying specific skill gaps for target roles"},
-            {"key": "interview_preparation", "label": "Preparing effectively for interviews"},
-            {"key": "finding_companies", "label": "Finding top companies hiring in my domain"},
-            {"key": "tracking_applications", "label": "Keeping track of multiple job applications"},
-            {"key": "knowing_what_to_learn", "label": "Deciding what skills to learn next"},
+            {
+                "key": "finding_relevant_jobs",
+                "label": "Finding relevant jobs matching my background",
+            },
+            {
+                "key": "finding_genuine_opportunities",
+                "label": "Filtering genuine opportunities from ghost/spam posts",
+            },
+            {
+                "key": "understanding_jds",
+                "label": "Understanding complex Job Descriptions",
+            },
+            {
+                "key": "knowing_qualification",
+                "label": "Knowing if I am actually qualified before applying",
+            },
+            {
+                "key": "resume_improvement",
+                "label": "Tailoring my resume for ATS screening",
+            },
+            {
+                "key": "skill_gap_identification",
+                "label": "Identifying specific skill gaps for target roles",
+            },
+            {
+                "key": "interview_preparation",
+                "label": "Preparing effectively for interviews",
+            },
+            {
+                "key": "finding_companies",
+                "label": "Finding top companies hiring in my domain",
+            },
+            {
+                "key": "tracking_applications",
+                "label": "Keeping track of multiple job applications",
+            },
+            {
+                "key": "knowing_what_to_learn",
+                "label": "Deciding what skills to learn next",
+            },
         ],
         "feature_count": 34,
     }

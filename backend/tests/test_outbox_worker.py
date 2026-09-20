@@ -2,6 +2,7 @@
 Integration tests for the OutboxWorker.
 Verifies events move from PENDING -> PROCESSED and handlers are invoked.
 """
+
 import asyncio
 import json
 import pytest
@@ -15,6 +16,7 @@ from app.models.models import EventOutbox
 def clear_subscribers():
     """Reset subscriber registry between tests."""
     from app.engine import outbox_worker as ow
+
     original = dict(ow._subscribers)
     ow._subscribers.clear()
     yield
@@ -82,7 +84,9 @@ class TestOutboxWorker:
             raise RuntimeError("Simulated handler failure")
 
         subscribe("GoalUpdated", broken_handler)
-        worker = OutboxWorker(db_factory=lambda: db_session, poll_interval=0.1, max_retries=2)
+        worker = OutboxWorker(
+            db_factory=lambda: db_session, poll_interval=0.1, max_retries=2
+        )
         asyncio.run(worker._process_batch())
         asyncio.run(worker._process_batch())
 

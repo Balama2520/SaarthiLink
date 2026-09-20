@@ -4,6 +4,7 @@ Opportunities API Router — Public Opportunity Signal Ingestion Pipeline
 Endpoints allowing users to submit public job links and hiring signals
 for verification and inclusion in the Saarthi Job Ecosystem.
 """
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, HttpUrl
 from typing import Any, Dict, Optional
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 
 
 from pydantic import BaseModel, HttpUrl, model_validator
+
 
 class OpportunitySubmissionRequest(BaseModel):
     public_job_url: Optional[str] = None

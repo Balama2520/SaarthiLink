@@ -44,7 +44,11 @@ class ResearchService:
             if filename.endswith(".pdf"):
                 reader = PdfReader(io.BytesIO(file_content))
                 text = "".join(
-                    [page.extract_text() for page in reader.pages if page.extract_text()]
+                    [
+                        page.extract_text()
+                        for page in reader.pages
+                        if page.extract_text()
+                    ]
                 )
             else:
                 text = file_content.decode("utf-8")
@@ -60,14 +64,22 @@ class ResearchService:
             clean = _strip_markdown_json(full_response)
             return json.loads(clean)
         except Exception:
-            logger.warning(f"Using fallback research analysis for output: {full_response[:100]}")
+            logger.warning(
+                f"Using fallback research analysis for output: {full_response[:100]}"
+            )
             return {
                 "summary": "This paper analyzes modern software and machine learning architectures.",
                 "explanation": "Presents empirical results, baseline benchmarking, and system optimization techniques.",
-                "notes": ["Key innovation in model efficiency", "Experimental validation across benchmark datasets"],
+                "notes": [
+                    "Key innovation in model efficiency",
+                    "Experimental validation across benchmark datasets",
+                ],
                 "quiz": [
-                    {"question": "What is the primary contribution of the paper?", "answer": "Improved efficiency and architecture design."}
-                ]
+                    {
+                        "question": "What is the primary contribution of the paper?",
+                        "answer": "Improved efficiency and architecture design.",
+                    }
+                ],
             }
 
     async def get_compass(self, interests: str) -> dict:
@@ -91,7 +103,11 @@ class ResearchService:
                         "Self-supervised learning",
                         "Efficient architectures",
                     ],
-                    "prerequisites": ["Linear Algebra", "Optimization", "Advanced Python"],
+                    "prerequisites": [
+                        "Linear Algebra",
+                        "Optimization",
+                        "Advanced Python",
+                    ],
                     "papers_to_read": [
                         "Attention Is All You Need",
                         "ResNet",

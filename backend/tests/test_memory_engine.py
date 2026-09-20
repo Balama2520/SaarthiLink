@@ -1,6 +1,7 @@
 """
 Unit tests for the WorkingMemoryEngine.
 """
+
 import pytest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
@@ -9,10 +10,18 @@ from app.memory.engine import WorkingMemoryEngine
 from app.models.models import Memory, UserProfile
 
 
-def _make_memory(db, user_id: int, mem_type: str, subject: str, value: str,
-                 importance: float = 1.0, confidence: float = 1.0,
-                 days_old: int = 0) -> Memory:
+def _make_memory(
+    db,
+    user_id: int,
+    mem_type: str,
+    subject: str,
+    value: str,
+    importance: float = 1.0,
+    confidence: float = 1.0,
+    days_old: int = 0,
+) -> Memory:
     from datetime import timedelta
+
     ts = datetime.now(timezone.utc) - timedelta(days=days_old)
     mem = Memory(
         user_id=user_id,
@@ -49,11 +58,15 @@ class TestWorkingMemoryEngine:
 
     def test_retrieve_relevance_boosts_on_keyword_match(self, db_session):
         engine = WorkingMemoryEngine(db_session)
-        _make_memory(db_session, 1, "FACT", "Leetcode", "Practices daily", importance=0.5)
+        _make_memory(
+            db_session, 1, "FACT", "Leetcode", "Practices daily", importance=0.5
+        )
         _make_memory(db_session, 1, "FACT", "Sleep", "Sleeps 8 hours", importance=0.5)
 
         # Query that mentions "leetcode" should boost that memory
-        results = engine.retrieve_and_rank_memories(user_id=1, query_context="leetcode hard problem")
+        results = engine.retrieve_and_rank_memories(
+            user_id=1, query_context="leetcode hard problem"
+        )
         assert results[0].subject == "Leetcode"
 
     def test_retrieve_respects_limit(self, db_session):
@@ -61,7 +74,9 @@ class TestWorkingMemoryEngine:
         for i in range(10):
             _make_memory(db_session, 1, "FACT", f"Fact{i}", f"value{i}")
 
-        results = engine.retrieve_and_rank_memories(user_id=1, query_context="", limit=5)
+        results = engine.retrieve_and_rank_memories(
+            user_id=1, query_context="", limit=5
+        )
         assert len(results) == 5
 
     def test_assemble_context_returns_dict(self, db_session):
@@ -87,7 +102,9 @@ class TestWorkingMemoryEngine:
         db_session.commit()
 
         engine = WorkingMemoryEngine(db_session)
-        result = engine.assemble_context(user_id=1, session_id="s", ui_context={}, current_message="Hi")
+        result = engine.assemble_context(
+            user_id=1, session_id="s", ui_context={}, current_message="Hi"
+        )
         assert "Staff SWE" in result["system_prompt_augmentation"]
 
     def test_assemble_context_includes_ui_context(self, db_session):

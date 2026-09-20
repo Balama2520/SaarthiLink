@@ -3,6 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 async def with_retry(func, max_retries=3, delay=1.0, *args, **kwargs):
     last_exception = None
     for attempt in range(max_retries):
