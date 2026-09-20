@@ -44,6 +44,8 @@ def get_file_text(file_id: str) -> Optional[str]:
 
 def find_relevant_context(file_id: str, query: str, max_chars: int = 4000) -> str:
     """Retrieves relevant chunk segments from unified RAG service, falls back to head text."""
+    from app.rag import find_relevant_chunks
+
     chunks = find_relevant_chunks(file_id, query)
     if chunks:
         return "\n[...]\n".join(chunks)
