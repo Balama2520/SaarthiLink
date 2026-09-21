@@ -141,7 +141,14 @@ async def upload_resume(
         # Keep profile facts and semantic retrieval current as soon as a
         # successful analysis is available. ProfileSyncService only fills
         # blank fields, so user-entered profile data is never overwritten.
-        ProfileSyncService().sync_profile(db, current_user.id, parsed_data)
+        ProfileSyncService().sync_profile(
+            db,
+            current_user.id,
+            parsed_data,
+            resume_id=db_resume.id,
+            resume_version=version,
+            target_role=target_role,
+        )
         index_text_content(db_resume.id, db_resume.filename, raw_text)
 
         # Invalidate AI cache for career copilot
@@ -170,7 +177,8 @@ async def upload_resume(
 
     except Exception as exc:
         logger.warning(
-            "Resume AI analysis failed; keeping persisted resume record",
+            "Resume AI analysis failed; keeping persisted resume record: %s",
+            exc,
             extra={
                 "user_id": current_user.id,
                 "resume_id": db_resume.id,
@@ -225,7 +233,14 @@ async def reanalyze_resume(
         db.commit()
         db.refresh(resume)
 
-        ProfileSyncService().sync_profile(db, current_user.id, parsed_data)
+        ProfileSyncService().sync_profile(
+            db,
+            current_user.id,
+            parsed_data,
+            resume_id=resume.id,
+            resume_version=resume.version,
+            target_role=target_role,
+        )
         index_text_content(resume.id, resume.filename, resume.raw_text)
 
         CareerCopilotService(db).invalidate_cache(current_user.id)
@@ -274,7 +289,13 @@ async def sync_resume_profile(
 
     parsed = json.loads(resume.parsed_json)
     sync_svc = ProfileSyncService()
-    sync_svc.sync_profile(db, current_user.id, parsed)
+    sync_svc.sync_profile(
+        db,
+        current_user.id,
+        parsed,
+        resume_id=resume.id,
+        resume_version=resume.version,
+    )
 
     logger.info(
         "Profile synced from resume",

@@ -62,6 +62,8 @@ export default function JobFinder() {
   // Job Radar states
   const [radarFilter, setRadarFilter] = useState<string>("All");
   const [radarSearch, setRadarSearch] = useState("");
+  const [radarLocation, setRadarLocation] = useState("");
+  const [radarExperience, setRadarExperience] = useState("");
   const [radarJobsList, setRadarJobsList] = useState<RadarJob[]>([]);
   const [recommendedJobsList, setRecommendedJobsList] = useState<RecommendedJob[]>([]);
 
@@ -177,7 +179,10 @@ export default function JobFinder() {
           const recs = await api.getRecommendedJobs();
           setRecommendedJobsList(recs);
         } else {
-          const jobs = radarSearch ? await api.searchJobs(radarSearch) : await api.getJobs();
+          const hasSearchFilters = radarSearch || radarLocation || radarExperience;
+          const jobs = hasSearchFilters
+            ? await api.searchJobs(radarSearch, radarLocation, radarExperience)
+            : await api.getJobs();
           setRadarJobsList(jobs);
         }
       } catch (err) {
@@ -186,7 +191,7 @@ export default function JobFinder() {
       }
     }
     loadJobs();
-  }, [radarFilter, radarSearch, toast]);
+  }, [radarFilter, radarSearch, radarLocation, radarExperience, toast]);
 
   const handleCrmAdd = async () => {
     if (!newCrmCompany.trim() || !newCrmRole.trim()) return;
@@ -365,15 +370,37 @@ export default function JobFinder() {
                   </button>
                 ))}
               </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input 
-                  type="text" 
-                  placeholder="Search roles..."
-                  value={radarSearch}
-                  onChange={(e) => setRadarSearch(e.target.value)}
-                  className="bg-border border border-border rounded-xl pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 w-full sm:w-64 transition-all"
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search roles..."
+                    value={radarSearch}
+                    onChange={(e) => setRadarSearch(e.target.value)}
+                    className="bg-border border border-border rounded-xl pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 w-full sm:w-52 transition-all"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Location e.g. Bangalore"
+                  value={radarLocation}
+                  onChange={(e) => setRadarLocation(e.target.value)}
+                  className="bg-border border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 w-full sm:w-48 transition-all"
                 />
+                <select
+                  aria-label="Experience level"
+                  value={radarExperience}
+                  onChange={(e) => setRadarExperience(e.target.value)}
+                  className="bg-border border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50 w-full sm:w-44 transition-all"
+                >
+                  <option value="">Any experience</option>
+                  <option value="Fresher">Fresher</option>
+                  <option value="0-1">0-1 years</option>
+                  <option value="1-3">1-3 years</option>
+                  <option value="3-5">3-5 years</option>
+                  <option value="5+">5+ years</option>
+                </select>
               </div>
             </div>
 
@@ -456,8 +483,14 @@ export default function JobFinder() {
                       <Briefcase className="w-8 h-8 text-primary/60" />
                     </div>
                     <div>
-                      <p className="text-foreground font-bold mb-1">No jobs found</p>
-                      <p className="text-muted-foreground text-sm font-medium">Try a different filter or search term</p>
+                      <p className="text-foreground font-bold mb-1">
+                        {radarSearch || radarLocation || radarExperience ? "No matching jobs" : "Job catalog is being refreshed"}
+                      </p>
+                      <p className="text-muted-foreground text-sm font-medium">
+                        {radarSearch || radarLocation || radarExperience
+                          ? "Try a different filter or search term"
+                          : "New verified opportunities will appear here after the next catalog sync."}
+                      </p>
                     </div>
                   </div>
                 )}

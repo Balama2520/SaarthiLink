@@ -7,6 +7,7 @@ import json
 import logging
 import time
 import io
+import re
 from typing import Optional
 
 from fastapi import HTTPException
@@ -34,6 +35,73 @@ def _strip_markdown_json(text: str) -> str:
     if clean.endswith("```"):
         clean = clean[:-3]
     return clean.strip()
+
+
+def _parse_json_response(text: str) -> dict:
+    """Parse a JSON object even when the model adds prose or code fences."""
+    clean = _strip_markdown_json(text)
+    try:
+        parsed = json.loads(clean)
+    except json.JSONDecodeError:
+        start = clean.find("{")
+        if start < 0:
+            raise
+        parsed, _ = json.JSONDecoder().raw_decode(clean[start:])
+
+    if not isinstance(parsed, dict):
+        raise json.JSONDecodeError("AI response was not a JSON object", clean, 0)
+    return parsed
+
+
+def _build_fallback_analysis(text: str) -> dict:
+    """Keep resume analysis useful when the model returns malformed output."""
+    lowered = text.lower()
+    known_skills = [
+        "python", "javascript", "typescript", "react", "node.js", "fastapi",
+        "sql", "postgresql", "docker", "kubernetes", "aws", "azure", "java",
+        "c++", "machine learning", "git",
+    ]
+    skills = [skill for skill in known_skills if skill in lowered]
+    word_count = len(text.split())
+    score = min(95, max(35, 35 + len(skills) * 4 + (10 if word_count >= 250 else 0)))
+    email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", text)
+    phone_match = re.search(r"(?:\+?\d[\d ()-]{8,}\d)", text)
+    links = re.findall(r"https?://\S+", text)
+
+    return {
+        "overall_ats_score": score,
+        "section_scores": {
+            "structure": score,
+            "skills": min(100, 40 + len(skills) * 6),
+            "education": 60 if "education" in lowered or "university" in lowered else 30,
+            "experience": 65 if "experience" in lowered else 35,
+            "keywords": min(100, 35 + len(skills) * 5),
+        },
+        "personal_info": {
+            "name": None,
+            "email": email_match.group(0) if email_match else None,
+            "phone": phone_match.group(0) if phone_match else None,
+        },
+        "education": [],
+        "experience": [],
+        "projects": [],
+        "tech_skills": skills,
+        "soft_skills": [],
+        "certifications": [],
+        "languages": [],
+        "links": {
+            "github": next((link for link in links if "github" in link.lower()), None),
+            "linkedin": next((link for link in links if "linkedin" in link.lower()), None),
+            "portfolio": None,
+        },
+        "strengths": ["Resume text was extracted successfully.", "Technical keywords were detected."],
+        "weaknesses": ["Full AI structuring is temporarily unavailable; retry analysis for richer insights."],
+        "skill_gaps": [],
+        "recommendations": ["Add quantified achievements and detailed project outcomes."],
+        "summary": text.strip()[:500] or "Resume text was extracted successfully.",
+        "analysis_source": "fallback",
+        "word_count": word_count,
+    }
 
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────
@@ -182,31 +250,12 @@ Resume Text:
 {text[:6000]}
 ---
 
-Provide your analysis STRICTLY as a valid JSON object. Do NOT wrap in markdown code fences:
-{{
-    "overall_ats_score": <integer 0-100>,
-    "section_scores": {{
-        "structure": <int 0-100>,
-        "skills": <int 0-100>,
-        "education": <int 0-100>,
-        "experience": <int 0-100>,
-        "keywords": <int 0-100>
-    }},
-    "personal_info": {{"name": <str|null>, "email": <str|null>, "phone": <str|null>}},
-    "education": [{{"degree": <str>, "university": <str>, "graduation_year": <int|null>, "cgpa": <str|null>}}],
-    "experience": [{{"company": <str>, "role": <str>, "duration": <str>}}],
-    "projects": [{{"title": <str>, "description": <str>, "technologies": [<str>]}}],
-    "tech_skills": [<str>],
-    "soft_skills": [<str>],
-    "certifications": [<str>],
-    "languages": [<str>],
-    "links": {{"github": <str|null>, "linkedin": <str|null>, "portfolio": <str|null>}},
-    "strengths": [<str>],
-    "weaknesses": [<str>],
-    "skill_gaps": [<str>],
-    "recommendations": [<str>],
-    "summary": <str>
-}}
+Return one valid JSON object only. Do not use markdown or explanatory text.
+Include these keys: overall_ats_score, section_scores, personal_info, education,
+experience, projects, tech_skills, soft_skills, certifications, languages, links,
+strengths, weaknesses, skill_gaps, recommendations, and summary.
+Use arrays for list fields, objects for section_scores/personal_info/links, and an
+integer from 0 to 100 for overall_ats_score.
 """
         t0 = time.perf_counter()
         try:
@@ -217,9 +266,9 @@ Provide your analysis STRICTLY as a valid JSON object. Do NOT wrap in markdown c
             raw = await _collect_stream(stream)
             duration_ms = (time.perf_counter() - t0) * 1000
 
-            clean = _strip_markdown_json(raw)
-            parsed = json.loads(clean)
+            parsed = _parse_json_response(raw)
             parsed["word_count"] = word_count
+            parsed["analysis_source"] = "ai"
 
             logger.info(
                 "Stage 3: AI analysis completed",
@@ -233,14 +282,12 @@ Provide your analysis STRICTLY as a valid JSON object. Do NOT wrap in markdown c
             return parsed
 
         except json.JSONDecodeError as exc:
-            logger.error(
-                "Stage 3: LLM returned invalid JSON",
+            logger.warning(
+                "Stage 3: LLM returned invalid JSON; using fallback analysis: %s",
+                exc,
                 extra={"error": str(exc), "request_id": get_request_id()},
             )
-            raise HTTPException(
-                status_code=502,
-                detail="AI analysis returned an invalid response. Please retry.",
-            )
+            return _build_fallback_analysis(text)
         except Exception as exc:
             logger.error(
                 "Stage 3: AI analysis failed",

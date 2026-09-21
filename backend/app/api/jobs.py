@@ -31,6 +31,7 @@ async def list_jobs(
 async def search_jobs(
     q: Optional[str] = None,
     location: Optional[str] = None,
+    experience: Optional[str] = None,
     job_type: Optional[str] = None,
     remote_type: Optional[str] = None,
     skip: int = Query(0, ge=0),
@@ -38,7 +39,7 @@ async def search_jobs(
     jobs_svc: JobsService = Depends(get_jobs_service),
 ):
     """Search jobs by title, location, type, etc."""
-    return jobs_svc.search_jobs(q, location, job_type, remote_type, skip, limit)
+    return jobs_svc.search_jobs(q, location, experience, job_type, remote_type, skip, limit)
 
 
 @router.get("/recommended", response_model=List[JobRecommendationOut])

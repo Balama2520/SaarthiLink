@@ -120,24 +120,24 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
       title: "Job Seekers & Students",
       tag: "CANDIDATE PATH",
       steps: [
-        "Create profile & discover career alignment",
-        "Upload resume for ATS & skill gap analysis",
-        "Practice role-specific mock interviews",
-        "Explore opportunities when a configured source has published them"
+        "Upload your resume and understand your strengths",
+        "See skill gaps and improve your fit for target roles",
+        "Find relevant opportunities and track applications",
+        "Practice interviews and follow a clear action plan"
       ],
-      actionText: "Launch Candidate Path",
-      actionTab: "discover"
+      actionText: "Start with Your Resume",
+      actionTab: "resume"
     },
     {
       title: "Companies & Hiring Teams",
       tag: "RECRUITER PATH",
       steps: [
-        "Register organization profile & hiring needs",
-        "Submit opportunity signals & job roles",
-        "Specify required skills & experience levels",
-        "Shape talent discovery pipeline rules"
+        "Share a verified role and the skills you need",
+        "Reach candidates with structured profiles",
+        "Review clearer skill and experience signals",
+        "Build a focused hiring pipeline"
       ],
-      actionText: "Submit Hiring Signal",
+      actionText: "Talk to Saarthi",
       actionTab: "contact"
     }
   ];
@@ -165,15 +165,15 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
         <div className="relative z-10 max-w-4xl space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>SAARTHI AI — Guiding Intelligence • Connected Action</span>
+            <span>FREE CAREER TOOLS FOR JOB SEEKERS</span>
           </div>
 
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground font-display leading-tight">
-            Architecting the Future of <span className="bg-gradient-to-r from-primary via-cyan-400 to-purple-400 bg-clip-text text-transparent">Career & Opportunity Intelligence</span>
+            Get job-ready with a clearer <span className="bg-gradient-to-r from-primary via-cyan-400 to-purple-400 bg-clip-text text-transparent">career action plan</span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl leading-relaxed">
-            Saarthi AI helps job seekers and students organize career information, submit feedback, and use AI-assisted guidance when a provider is configured. Opportunity data retains its source and is never invented to fill the interface.
+            Improve your resume, understand your skill gaps, find better-fit opportunities, practice interviews, and know what to do next. Saarthi is free for job seekers, with recommendations grounded in the information you provide.
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-4">
@@ -188,20 +188,20 @@ export default function LandingPage({ onShowAuth, customVideoUrl = "/demo-video.
             </button>
 
             <button
-              onClick={() => setActiveTab("discover")}
+              onClick={() => setActiveTab("resume")}
               className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-6 py-3.5 font-semibold text-primary backdrop-blur-md transition-all hover:bg-primary/20 hover:scale-[1.02]"
             >
               <Compass className="h-5 w-5" />
-              <span>Explore Discovery Engine</span>
+              <span>Analyze My Resume</span>
               <ArrowRight className="h-4 w-4" />
             </button>
 
             <button
-              onClick={() => setActiveTab("dashboard")}
+              onClick={() => setActiveTab("jobs")}
               className="flex items-center gap-2 rounded-xl border border-border bg-card/80 px-6 py-3.5 font-semibold text-foreground backdrop-blur-md transition-all hover:bg-muted"
             >
               <Zap className="h-5 w-5 text-primary" />
-              <span>Launch Dashboard</span>
+              <span>Find Better-Fit Jobs</span>
             </button>
           </div>
         </div>

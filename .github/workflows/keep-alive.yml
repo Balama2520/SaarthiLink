@@ -2,7 +2,6 @@ name: Saarthi Stack Keep-Alive Warm-Up
 
 on:
   schedule:
-    # Run every 14 minutes to prevent Render & Hugging Face cold sleep (free tier idle timeout is ~15 minutes)
     - cron: "*/14 * * * *"
   workflow_dispatch:
 
@@ -16,11 +15,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Execute Keep-Alive Ping
         env:
           RENDER_URL: "https://saarthilink.onrender.com/"
+          HF_URL: "https://huggingface.co/spaces/Balamaneesh2520/saarthi-ai-brain"
+          SUPABASE_URL: "https://wcawcytqhpyvtuwnbqlv.supabase.co"
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: node keep-alive.js

@@ -12,7 +12,7 @@ export default function PrivacyPage() {
           Privacy Policy & Data Principles
         </h1>
         <p className="text-sm text-muted-foreground">
-          Last updated: September 11, 2026. This policy describes exactly how Saarthi AI handles user data and privacy.
+          Last updated: September 14, 2026. This policy describes exactly how Saarthi AI handles user data and privacy.
         </p>
       </div>
 

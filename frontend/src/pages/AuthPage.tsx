@@ -3,7 +3,7 @@ import { api } from "../services/api";
 import { BrandMark } from "../components/BrandMark";
 
 interface AuthPageProps {
-  onSuccess: (username: string, token: string, refreshToken?: string | null, persistence?: "local" | "session") => void;
+  onSuccess: (username: string, token: string, refreshToken?: string | null, persistence?: "local" | "session", role?: "admin" | "user") => void;
   onGuestAccess?: () => void;
 }
 
@@ -53,7 +53,7 @@ export default function AuthPage({ onSuccess, onGuestAccess }: AuthPageProps) {
       // when the tab/browser closes). src/lib/auth.ts's getToken() checks
       // both, and is the single place every other page reads from, so this
       // choice is respected consistently across the whole app.
-      onSuccess(username, data.access_token, data.refresh_token, keepSignedIn ? "local" : "session");
+      onSuccess(username, data.access_token, data.refresh_token, keepSignedIn ? "local" : "session", data.role);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message || "Authentication failed.");

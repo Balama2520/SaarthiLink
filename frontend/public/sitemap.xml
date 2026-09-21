@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <!-- Public Marketing Pages -->
   <url>
     <loc>https://saarthi-link.netlify.app/</loc>
     <lastmod>2026-09-19</lastmod>
@@ -9,92 +8,46 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://saarthi-link.netlify.app/#/landing</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://saarthi-link.netlify.app/#/discover</loc>
+    <loc>https://saarthi-link.netlify.app/discover</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://saarthi-link.netlify.app/#/about</loc>
+    <loc>https://saarthi-link.netlify.app/about</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://saarthi-link.netlify.app/#/contact</loc>
+    <loc>https://saarthi-link.netlify.app/contact</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
 
-  <!-- Core App Features -->
   <url>
-    <loc>https://saarthi-link.netlify.app/#/resume</loc>
+    <loc>https://saarthi-link.netlify.app/resume-analyzer</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://saarthi-link.netlify.app/#/jobs</loc>
+    <loc>https://saarthi-link.netlify.app/job-finder</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://saarthi-link.netlify.app/#/interview</loc>
+    <loc>https://saarthi-link.netlify.app/interview-coach</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://saarthi-link.netlify.app/#/roadmaps</loc>
+    <loc>https://saarthi-link.netlify.app/learning-roadmaps</loc>
     <lastmod>2026-09-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://saarthi-link.netlify.app/#/copilot</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://saarthi-link.netlify.app/#/gradhub</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://saarthi-link.netlify.app/#/growthlab</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://saarthi-link.netlify.app/#/toolkit</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- Legal Pages -->
-  <url>
-    <loc>https://saarthi-link.netlify.app/#/privacy</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://saarthi-link.netlify.app/#/terms</loc>
-    <lastmod>2026-09-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-
 </urlset>

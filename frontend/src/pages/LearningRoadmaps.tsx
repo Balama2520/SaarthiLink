@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import {
   Route, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp,
   Sparkles, Target, Clock, Zap, RotateCcw, BookOpen, Code, Globe
 } from "lucide-react";
 import { api } from "../services/api";
 import { GearRecommendCard } from "../components/GearRecommendCard";
+import { useProfile } from "../hooks/useProfile";
 
 interface Milestone {
   day_range: string;
@@ -143,6 +145,12 @@ export default function LearningRoadmaps() {
   const [loading, setLoading] = useState(false);
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { data: profile } = useProfile();
+
+  useEffect(() => {
+    const profileRole = (profile?.target_role as string | undefined)?.trim();
+    if (profileRole && !targetRole) setTargetRole(profileRole);
+  }, [profile, targetRole]);
 
   const handleGenerate = async (role?: string) => {
     const finalRole = role ?? targetRole;

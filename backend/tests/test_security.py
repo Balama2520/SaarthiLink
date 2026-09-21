@@ -287,23 +287,16 @@ class TestUserIsolation:
 
 
 class TestAdminAuthMatrix:
-    def test_guest_to_admin_returns_200_limited_summary(self, client):
-        """No token -> GET /api/admin/stats = 200 with public summary data."""
+    def test_guest_to_admin_returns_401(self, client):
+        """No token -> GET /api/admin/stats = 401."""
         res = client.get("/api/admin/stats")
-        assert res.status_code == 200, f"Expected 200, got {res.status_code}"
-        data = res.json()
-        assert data.get("is_admin") is False
-        assert "total_users" in data
-        assert "summary_mode" in data
+        assert res.status_code == 401, f"Expected 401, got {res.status_code}"
 
-    def test_normal_user_to_admin_returns_200_limited_summary(self, client):
-        """Non-admin user -> GET /api/admin/stats = 200 with reduced dataset."""
+    def test_normal_user_to_admin_returns_403(self, client):
+        """Non-admin user -> GET /api/admin/stats = 403."""
         auth = _register_login(client, "normal_user", "Pass123!")
         res = client.get("/api/admin/stats", headers=auth["headers"])
-        assert res.status_code == 200, f"Expected 200, got {res.status_code}"
-        data = res.json()
-        assert data.get("is_admin") is False
-        assert data.get("summary_mode") is True
+        assert res.status_code == 403, f"Expected 403, got {res.status_code}"
 
     @patch("app.core.dependencies.auth.get_settings")
     def test_admin_user_to_admin_returns_200_with_full_details(

@@ -4,38 +4,36 @@ import {
   Target, User, Wrench, X, FolderKanban, Info, Mail, Home
 } from "lucide-react";
 import { BrandMark } from "./BrandMark";
-import { useAppStore, type PersonaType } from "../store/useAppStore";
+import { useAppStore, type AccessRole, type PersonaType } from "../store/useAppStore";
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   username: string;
   isAuthenticated: boolean;
+  role: AccessRole;
   onLogout: () => void;
   onSignIn: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
 }
-const careerItems = [
+const workspaceItems = [
   { id: "dashboard", name: "Dashboard", icon: LayoutDashboard },
   { id: "profile", name: "Profile", icon: User },
-  { id: "resume", name: "Resume ATS", icon: FileText },
-  { id: "goals", name: "Career Goals", icon: Target },
-  { id: "jobs", name: "Job Finder", icon: Briefcase },
-];
-
-const prepareItems = [
-  { id: "copilot", name: "Career Copilot", icon: Compass },
-  { id: "roadmaps", name: "AI Roadmaps", icon: Map },
-  { id: "interview", name: "Mock Interview", icon: MessageSquare },
   { id: "chat", name: "AI Coach", icon: Sparkles },
+  { id: "copilot", name: "Career Copilot", icon: Sparkles },
+  { id: "goals", name: "Goals", icon: Target },
+  { id: "workspaces", name: "Workspaces", icon: FolderKanban },
 ];
 
-const buildItems = [
-  { id: "growthlab", name: "Growth Lab", icon: FlaskConical },
-  { id: "workspaces", name: "Workspaces", icon: FolderKanban },
-  { id: "toolkit", name: "Career Toolkit", icon: Wrench },
+const careerToolItems = [
+  { id: "resume", name: "Resume ATS", icon: FileText },
+  { id: "jobs", name: "Job Finder", icon: Briefcase },
+  { id: "interview", name: "Interview Coach", icon: MessageSquare },
+  { id: "roadmaps", name: "Roadmaps", icon: Map },
   { id: "gradhub", name: "Graduate Hub", icon: GraduationCap },
+  { id: "growthlab", name: "Growth Lab", icon: FlaskConical },
+  { id: "toolkit", name: "Career Toolkit", icon: Wrench },
 ];
 
 const discoveryItems = [
@@ -43,10 +41,6 @@ const discoveryItems = [
   { id: "discover", name: "Discovery", icon: Compass },
   { id: "about", name: "About", icon: Info },
   { id: "contact", name: "Contact", icon: Mail },
-];
-
-const systemItems = [
-  { id: "admin", name: "Control Center", icon: ShieldCheck },
 ];
 
 const PERSONAS: { id: PersonaType; label: string }[] = [
@@ -67,13 +61,13 @@ const PERSONA_RECOMMENDATIONS: Record<Exclude<PersonaType, null>, string[]> = {
 
 export default function Sidebar({
   activeTab, setActiveTab, username, isAuthenticated, onLogout, onSignIn,
-  mobileOpen, onMobileClose
+  mobileOpen, onMobileClose, role
 }: SidebarProps) {
   const persona = useAppStore((s) => s.persona);
   const setPersona = useAppStore((s) => s.setPersona);
   const recommended = persona ? PERSONA_RECOMMENDATIONS[persona] : [];
 
-  const renderGroup = (title: string, items: typeof careerItems) => {
+  const renderGroup = (title: string, items: typeof workspaceItems) => {
     if (items.length === 0) return null;
 
     return (
@@ -108,10 +102,10 @@ export default function Sidebar({
               />
               <span className="truncate flex-1 text-left">{item.name}</span>
               {isRecommended && (
-                <span className="flex items-center gap-1 rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-400 shrink-0">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  Recommended
-                </span>
+                <span
+                  aria-label="Recommended for your path"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400"
+                />
               )}
             </button>
           );
@@ -153,11 +147,9 @@ export default function Sidebar({
         aria-label="Primary Navigation"
         className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4 space-y-5"
       >
-        {renderGroup("Career Core", careerItems)}
-        {renderGroup("AI Prep & Mentorship", prepareItems)}
-        {renderGroup("Builder Studio", buildItems)}
+        {renderGroup("Workspace", workspaceItems)}
+        {renderGroup("Career Tools", careerToolItems)}
         {renderGroup("Platform & Info", discoveryItems)}
-        {renderGroup("System", systemItems)}
       </nav>
 
       {/* Footer & Persona Selector */}
@@ -202,6 +194,24 @@ export default function Sidebar({
           <span>•</span>
           <button onClick={() => setActiveTab("terms")} className="hover:text-primary transition-colors">Terms</button>
         </div>
+
+        <button
+          onClick={() => role === "admin" && setActiveTab("admin")}
+          disabled={role !== "admin"}
+          title={role === "admin" ? "Admin" : "Admin access required"}
+          aria-current={activeTab === "admin" ? "page" : undefined}
+          className={`group flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
+            activeTab === "admin"
+              ? "border-primary/30 bg-primary/15 text-primary"
+              : role === "admin"
+                ? "border-border/60 text-muted-foreground hover:border-border hover:bg-muted/40 hover:text-foreground"
+                : "cursor-not-allowed border-border/40 text-muted-foreground/50"
+          }`}
+        >
+          <ShieldCheck className={`h-4 w-4 shrink-0 ${activeTab === "admin" ? "text-primary" : "text-muted-foreground/60"}`} />
+          <span>Admin</span>
+          {role !== "admin" && <span className="ml-auto text-[9px] font-medium text-muted-foreground/60">Restricted</span>}
+        </button>
 
         {/* User Badge Bar */}
         <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-2.5">

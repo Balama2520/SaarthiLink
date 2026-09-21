@@ -72,7 +72,7 @@ def get_contact_info():
     return {
         "platform_name": "Saarthi AI",
         "contact_email": settings.SAARTHI_CONTACT_EMAIL,
-        "lead_architect": "Bala Maneesh Ayanala",
+        "lead_architect": "Saarthi AI team",
         "github": "Balamaneesh2520",
         "huggingface_space": "Balamaneesh2520/saarthi-ai-brain",
         "support_status": "active",

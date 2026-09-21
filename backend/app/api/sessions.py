@@ -5,6 +5,7 @@ that the ChatCoach page consumes.
 """
 
 import logging
+import json
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -12,7 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.dependencies.auth import require_authenticated_user
-from app.models.models import User, ChatSession, ChatMessage
+from app.models.models import User, ChatSession, ChatMessage, Resume, UserProfile, UserSkill
 from app.database.connection import get_db
 from app.ai.gateway import AIGateway
 from app.ai.prompt_manager import PromptManager
@@ -117,8 +118,9 @@ async def chat(
     current_user: User = Depends(require_authenticated_user),
     db: Session = Depends(get_db),
 ):
-    system_prompt = PromptManager.load(f"system/{body.personality or 'default'}")
-    messages = [{"role": "system", "content": system_prompt}]
+    # AIGateway adds the selected personality system prompt itself. Keeping
+    # this request payload to history plus the user message avoids duplicates.
+    messages = []
 
     # Persist message to session
     if body.session_id and body.session_id != "default":
@@ -146,6 +148,41 @@ async def chat(
         db.add(user_msg)
         db.commit()
     messages.append({"role": "user", "content": body.message})
+
+    # Give authenticated chat the same resume/profile context used by
+    # Copilot, without exposing another user's records or sending raw files.
+    profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
+    resume = (
+        db.query(Resume)
+        .filter(Resume.user_id == current_user.id, Resume.parsed_json.isnot(None))
+        .order_by(Resume.created_at.desc())
+        .first()
+    )
+    skills = [
+        skill.skill_name
+        for skill in db.query(UserSkill).filter(UserSkill.user_id == current_user.id).limit(40).all()
+    ]
+    context = {
+        "target_role": profile.target_role if profile else None,
+        "profile_summary": profile.background_summary if profile else None,
+        "skills": skills,
+    }
+    if resume and resume.parsed_json:
+        try:
+            parsed = json.loads(resume.parsed_json)
+            context["resume_summary"] = parsed.get("summary")
+            context["resume_skill_gaps"] = parsed.get("skill_gaps", [])
+            context["resume_strengths"] = parsed.get("strengths", [])
+        except (TypeError, json.JSONDecodeError):
+            pass
+    messages.insert(
+        0,
+        {
+            "role": "system",
+            "content": "Use this private career context when relevant; do not invent missing facts:\n"
+            + json.dumps(context, ensure_ascii=True),
+        },
+    )
 
     async def stream_gen():
         accumulated = ""

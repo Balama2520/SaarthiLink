@@ -73,7 +73,7 @@ export default function ContactPage() {
   };
 
   const contactEmail = contactInfo?.contact_email || "saarthi.ai.team@gmail.com";
-  const leadArchitect = contactInfo?.lead_architect || "Bala Maneesh Ayanala";
+  const teamLabel = contactInfo?.lead_architect || "Saarthi AI team";
   const githubUser = contactInfo?.github || "Balamaneesh2520";
   const hfSpace = contactInfo?.huggingface_space || "Balamaneesh2520/saarthi-ai-brain";
 
@@ -91,7 +91,7 @@ export default function ContactPage() {
           <span className="text-xs font-mono uppercase tracking-widest text-emerald-400">Direct Message Dispatched</span>
           <h2 className="text-3xl font-extrabold text-foreground font-display">Message Sent to Saarthi AI!</h2>
           <p className="text-sm text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            Your inquiry has been logged for review by <span className="font-mono text-primary font-bold">{contactEmail}</span> and lead architect <span className="font-semibold text-foreground">{leadArchitect}</span>.
+            Your inquiry has been logged for review by <span className="font-mono text-primary font-bold">{contactEmail}</span> and the <span className="font-semibold text-foreground">{teamLabel}</span> support team.
           </p>
         </div>
         <div className="rounded-2xl border border-border/80 bg-card p-6 text-left space-y-3 w-full max-w-md">
@@ -165,7 +165,7 @@ export default function ContactPage() {
                     required
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
-                    placeholder="Bala Maneesh"
+                    placeholder="Your name"
                     className="w-full pl-9 rounded-xl border border-border bg-background/50 p-3 text-xs text-foreground focus:border-primary focus:outline-none"
                   />
                 </div>
@@ -291,7 +291,7 @@ export default function ContactPage() {
                 <span>Direct Architect Desk</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Inquiries route straight to Bala Maneesh Ayanala & engineering leads for swift resolution.
+                Inquiries route directly to the Saarthi AI product and support team for rapid follow-up.
               </p>
             </div>
 
@@ -329,9 +329,9 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <div className="font-semibold text-muted-foreground">Lead Architect & Developer</div>
-                <div className="mt-1 font-bold text-foreground">{leadArchitect}</div>
-                <div className="text-[11px] text-muted-foreground">Creator of Saarthi Career Intelligence</div>
+                <div className="font-semibold text-muted-foreground">Support Team</div>
+                <div className="mt-1 font-bold text-foreground">{teamLabel}</div>
+                <div className="text-[11px] text-muted-foreground">Product, engineering, and operations follow-up</div>
               </div>
 
               <div>
@@ -405,7 +405,7 @@ export default function ContactPage() {
                 },
                 {
                   q: "How do I suggest new features or report issues?",
-                  a: "Use the contact form above with category 'Website & AI Feedback' or fill out the 34-feature survey on the Discovery Page."
+                  a: "Use the contact form above with category 'Website & AI Feedback' or fill out the 31-feature survey on the Discovery Page."
                 }
               ].map((faq, idx) => (
                 <div key={idx} className="rounded-xl border border-border/60 bg-background/40 overflow-hidden">

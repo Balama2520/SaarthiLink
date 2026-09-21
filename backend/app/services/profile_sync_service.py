@@ -1,4 +1,6 @@
 import logging
+import json
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.models import UserProfile, UserSkill
 from typing import List
@@ -34,7 +36,15 @@ class ProfileSyncService:
                 normalized.append(clean_skill)
         return normalized
 
-    def sync_profile(self, db: Session, user_id: int, parsed_data: dict) -> None:
+    def sync_profile(
+        self,
+        db: Session,
+        user_id: int,
+        parsed_data: dict,
+        resume_id: str | None = None,
+        resume_version: int | None = None,
+        target_role: str | None = None,
+    ) -> None:
         """
         Merge parsed data into UserProfile and UserSkill.
         In a real flow, this is called after user confirmation.
@@ -50,6 +60,12 @@ class ProfileSyncService:
         if parsed_data.get("personal_info"):
             if not profile.phone and parsed_data["personal_info"].get("phone"):
                 profile.phone = parsed_data["personal_info"]["phone"]
+
+        if target_role and not profile.target_role:
+            profile.target_role = target_role
+
+        if parsed_data.get("summary") and not profile.background_summary:
+            profile.background_summary = parsed_data["summary"]
 
         if parsed_data.get("links"):
             if not profile.github_url and parsed_data["links"].get("github"):
@@ -69,6 +85,30 @@ class ProfileSyncService:
                 profile.graduation_year = str(edu["graduation_year"])
             if not profile.cgpa and edu.get("cgpa"):
                 profile.cgpa = str(edu["cgpa"])
+
+        if parsed_data.get("soft_skills"):
+            existing_soft = json.loads(profile.soft_skills_json or "[]")
+            profile.soft_skills_json = json.dumps(
+                list(dict.fromkeys(existing_soft + parsed_data["soft_skills"]))
+            )
+        if parsed_data.get("languages"):
+            existing_languages = json.loads(profile.languages_json or "[]")
+            profile.languages_json = json.dumps(
+                list(dict.fromkeys(existing_languages + parsed_data["languages"]))
+            )
+        if parsed_data.get("certifications"):
+            existing_certs = json.loads(profile.certifications_json or "[]")
+            profile.certifications_json = json.dumps(
+                list(dict.fromkeys(existing_certs + parsed_data["certifications"]))
+            )
+
+        if resume_id:
+            profile.current_resume_id = resume_id
+        if resume_version is not None:
+            profile.resume_version = resume_version
+        if parsed_data.get("overall_ats_score") is not None:
+            profile.resume_ats_score = parsed_data["overall_ats_score"]
+        profile.resume_last_parsed = datetime.now(timezone.utc)
 
         # 2. Update UserSkill
         existing_skills = {

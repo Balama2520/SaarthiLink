@@ -16,6 +16,11 @@ from app.models.models import (
     FeatureFeedback,
     ProductFeedback,
     OpportunitySignal,
+    CompanyProfile,
+    HiringSignal,
+    JobSubmission,
+    ContactRequest,
+    FeedbackEvent,
 )
 
 
@@ -236,3 +241,99 @@ class DiscoveryRepository:
         self.db.commit()
         self.db.refresh(sig)
         return sig
+
+    def create_contact_request(
+        self, data: Dict[str, Any], user_id: Optional[int] = None
+    ) -> ContactRequest:
+        request = ContactRequest(
+            session_id=data.get("session_id"),
+            user_id=user_id,
+            name=data["name"],
+            email=str(data["email"]),
+            role_type=data.get("role_type"),
+            reason=data.get("reason"),
+            category=data.get("category", "general"),
+            message=data["message"],
+            consent_given=data.get("consent_given", True),
+            target_email=data.get("target_email", "saarthi.ai.team@gmail.com"),
+        )
+        self.db.add(request)
+        self.db.commit()
+        self.db.refresh(request)
+        return request
+
+    def log_event(
+        self,
+        event_type: str,
+        entity_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        user_id: Optional[int] = None,
+        payload_json: Optional[str] = None,
+    ) -> FeedbackEvent:
+        event = FeedbackEvent(
+            event_type=event_type,
+            entity_id=entity_id,
+            session_id=session_id,
+            user_id=user_id,
+            payload_json=payload_json,
+        )
+        self.db.add(event)
+        self.db.commit()
+        self.db.refresh(event)
+        return event
+
+    def create_company_profile(
+        self, data: Dict[str, Any], profile_id: Optional[str] = None
+    ) -> CompanyProfile:
+        profile = CompanyProfile(
+            session_id=data.get("session_id") or profile_id or "anonymous_company",
+            company_name=data.get("company_name"),
+            company_type=data.get("company_type"),
+            industry=data.get("industry"),
+            company_size=data.get("company_size"),
+            contact_name=data.get("contact_name"),
+            contact_email=data.get("contact_email"),
+            contact_linkedin=data.get("contact_linkedin"),
+            source=data.get("source", "discover_page"),
+        )
+        self.db.add(profile)
+        self.db.commit()
+        self.db.refresh(profile)
+        return profile
+
+    def create_hiring_signal(
+        self, company_profile_id: str, data: Dict[str, Any]
+    ) -> HiringSignal:
+        signal = HiringSignal(company_profile_id=company_profile_id)
+        for key, value in data.items():
+            if hasattr(signal, key):
+                setattr(signal, key, value)
+        self.db.add(signal)
+        self.db.commit()
+        self.db.refresh(signal)
+        return signal
+
+    def create_job_submission(
+        self, data: Dict[str, Any], company_profile_id: Optional[str] = None
+    ) -> JobSubmission:
+        submission = JobSubmission(
+            company_profile_id=company_profile_id,
+            company=data.get("company"),
+            role=data["title"],
+            location=data.get("location"),
+            skills=data.get("skills"),
+            public_job_url=data.get("public_job_url", "https://pending.invalid"),
+            additional_information=data.get("additional_information"),
+        )
+        self.db.add(submission)
+        self.db.commit()
+        self.db.refresh(submission)
+        return submission
+
+    def get_discovery_stats(self) -> Dict[str, Any]:
+        return {
+            "profiles": self.db.query(UserDiscoveryProfile).count(),
+            "feature_feedback": self.db.query(FeatureFeedback).count(),
+            "product_feedback": self.db.query(ProductFeedback).count(),
+            "opportunity_signals": self.db.query(OpportunitySignal).count(),
+        }

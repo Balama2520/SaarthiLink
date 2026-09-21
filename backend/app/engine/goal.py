@@ -13,6 +13,23 @@ class GoalEngine:
     def __init__(self, db: Session):
         self.db = db
 
+    @staticmethod
+    def _goal_state(goal: Goal | None) -> Dict[str, Any] | None:
+        if goal is None:
+            return None
+        return {
+            "id": goal.id,
+            "user_id": goal.user_id,
+            "parent_id": goal.parent_id,
+            "type": goal.type,
+            "title": goal.title,
+            "description": goal.description,
+            "status": goal.status,
+            "progress": goal.progress,
+            "priority": goal.priority,
+            "due_date": goal.due_date,
+        }
+
     def calculate_health(self, goal: Goal) -> float:
         """
         Calculates the health of a goal (0.0 to 1.0) based on:
@@ -221,7 +238,13 @@ class GoalEngine:
         )
 
         if not current_goal:
-            return {"status": "NO_ACTIVE_GOALS"}
+            return {
+                "status": "NO_ACTIVE_GOALS",
+                "current_goal": None,
+                "active_milestone": None,
+                "tasks": [],
+                "overdue_tasks": [],
+            }
 
         # Get active milestone
         active_milestone = (
@@ -242,11 +265,25 @@ class GoalEngine:
             .filter(Goal.parent_id == milestone_id, Goal.type == "TASK")
             .all()
         )
+        overdue_tasks = []
+        now = datetime.now(timezone.utc)
+        for task in tasks:
+            if not task.due_date:
+                continue
+            try:
+                due = datetime.fromisoformat(task.due_date.replace("Z", "+00:00"))
+                if due < now and task.status not in ["COMPLETED", "ARCHIVED"]:
+                    overdue_tasks.append(task)
+            except ValueError:
+                continue
 
         # Ensure active tasks array structure returned seamlessly
         return {
             "status": "ACTIVE_PLAN_FOUND",
-            "goal": current_goal,
-            "milestone": active_milestone,
-            "tasks": tasks,
+            "current_goal": self._goal_state(current_goal),
+            "active_milestone": self._goal_state(active_milestone),
+            "overdue_tasks": [self._goal_state(task) for task in overdue_tasks],
+            "goal": self._goal_state(current_goal),
+            "milestone": self._goal_state(active_milestone),
+            "tasks": [self._goal_state(task) for task in tasks],
         }

@@ -15,21 +15,33 @@ def _ensure_initialized() -> bool:
     if _rag_initialized:
         return bool(collection and embedding_model)
 
-    _rag_initialized = True
+    if os.getenv("SAARTHI_RAG_ENABLED", "false").lower() != "true":
+        _rag_initialized = True
+        logger.info("RAG indexing is disabled; resume processing continues without vector indexing.")
+        return False
+
     try:
         import chromadb
         from sentence_transformers import SentenceTransformer
 
         os.makedirs(CHROMA_DIR, exist_ok=True)
-        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        model_name = os.getenv("SAARTHI_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+        local_files_only = os.getenv("SAARTHI_RAG_LOCAL_ONLY", "true").lower() == "true"
+        embedding_model = SentenceTransformer(
+            model_name,
+            local_files_only=local_files_only,
+        )
         chroma_client = chromadb.PersistentClient(path=CHROMA_DIR)
         collection = chroma_client.get_or_create_collection(name="saarthi_docs")
+        _rag_initialized = True
     except Exception as exc:
-        logger.error(
-            f"Failed to initialize ChromaDB or SentenceTransformer in RAG: {exc}"
+        logger.warning(
+            "RAG disabled for this request because ChromaDB or SentenceTransformer could not initialize: %s",
+            exc,
         )
         embedding_model = None
         collection = None
+        _rag_initialized = True
 
     return bool(collection and embedding_model)
 

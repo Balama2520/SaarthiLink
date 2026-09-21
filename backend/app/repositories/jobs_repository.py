@@ -31,6 +31,7 @@ class JobsRepository:
         self,
         q: Optional[str] = None,
         location: Optional[str] = None,
+        experience: Optional[str] = None,
         job_type: Optional[str] = None,
         remote_type: Optional[str] = None,
         skip: int = 0,
@@ -46,6 +47,8 @@ class JobsRepository:
             query = query.filter(Job.title.ilike(f"%{q}%"))
         if location:
             query = query.filter(Job.location.ilike(f"%{location}%"))
+        if experience:
+            query = query.filter(Job.experience_required.ilike(f"%{experience}%"))
         if job_type:
             query = query.filter(Job.job_type == job_type)
         if remote_type:

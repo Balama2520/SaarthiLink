@@ -21,7 +21,7 @@ class TestDiscoveryOptions:
         assert "user_types" in data
         assert "intent_options" in data
         assert "challenge_areas" in data
-        assert data["feature_count"] == 34
+        assert data["feature_count"] == 31
 
     def test_user_types_include_expected_keys(self, client):
         res = client.get("/api/discovery/options")
@@ -106,8 +106,8 @@ class TestFeedbackAPI:
         res = client.get("/api/feedback/features")
         assert res.status_code == 200
         data = res.json()
-        assert data["total"] == 34
-        assert len(data["features"]) == 34
+        assert data["total"] == 31
+        assert len(data["features"]) == 31
 
     def test_features_have_required_fields(self, client):
         res = client.get("/api/feedback/features")
@@ -120,7 +120,7 @@ class TestFeedbackAPI:
     def test_feature_ids_are_1_to_34(self, client):
         res = client.get("/api/feedback/features")
         ids = sorted([f["id"] for f in res.json()["features"]])
-        assert ids == list(range(1, 35))
+        assert ids == list(range(1, 32))
 
     def test_submit_feature_rating(self, client):
         payload = {
@@ -183,7 +183,7 @@ class TestContactAPI:
         assert res.status_code == 200
         data = res.json()
         assert data["contact_email"] == "saarthi.ai.team@gmail.com"
-        assert data["lead_architect"] == "Bala Maneesh Ayanala"
+        assert data["lead_architect"] == "Saarthi AI team"
 
     def test_contact_requires_name(self, client):
         payload = {

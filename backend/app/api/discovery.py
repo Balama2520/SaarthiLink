@@ -258,5 +258,5 @@ def get_discovery_options():
                 "label": "Deciding what skills to learn next",
             },
         ],
-        "feature_count": 34,
+        "feature_count": 31,
     }

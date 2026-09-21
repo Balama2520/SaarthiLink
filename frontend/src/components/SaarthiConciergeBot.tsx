@@ -32,7 +32,7 @@ const KNOWLEDGE_BASE: KnowledgeItem[] = [
     response: "The **Resume ATS Analyzer** parses your PDF or DOCX resume, evaluates keyword match percentage against target Job Descriptions, and suggests ATS optimizations to maximize your interview shortlisting.",
     actionTab: "resume",
     actionLabel: "Launch Resume ATS Analyzer",
-    suggestions: ["Where is Job Finder?", "Where is Mock Interview?", "How to contact founder?"]
+    suggestions: ["Where is Job Finder?", "Where is Mock Interview?", "How to contact the team?"]
   },
   {
     keywords: ["job", "jobs", "find", "search", "openings", "hire", "apply"],
@@ -44,16 +44,16 @@ const KNOWLEDGE_BASE: KnowledgeItem[] = [
   },
   {
     keywords: ["discover", "discovery", "feedback", "rating", "34", "feature", "features", "survey"],
-    title: "Discovery & 34-Feature Rating Engine",
-    response: "The **Discovery Page** is our 4-step intelligence wizard! You can select your role persona, rate all 34 core features, suggest skills candidates should learn, and submit recruiter job openings.",
+    title: "Discovery & Public Feature Rating",
+    response: "The **Discovery Page** is our 4-step intelligence wizard! You can select your role persona, rate Saarthi's 31 public features, suggest skills candidates should learn, and submit recruiter job openings.",
     actionTab: "discover",
     actionLabel: "Open Discovery Page",
     suggestions: ["Where is Contact Page?", "Where is Job Finder?", "Who created Saarthi?"]
   },
   {
-    keywords: ["contact", "email", "founder", "team", "balamaneesh", "maneesh", "support", "help", "message"],
-    title: "Contact & Founder Direct Channel",
-    response: "The **Contact Page** allows job seekers, recruiters, HRs, and agencies to directly message Lead Architect **Bala Maneesh Ayanala** & email our team at `saarthi.ai.team@gmail.com` with a <24h SLA.",
+    keywords: ["contact", "email", "team", "support", "help", "message", "recruiter", "partner"],
+    title: "Contact & Team Support Channel",
+    response: "The **Contact Page** lets job seekers, recruiters, HR teams, and partners send direct inquiries to the Saarthi AI team at `saarthi.ai.team@gmail.com` with a fast response SLA.",
     actionTab: "contact",
     actionLabel: "Go to Contact Page",
     suggestions: ["Where is Discovery?", "Where is Resume ATS?", "Who created Saarthi?"]
@@ -125,15 +125,15 @@ const KNOWLEDGE_BASE: KnowledgeItem[] = [
   {
     keywords: ["recruiter", "post", "hiring", "posting", "hr", "company", "agency"],
     title: "Posting Job Openings for Recruiters & HRs",
-    response: "Recruiters, HRs, and founders can submit active job openings directly on the **Discovery Page** under Step 4 (Hiring Portal) or contact our lead architect on the **Contact Page**!",
+    response: "Recruiters, HR teams, and hiring partners can submit active job openings directly on the **Discovery Page** under Step 4 (Hiring Portal) or contact the Saarthi AI team on the **Contact Page**!",
     actionTab: "discover",
     actionLabel: "Go to Employer Hiring Portal",
     suggestions: ["Where is Contact Page?", "Where is Job Finder?", "Who created Saarthi?"]
   },
   {
     keywords: ["who", "author", "creator", "created", "architect", "built", "saarthi"],
-    title: "About Saarthi AI & Lead Architect",
-    response: "Saarthi AI (**Guiding Intelligence • Connected Action**) was created by **Bala Maneesh Ayanala** (`saarthi.ai.team@gmail.com`). It bridges the gap between candidates, companies, recruiters, and institutions.",
+    title: "About Saarthi AI",
+    response: "Saarthi AI (**Guiding Intelligence • Connected Action**) is a career intelligence platform built to connect candidates, recruiters, and institutions through one shared system for resumes, jobs, learning, interviews, and decision support.",
     actionTab: "about",
     actionLabel: "Read About Saarthi",
     suggestions: ["Where is Contact Page?", "Where is Discovery?", "Where is Resume ATS?"]
@@ -232,7 +232,7 @@ export default function SaarthiConciergeBot({ activeTab }: { activeTab: string }
         botResponse = {
           id: nextMessageId(),
           sender: "bot",
-          text: `I'm here to guide you across Saarthi AI! You can explore our core tools using the quick navigation below, or visit our **Discovery Wizard** to rate all 34 features.`,
+          text: `I'm here to guide you across Saarthi AI! You can explore our core tools using the quick navigation below, or visit our **Discovery Wizard** to rate the 31 public features.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           actionTab: "discover",
           actionLabel: "Open Discovery Page",
@@ -260,7 +260,7 @@ export default function SaarthiConciergeBot({ activeTab }: { activeTab: string }
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="pointer-events-auto mb-4 w-96 max-w-[calc(100vw-2.5rem)] h-[540px] rounded-3xl border border-border/80 bg-card/95 shadow-2xl backdrop-blur-xl flex flex-col overflow-hidden"
+            className="pointer-events-auto mb-4 w-96 max-w-[calc(100vw-2.5rem)] h-[min(540px,calc(100dvh-7rem))] rounded-3xl border border-border/80 bg-card/95 shadow-2xl backdrop-blur-xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border/80 bg-muted/40 p-4">

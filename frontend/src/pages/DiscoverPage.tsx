@@ -14,7 +14,7 @@ interface FeatureItem {
   group: string;
 }
 
-const DEFAULT_34_FEATURES: FeatureItem[] = [
+const DEFAULT_31_FEATURES: FeatureItem[] = [
   { id: 1, key: "job_discovery", label: "Smart Job Discovery Engine", group: "Job Matching" },
   { id: 2, key: "ats_resume_matching", label: "ATS Resume Match & Score", group: "Job Matching" },
   { id: 3, key: "skill_gap_analysis", label: "Role Skill Gap Breakdown", group: "Job Matching" },
@@ -37,19 +37,21 @@ const DEFAULT_34_FEATURES: FeatureItem[] = [
   { id: 20, key: "custom_deadlines", label: "Application Deadline Reminders", group: "Applications" },
   { id: 21, key: "salary_insights", label: "Salary Range & Market Benchmarks", group: "Applications" },
   { id: 22, key: "graduate_hub", label: "Graduate Hub & Higher Education Tools", group: "Graduate & Higher Ed" },
-  { id: 23, key: "exam_prep_gate_cat", label: "GATE / CAT / GRE Exam Prep Trackers", group: "Graduate & Higher Ed" },
   { id: 24, key: "sop_essay_feedback", label: "SOP & Essay AI Reviewer", group: "Graduate & Higher Ed" },
-  { id: 25, key: "university_discovery", label: "University Program Finder", group: "Graduate & Higher Ed" },
-  { id: 26, key: "scholarship_finder", label: "Scholarship & Grant Opportunities", group: "Graduate & Higher Ed" },
-  { id: 27, key: "document_workspaces", label: "Document & Research Workspaces", group: "Workspaces" },
-  { id: 28, key: "rag_document_search", label: "RAG Multi-Document AI Search", group: "Workspaces" },
-  { id: 29, key: "project_showcase", label: "Project Showcase Builder", group: "Workspaces" },
-  { id: 30, key: "career_toolkit", label: "Career Utilities & Calculators", group: "Workspaces" },
-  { id: 31, key: "opportunity_submission", label: "Public Opportunity Signal Submissions", group: "Ecosystem" },
-  { id: 32, key: "company_hiring_portal", label: "Company Hiring Signal Portal", group: "Ecosystem" },
-  { id: 33, key: "sheets_control_center", label: "Google Sheets Job Seeding Integration", group: "Ecosystem" },
-  { id: 34, key: "admin_intelligence", label: "Admin Career Intelligence Dashboard", group: "Ecosystem" },
+  { id: 25, key: "document_workspaces", label: "Document & Research Workspaces", group: "Workspaces" },
+  { id: 26, key: "rag_document_search", label: "RAG Multi-Document AI Search", group: "Workspaces" },
+  { id: 27, key: "project_showcase", label: "Project Showcase Builder", group: "Workspaces" },
+  { id: 28, key: "career_toolkit", label: "Career Utilities & Calculators", group: "Career Toolkit" },
+  { id: 29, key: "opportunity_submission", label: "Public Opportunity Signal Submissions", group: "Ecosystem" },
+  { id: 30, key: "company_hiring_portal", label: "Company Hiring Signal Portal", group: "Ecosystem" },
+  { id: 31, key: "daily_missions", label: "Daily Career Missions", group: "Career Progress" },
+  { id: 32, key: "career_health", label: "Career Health & Profile Readiness", group: "Career Progress" },
 ];
+
+const PUBLIC_FEEDBACK_FEATURES = DEFAULT_31_FEATURES.map((feature, index) => ({
+  ...feature,
+  id: index + 1,
+}));
 
 const PERSONA_TOOLS_RECOMMENDATION: Record<string, { title: string; desc: string; tab: string }[]> = {
   student: [
@@ -118,7 +120,7 @@ export default function DiscoverPage() {
     recruiter_email: "",
   });
 
-  const [features, setFeatures] = useState<FeatureItem[]>(DEFAULT_34_FEATURES);
+  const [features, setFeatures] = useState<FeatureItem[]>(PUBLIC_FEEDBACK_FEATURES);
 
   useEffect(() => {
     async function loadData() {
@@ -128,11 +130,11 @@ export default function DiscoverPage() {
         if (data && Array.isArray(data.features) && data.features.length > 0) {
           setFeatures(data.features);
         } else {
-          setFeatures(DEFAULT_34_FEATURES);
+          setFeatures(PUBLIC_FEEDBACK_FEATURES);
         }
       } catch (err: unknown) {
         console.error("Failed to load discovery options:", err);
-        setFeatures(DEFAULT_34_FEATURES);
+        setFeatures(PUBLIC_FEEDBACK_FEATURES);
       } finally {
         setLoading(false);
       }
@@ -281,7 +283,7 @@ export default function DiscoverPage() {
 
   const wizardSteps = [
     { num: 1, label: "Role & Intent", icon: UserCheck },
-    { num: 2, label: "34 Features", icon: Layers },
+    { num: 2, label: "Core Features", icon: Layers },
     { num: 3, label: "Feedback & Skills", icon: Lightbulb },
     { num: 4, label: "Hiring Portal", icon: Building2 },
   ];
@@ -298,7 +300,7 @@ export default function DiscoverPage() {
           Help Us Build Your Ideal Career & Hiring Platform
         </h1>
         <p className="text-sm text-muted-foreground max-w-3xl leading-relaxed">
-          Share your career persona, rate our 34 core features, suggest what skills candidates should learn, or submit live job openings directly into Saarthi AI.
+          Share your career persona, rate Saarthi's core career features, suggest what skills candidates should learn, or submit live job openings directly into Saarthi AI.
         </p>
       </div>
 
@@ -441,14 +443,14 @@ export default function DiscoverPage() {
                   onClick={() => setActiveWizardStep(2)}
                   className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90"
                 >
-                  <span>Continue to 34 Features</span>
+                  <span>Continue to Core Features</span>
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 2: 34 Features Grid */}
+          {/* STEP 2: Core Features Grid */}
           {activeWizardStep === 2 && (
             <motion.div
               key="step2"
@@ -461,7 +463,7 @@ export default function DiscoverPage() {
                 <div>
                   <h2 className="text-xl font-bold text-foreground font-display flex items-center gap-2">
                     <Layers className="h-5 w-5 text-primary" />
-                    Rate Saarthi's 34 Core Features
+                    Rate Saarthi's Core Features
                   </h2>
                   <p className="text-xs text-muted-foreground mt-1">
                     Select how valuable each feature is for your workflow to prioritize our AI development.
@@ -470,7 +472,7 @@ export default function DiscoverPage() {
 
                 {loading ? (
                   <div className="text-sm text-muted-foreground animate-pulse py-8 text-center">
-                    Loading 34 feature intelligence items...
+                    Loading core feature intelligence items...
                   </div>
                 ) : (
                   Object.entries(groupedFeatures).map(([groupName, groupFeats]) => (
@@ -622,7 +624,7 @@ export default function DiscoverPage() {
                   className="flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-3 font-semibold text-foreground text-xs hover:bg-muted transition-all"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  <span>Back to 34 Features</span>
+                  <span>Back to Core Features</span>
                 </button>
                 <button
                   type="button"

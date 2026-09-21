@@ -1,29 +1,64 @@
-name: Saarthi Stack Keep-Alive Warm-Up
+const http = require("http");
+const https = require("https");
 
-on:
-  schedule:
-    # Run every 7 minutes, offset from the top of the hour, to prevent
-    # Render & Hugging Face cold sleep (free tier idle timeout is ~15 minutes).
-    # GitHub Actions schedules are best-effort and can be delayed, especially
-    # at :00 — a wider margin + offset makes missed/delayed runs harmless.
-    - cron: "3-59/7 * * * *"
-  workflow_dispatch:
+const defaultTargets = [
+  { name: "Render", url: process.env.RENDER_URL || "https://saarthilink.onrender.com/" },
+  { name: "Hugging Face", url: process.env.HF_URL || "https://huggingface.co/spaces/Balamaneesh2520/saarthi-ai-brain" },
+  { name: "Supabase", url: process.env.SUPABASE_URL || "https://wcawcytqhpyvtuwnbqlv.supabase.co" },
+];
 
-jobs:
-  ping-services:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+function requestURL(target) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(target.url);
+    const client = url.protocol === "https:" ? https : http;
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+    const req = client.get(
+      url,
+      { timeout: 15000 },
+      (res) => {
+        const { statusCode } = res;
+        res.resume();
 
-      - name: Execute Keep-Alive Ping
-        env:
-          RENDER_URL: "https://saarthilink.onrender.com/"
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: node keep-alive.js
+        if (statusCode >= 200 && statusCode < 400) {
+          resolve({ ...target, statusCode });
+          return;
+        }
+
+        reject(new Error(`${target.name} (${target.url}) returned HTTP ${statusCode}`));
+      }
+    );
+
+    req.on("timeout", () => {
+      req.destroy(new Error(`Timeout while reaching ${target.name} (${target.url})`));
+    });
+
+    req.on("error", reject);
+  });
+}
+
+async function main() {
+  const successes = [];
+
+  for (const target of defaultTargets) {
+    try {
+      const result = await requestURL(target);
+      successes.push(`${result.name} ${result.statusCode}`);
+      console.log(`✅ Warm-up OK: ${result.name} -> ${result.url} (${result.statusCode})`);
+    } catch (error) {
+      console.warn(`⚠️ Warm-up failed: ${target.name} -> ${target.url}`);
+      console.warn(error.message);
+    }
+  }
+
+  if (successes.length === 0) {
+    console.error("All warm-up endpoints failed.");
+    process.exit(1);
+  }
+
+  console.log(`Warm-up complete. Successful pings: ${successes.join(" | ")}`);
+}
+
+main().catch((error) => {
+  console.error("Unexpected warm-up error:", error.message);
+  process.exit(1);
+});

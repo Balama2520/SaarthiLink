@@ -43,12 +43,13 @@ class JobsService:
         self,
         q: Optional[str] = None,
         location: Optional[str] = None,
+        experience: Optional[str] = None,
         job_type: Optional[str] = None,
         remote_type: Optional[str] = None,
         skip: int = 0,
         limit: int = 20,
     ) -> List[Job]:
-        return self.repo.search_jobs(q, location, job_type, remote_type, skip, limit)
+        return self.repo.search_jobs(q, location, experience, job_type, remote_type, skip, limit)
 
     def get_recommended_jobs(
         self, user_id: int, skip: int = 0, limit: int = 20

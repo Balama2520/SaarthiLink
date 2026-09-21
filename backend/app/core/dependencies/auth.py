@@ -76,8 +76,15 @@ def require_admin_user(
     current_user: User | GuestUser = Depends(get_current_user),
 ) -> User:
     if isinstance(current_user, GuestUser):
-        return current_user  # allow the public summary endpoint to remain open
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     if not is_admin_user(current_user):
-        return current_user  # allow the public summary endpoint to stay accessible to all users
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
     return current_user

@@ -12,7 +12,7 @@ export default function TermsPage() {
           Terms of Service & Usage Agreement
         </h1>
         <p className="text-sm text-muted-foreground">
-          Last updated: September 11, 2026. Please read these terms before using the Saarthi AI platform.
+          Last updated: September 14, 2026. Please read these terms before using the Saarthi AI platform.
         </p>
       </div>
 

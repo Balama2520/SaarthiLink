@@ -4,6 +4,7 @@ import { setAuth as persistAuth, clearAuth, isAuthenticated as hasStoredToken, g
 import { api } from '../services/api';
 
 export type PersonaType = 'undergrad' | 'mtech' | 'phd' | 'ms_abroad' | 'professional' | null;
+export type AccessRole = 'admin' | 'user' | 'guest';
 
 interface AppState {
   // Auth state
@@ -11,8 +12,9 @@ interface AppState {
   username: string;
   token: string | null;
   refreshToken: string | null;
+  role: AccessRole;
   persistence: AuthPersistence | null;
-  setAuth: (username: string, token: string, refreshToken?: string | null, persistence?: AuthPersistence) => void;
+  setAuth: (username: string, token: string, refreshToken?: string | null, persistence?: AuthPersistence, role?: AccessRole) => void;
   enterGuestMode: () => void;
   logout: () => void;
 
@@ -36,14 +38,15 @@ export const useAppStore = create<AppState>()(
       username: getStoredUsername() ?? 'Guest User',
       token: getToken(),
       refreshToken: getRefreshToken(),
+      role: hasStoredToken() ? 'user' : 'guest',
       persistence: getAuthPersistence(),
-      setAuth: (username, token, refreshToken, persistence = 'local') => {
+      setAuth: (username, token, refreshToken, persistence = 'local', role = 'user') => {
         persistAuth(username, token, refreshToken, persistence);
-        set({ isAuthenticated: true, username, token, refreshToken: refreshToken ?? null, persistence });
+        set({ isAuthenticated: true, username, token, refreshToken: refreshToken ?? null, role, persistence });
       },
       enterGuestMode: () => {
         clearAuth();
-        set({ isAuthenticated: false, username: 'Guest User', token: null, refreshToken: null, persistence: null });
+        set({ isAuthenticated: false, username: 'Guest User', token: null, refreshToken: null, role: 'guest', persistence: null });
       },
       logout: () => {
         const refreshToken = getRefreshToken();
@@ -51,7 +54,7 @@ export const useAppStore = create<AppState>()(
           api.logout(refreshToken).catch(() => {});
         }
         clearAuth();
-        set({ isAuthenticated: false, username: 'Guest User', token: null, refreshToken: null, persistence: null, activeTab: 'dashboard' });
+        set({ isAuthenticated: false, username: 'Guest User', token: null, refreshToken: null, role: 'guest', persistence: null, activeTab: 'dashboard' });
       },
 
       // Navigation state
@@ -67,6 +70,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         username: state.username,
         isAuthenticated: state.isAuthenticated,
+        role: state.role,
         persona: state.persona,
       }), // only persist these fields
       merge: (persistedState, currentState) => {
@@ -79,6 +83,7 @@ export const useAppStore = create<AppState>()(
           ...persisted,
           isAuthenticated: Boolean(token),
           username: token ? (getStoredUsername() ?? 'Guest User') : 'Guest User',
+          role: token ? (persisted.role === 'admin' ? 'admin' : 'user') : 'guest',
           token,
           refreshToken,
           persistence,

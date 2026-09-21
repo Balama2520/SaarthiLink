@@ -87,19 +87,22 @@ function InlineField({
 }
 
 // ─── Skill Tag ──────────────────────────────────────────────────────────────
-function SkillTag({ name, proficiency }: { name: string; proficiency?: string }) {
+function SkillTag({ name, proficiency }: { name: string; proficiency?: string | number }) {
   const colorMap: Record<string, string> = {
     expert: "bg-accent/15 border-accent/30 text-accent",
     advanced: "bg-primary/15 border-primary/30 text-primary",
     intermediate: "bg-success/15 border-success/30 text-success",
     beginner: "bg-muted-foreground/15 border-muted-foreground/30 text-foreground",
   };
-  const color = colorMap[(proficiency || "").toLowerCase()] || colorMap.beginner;
+  const normalizedProficiency = typeof proficiency === "number"
+    ? proficiency >= 5 ? "expert" : proficiency >= 4 ? "advanced" : proficiency >= 3 ? "intermediate" : "beginner"
+    : proficiency?.toLowerCase();
+  const color = colorMap[normalizedProficiency || ""] || colorMap.beginner;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm ${color}`}>
       {name}
       {proficiency && <span className="opacity-40">•</span>}
-      {proficiency && <span className="opacity-80 uppercase tracking-wider text-[10px]">{proficiency}</span>}
+      {proficiency && <span className="opacity-80 uppercase tracking-wider text-[10px]">{normalizedProficiency}</span>}
     </span>
   );
 }
@@ -409,7 +412,7 @@ export function Profile() {
                     <div className="md:col-span-2">
                       <SectionCard title="Technical Arsenal">
                         <div className="flex flex-wrap gap-2.5">
-                          {profile.technical_skills.map((skill: { skill_name: string; proficiency: string }, i: number) => (
+                          {profile.technical_skills.map((skill: { skill_name: string; proficiency: string | number }, i: number) => (
                             <SkillTag key={i} name={skill.skill_name} proficiency={skill.proficiency} />
                           ))}
                         </div>

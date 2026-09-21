@@ -3,6 +3,7 @@ from pydantic import BaseModel, field_validator
 
 
 class ProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
     headline: Optional[str] = None
     phone: Optional[str] = None
     profile_photo_url: Optional[str] = None

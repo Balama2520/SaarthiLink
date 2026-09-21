@@ -69,14 +69,14 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Team / Architect Info */}
+      {/* Team / Product Info */}
       <div className="rounded-3xl border border-border bg-gradient-to-r from-card via-card to-background p-8 md:p-10 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-primary">Principal Architect & Lead Engineer</div>
-            <h3 className="text-2xl font-bold text-foreground font-display">Bala Maneesh Ayanala</h3>
+            <div className="text-xs font-bold uppercase tracking-wider text-primary">Engineering & Product Team</div>
+            <h3 className="text-2xl font-bold text-foreground font-display">Built for candidates, recruiters, and career teams</h3>
             <p className="text-sm text-muted-foreground max-w-xl">
-              Lead full-stack developer and AI systems architect responsible for Saarthi AI's career copilot, Google Sheets job seeding, and dual AI provider integration.
+              Saarthi AI is designed by a product and engineering team focused on career intelligence, recruiter workflows, and practical job-readiness support across the full hiring journey.
             </p>
           </div>
 

@@ -1,7 +1,7 @@
 """
-Feedback API Router — Saarthi 34-Feature Rating & Product Feedback System
+Feedback API Router — Saarthi Public Feature Rating & Product Feedback System
 =========================================================================
-Endpoints for submitting and retrieving 34-feature ratings and product feedback.
+Endpoints for submitting and retrieving public feature ratings and product feedback.
 """
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -13,11 +13,12 @@ from app.database.connection import get_db
 from app.services.discovery_service import DiscoveryService
 from app.core.dependencies.auth import get_optional_current_user
 from app.models.models import User
+from app.core.feature_registry import PUBLIC_FEATURES
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
 
-# ── 34 Features Registry (Canonical Specification) ─────────────────────────
+# ── Legacy source list retained below for migration compatibility. ──────────
 
 SAARTHI_34_FEATURES = [
     # Group 1: Discovery & Matching (1-5)
@@ -234,6 +235,11 @@ SAARTHI_34_FEATURES = [
 ]
 
 
+# Keep the public API name stable for existing imports while using the single
+# canonical 31-feature contract everywhere.
+SAARTHI_34_FEATURES = PUBLIC_FEATURES
+
+
 class FeatureFeedbackSchema(BaseModel):
     feature_id: int
     rating: str = Field("useful", description="valuable | useful | neutral | bad")
@@ -290,8 +296,54 @@ def submit_feedback(
 
 @router.get("/features")
 def get_features_registry():
-    """Returns the canonical catalog of all 34 evaluation features."""
+    """Returns the canonical catalog of all public evaluation features."""
     return {
+        "total": len(SAARTHI_34_FEATURES),
         "total_registered": len(SAARTHI_34_FEATURES),
         "features": SAARTHI_34_FEATURES,
     }
+
+
+@router.post("/feature")
+def submit_feature_rating_legacy(
+    payload: FeatureFeedbackSchema,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+):
+    registry_map = {feature["id"]: feature for feature in SAARTHI_34_FEATURES}
+    feature = registry_map.get(payload.feature_id)
+    if not feature:
+        raise HTTPException(status_code=400, detail="Unknown feature id")
+    session_id = x_session_id or "anonymous_feedback"
+    profile = DiscoveryService(db).repo.get_or_create_profile(
+        session_id=session_id,
+        user_id=current_user.id if current_user else None,
+    )
+    DiscoveryService(db).repo.save_feature_feedbacks(
+        profile.id,
+        [{
+            "feature_id": payload.feature_id,
+            "feature_key": feature["key"],
+            "feature_label": feature["label"],
+            "rating": payload.rating,
+            "comment": payload.comment,
+        }],
+    )
+    return {"status": "success", "feature_id": payload.feature_id}
+
+
+@router.post("/product")
+def submit_product_feedback_legacy(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
+):
+    session_id = payload.pop("session_id", None) or x_session_id or "anonymous_feedback"
+    profile = DiscoveryService(db).repo.get_or_create_profile(
+        session_id=session_id,
+        user_id=current_user.id if current_user else None,
+    )
+    DiscoveryService(db).repo.save_product_feedback(profile.id, payload)
+    return {"status": "success", "profile_id": profile.id}

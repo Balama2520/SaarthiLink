@@ -297,10 +297,10 @@ export const api = {
       body: formData,
     });
     if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.detail || "Resume analysis failed");
+      const data = await parseJsonSafe(res);
+      throw new Error(data?.detail || `Resume analysis failed (HTTP ${res.status})`);
     }
-    return res.json();
+    return parseJsonSafe(res);
   },
 
   async syncResumeProfile(resumeId: string, accepted: boolean = true) {
@@ -383,10 +383,11 @@ export const api = {
     return res.json();
   },
 
-  async searchJobs(q: string = "", location: string = "", skip: number = 0, limit: number = 20) {
+  async searchJobs(q: string = "", location: string = "", experience: string = "", skip: number = 0, limit: number = 20) {
     let url = `${API_BASE}/jobs/search?skip=${skip}&limit=${limit}`;
     if (q) url += `&q=${encodeURIComponent(q)}`;
     if (location) url += `&location=${encodeURIComponent(location)}`;
+    if (experience) url += `&experience=${encodeURIComponent(experience)}`;
     const res = await fetch(url, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to search jobs");
     return res.json();

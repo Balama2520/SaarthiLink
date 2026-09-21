@@ -220,3 +220,25 @@ class DiscoveryService:
     # ── Admin Intelligence Stats ───────────────────────────────────────────
     def get_intelligence_stats(self) -> Dict[str, Any]:
         return self.repo.get_discovery_stats()
+
+    def process_system_feedback(
+        self, data: Dict[str, Any], user_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        session_id = data.get("session_id") or "anonymous_feedback"
+        profile = self.repo.get_or_create_profile(session_id=session_id, user_id=user_id)
+        feature_items = data.get("features", [])
+        if feature_items:
+            self.repo.save_feature_feedbacks(profile.id, feature_items)
+        product_data = {
+            "what_you_like": data.get("benefit"),
+            "what_feels_missing": data.get("missing"),
+        }
+        if any(value is not None for value in product_data.values()):
+            self.repo.save_product_feedback(profile.id, product_data)
+        self.repo.log_event(
+            event_type="system_feedback_submitted",
+            entity_id=profile.id,
+            session_id=session_id,
+            user_id=user_id,
+        )
+        return {"status": "success", "profile_id": profile.id, "message": "Feedback recorded."}

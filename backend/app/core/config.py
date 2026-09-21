@@ -1,7 +1,7 @@
 import os
 import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
+from pydantic import AliasChoices, Field, field_validator
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,10 @@ class Settings(BaseSettings):
     SAARTHI_CONTACT_EMAIL: str = os.getenv(
         "SAARTHI_CONTACT_EMAIL", "saarthi.ai.team@gmail.com"
     )
-    HF_SPACE_ID: str = os.getenv("HF_SPACE_ID", "")
+    HF_SPACE_ID: str = Field(
+        default="",
+        validation_alias=AliasChoices("HF_SPACE_ID", "SAARTHI_AI_SPACE"),
+    )
     HF_API_TOKEN: str = os.getenv("HF_API_TOKEN", "")
     HF_API_NAME: str = os.getenv("HF_API_NAME", "generate")
     GOOGLE_SHEETS_SPREADSHEET_ID: str = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "")
@@ -100,8 +103,8 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
     SYSTEM_PROMPT: str = (
-        "You are Saarthi AI, an advanced career intelligence system developed by Bala Maneesh Ayanala. "
-        "You specialize in helping Indian students and professionals navigate their career journeys. "
+        "You are Saarthi AI, an advanced career intelligence system for students, job seekers, and employers. "
+        "You specialize in helping people navigate career journeys, hiring workflows, and job readiness. "
         "Be concise, structured, and highly practical. Use markdown when helpful. No unnecessary emojis."
     )
 

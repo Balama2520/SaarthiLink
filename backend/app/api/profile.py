@@ -152,6 +152,9 @@ def update_profile(
     ]
 
     for key, value in update_data.items():
+        if key == "full_name":
+            current_user.full_name = value
+            continue
         if key in json_fields:
             setattr(profile, f"{key}_json", json.dumps(value))
         else:
@@ -246,3 +249,48 @@ def get_completeness(
     # Technical Skills (from UserSkill)
     ts_count = db.query(UserSkill).filter(UserSkill.user_id == current_user.id).count()
     sections["Technical Skills"] = min(100, ts_count * 20)
+
+    # Soft Skills
+    soft_skills = _parse_json_field(profile.soft_skills_json)
+    sections["Soft Skills"] = 100 if soft_skills else 0
+    if not soft_skills:
+        suggestions.append("Add your key soft skills like communication, teamwork, leadership.")
+
+    # Portfolio links
+    portfolio_fields = [
+        profile.github_url,
+        profile.linkedin_url,
+        profile.portfolio_url,
+        profile.leetcode_url,
+        profile.hackerrank_url,
+    ]
+    portfolio_count = sum(1 for value in portfolio_fields if value)
+    sections["Portfolio"] = min(100, portfolio_count * 25)
+    if portfolio_count < 2:
+        suggestions.append("Add your GitHub, LinkedIn, or portfolio links to strengthen your profile.")
+
+    # Preferences
+    prefs = [
+        profile.preferred_domains_json,
+        profile.preferred_industries_json,
+        profile.preferred_locations_json,
+        profile.work_preferences_json,
+    ]
+    pref_score = 0
+    for item in prefs:
+        if item and item != "[]":
+            pref_score += 25
+    sections["Preferences"] = min(100, pref_score)
+    if sections["Preferences"] < 100:
+        suggestions.append("Set your preferred domains, industries, locations, and work mode.")
+
+    overall_percentage = int(
+        round(sum(sections.values()) / len(sections))
+    )
+    suggestions = list(dict.fromkeys(suggestions))
+
+    return {
+        "overall_percentage": max(0, min(100, overall_percentage)),
+        "sections": sections,
+        "suggestions": suggestions,
+    }

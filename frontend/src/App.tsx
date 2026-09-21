@@ -29,7 +29,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { GlobalAdScripts } from "./components/GlobalAdScripts";
 import "./index.css";
 
-import { useAppStore } from "./store/useAppStore";
+import { useAppStore, type AccessRole } from "./store/useAppStore";
 import { AUTH_EXPIRED_EVENT } from "./lib/auth";
 
 import { CommandPalette } from "./components/CommandPalette";
@@ -38,13 +38,161 @@ import SaarthiConciergeBot from "./components/SaarthiConciergeBot";
 
 const tabs = new Set([
   "landing", "discover", "about", "contact", "privacy", "terms",
-  "dashboard", "profile", "resume", "goals", "jobs", "copilot", "interview", "roadmaps", "chat",
-  "workspaces", "gradhub", "growthlab", "toolkit", "admin",
+  "dashboard", "profile", "resume", "jobs", "chat", "copilot", "goals",
+  "interview", "roadmaps", "workspaces", "gradhub", "growthlab", "toolkit",
+  "admin",
 ]);
+
+const publicPaths: Record<string, string> = {
+  landing: "/",
+  discover: "/discover",
+  about: "/about",
+  contact: "/contact",
+  resume: "/resume-analyzer",
+  jobs: "/job-finder",
+  copilot: "/career-copilot",
+  goals: "/goals",
+  interview: "/interview-coach",
+  roadmaps: "/learning-roadmaps",
+  workspaces: "/workspaces",
+  gradhub: "/graduate-hub",
+  growthlab: "/growth-lab",
+  toolkit: "/career-toolkit",
+  admin: "/admin",
+};
+
+const tabByPath = Object.fromEntries(
+  Object.entries(publicPaths).map(([tab, path]) => [path, tab]),
+) as Record<string, string>;
+
+const seoByTab: Record<string, {
+  title: string;
+  description: string;
+  keywords: string;
+}> = {
+  landing: {
+    title: "Saarthi — AI Career Operating System & Resume Intelligence",
+    description: "Saarthi is an AI-powered Career Operating System for resume intelligence, job matching, interview coaching, skill gap analysis, and personalized career roadmaps.",
+    keywords: "Saarthi, AI career operating system, resume intelligence, AI job matching, mock interview coaching, career roadmap, skill gap analysis",
+  },
+  discover: {
+    title: "Discover Saarthi — Smart Career Discovery Tools",
+    description: "Explore personalized career opportunities, skill trends, and job discovery tools designed to help you find the right next move faster.",
+    keywords: "discover careers, AI career discovery, job discovery, skill trends, career guidance, Saarthi discover",
+  },
+  about: {
+    title: "About Saarthi — AI Guidance for Career Growth",
+    description: "Learn how Saarthi blends AI, career intelligence, and guided action for modern learners, professionals, and job seekers.",
+    keywords: "about Saarthi, AI career growth, career intelligence, AI guidance, professional development",
+  },
+  contact: {
+    title: "Contact Saarthi — Get in Touch",
+    description: "Reach out to the Saarthi team for support, partnership opportunities, or questions about AI-powered career tools.",
+    keywords: "contact Saarthi, career product support, SaaS support, AI career platform",
+  },
+  dashboard: {
+    title: "Saarthi Dashboard — Career Intelligence Overview",
+    description: "View your career metrics, opportunities, progress, and AI-powered recommendations from the Saarthi dashboard.",
+    keywords: "Saarthi dashboard, career dashboard, career intelligence overview, AI recommendations, career progress",
+  },
+  profile: {
+    title: "Saarthi Profile — Career Snapshot and Skills",
+    description: "Manage your profile, highlight strengths, and align your experience and skills with the best-fit opportunities.",
+    keywords: "Saarthi profile, career profile, skills profile, professional profile, talent overview",
+  },
+  resume: {
+    title: "Resume Analyzer — AI Resume Intelligence",
+    description: "Analyze and improve your resume with AI-driven insights, keyword alignment, and realistic job-fit recommendations.",
+    keywords: "resume analyzer, AI resume review, resume intelligence, ATS optimization, job-fit analysis",
+  },
+  goals: {
+    title: "Career Goals — Plan Your Growth with Saarthi",
+    description: "Set measurable goals, map milestones, and track career progress with AI-guided planning and personalized coaching.",
+    keywords: "career goals, growth planning, career milestones, AI goal tracking, professional roadmap",
+  },
+  jobs: {
+    title: "Job Finder — AI-Powered Career Matching",
+    description: "Discover relevant jobs, compare opportunities, and match your skills with roles that fit your long-term career trajectory.",
+    keywords: "job finder, AI job matching, career opportunities, jobs near me, role fit analysis",
+  },
+  copilot: {
+    title: "Career Copilot — Guided AI Career Support",
+    description: "Chat with your AI career copilot for strategy, role advice, resume feedback, and decision support across your journey.",
+    keywords: "career copilot, AI career advice, job coaching, career planning assistant, professional guidance",
+  },
+  interview: {
+    title: "Interview Coach — AI Mock Interview Practice",
+    description: "Practice with AI-led mock interviews, get feedback, and sharpen your communication for real-world job conversations.",
+    keywords: "interview coach, mock interviews, AI interview prep, interview feedback, job interview training",
+  },
+  roadmaps: {
+    title: "Learning Roadmaps — Personalized Skill Paths",
+    description: "Follow structured learning roadmaps that convert your current skills into the next role, track, and growth plan.",
+    keywords: "learning roadmaps, career roadmap, skill path planning, personalized growth plan, upskilling",
+  },
+  chat: {
+    title: "Saarthi Chat Coach — Real-Time Career Guidance",
+    description: "Get practical, personalized career support from Saarthi's chat coach for decisions, prep, and growth conversations.",
+    keywords: "AI chat coach, career guidance chat, instant career advice, personalized coaching, job support",
+  },
+  workspaces: {
+    title: "Workspaces — Organize Your Career Projects",
+    description: "Create spaces to track goals, resumes, projects, applications, and career tasks in one connected workflow.",
+    keywords: "career workspaces, task tracking, resume workspace, role planning, talent workspace",
+  },
+  gradhub: {
+    title: "Graduate Hub — Career Launch for New Graduates",
+    description: "Access career guidance, first-job preparation, and community resources built for recent graduates and early-career professionals.",
+    keywords: "graduate hub, career launch, first job support, graduate resources, early career guidance",
+  },
+  growthlab: {
+    title: "Growth Lab — Skill Development and Experimentation",
+    description: "Use Growth Lab to build new skills, test ideas, and accelerate learning with structured career experiments.",
+    keywords: "growth lab, skill development, experiments, AI learning, career acceleration",
+  },
+  toolkit: {
+    title: "Career Toolkit — Practical Tools for Smart Decisions",
+    description: "Use practical career tools for planning, applying, tracking, and improving your momentum across your next moves.",
+    keywords: "career toolkit, AI career tools, job application tools, career planning resources",
+  },
+  admin: {
+    title: "Saarthi Admin — Platform Management",
+    description: "Administrative controls and operational views for managing Saarthi's career platform and internal workflows.",
+    keywords: "Saarthi admin, platform management, internal operations, career platform admin",
+  },
+  privacy: {
+    title: "Privacy Policy — Saarthi",
+    description: "Read the Saarthi privacy policy and understand how personal data is collected, protected, and used.",
+    keywords: "Saarthi privacy policy, data privacy, career app privacy, user privacy",
+  },
+  terms: {
+    title: "Terms of Service — Saarthi",
+    description: "Review the Saarthi terms of service, platform usage guidelines, and responsibilities for members and visitors.",
+    keywords: "Saarthi terms of service, platform terms, user agreement, SaaS terms",
+  },
+};
 
 function tabFromHash() {
   const tab = window.location.hash.replace(/^#\/?/, "");
-  return tabs.has(tab) ? tab : "dashboard";
+  if (tab) return tabs.has(tab) ? tab : "dashboard";
+  return tabByPath[window.location.pathname] ?? (window.location.pathname === "/" ? "landing" : "dashboard");
+}
+
+function setMetaTag(selector: string, attributes: Record<string, string>, content?: string) {
+  const existing = document.head.querySelector(selector) as HTMLMetaElement | null;
+  const tag = existing ?? document.createElement("meta");
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    tag.setAttribute(key, value);
+  });
+
+  if (content !== undefined) {
+    tag.setAttribute("content", content);
+  }
+
+  if (!existing) {
+    document.head.appendChild(tag);
+  }
 }
 
 /** Shown when a guest user tries to access an auth-required page */
@@ -79,9 +227,37 @@ function AuthGate({ onSignIn, featureName }: { onSignIn: () => void; featureName
   );
 }
 
+function AdminAccessGate({ onSignIn, isAuthenticated }: { onSignIn: () => void; isAuthenticated: boolean }) {
+  return (
+    <div className="flex flex-1 items-center justify-center p-8">
+      <div className="flex w-full max-w-md flex-col items-center gap-5 rounded-2xl border border-border/80 bg-card/60 p-10 text-center shadow-xl backdrop-blur-xl">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-primary/10">
+          <Lock className="h-8 w-8 text-primary" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="font-display text-xl font-extrabold text-foreground">Admin Access Required</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Platform metrics, user activity, and integration controls are restricted to authorized administrators.
+          </p>
+        </div>
+        {!isAuthenticated && (
+          <button
+            onClick={onSignIn}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:bg-primary/90"
+          >
+            <LogIn className="h-4 w-4" />
+            Sign In / Register
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const authenticated = useAppStore((state) => state.isAuthenticated);
   const username = useAppStore((state) => state.username);
+  const role = useAppStore((state) => state.role);
   const activeTab = useAppStore((state) => state.activeTab);
   const setAuth = useAppStore((state) => state.setAuth);
   const enterGuestMode = useAppStore((state) => state.enterGuestMode);
@@ -92,10 +268,20 @@ export default function App() {
   const [showCmdPalette, setShowCmdPalette] = useState(false);
 
   useEffect(() => {
+    if (activeTab === "admin") {
+      setActiveTab("admin");
+    }
+  }, [activeTab, setActiveTab]);
+
+  useEffect(() => {
     const syncFromAddress = () => setActiveTab(tabFromHash());
     syncFromAddress();
     window.addEventListener("hashchange", syncFromAddress);
-    return () => window.removeEventListener("hashchange", syncFromAddress);
+    window.addEventListener("popstate", syncFromAddress);
+    return () => {
+      window.removeEventListener("hashchange", syncFromAddress);
+      window.removeEventListener("popstate", syncFromAddress);
+    };
   }, [setActiveTab]);
 
   useEffect(() => {
@@ -108,12 +294,41 @@ export default function App() {
   }, [enterGuestMode]);
 
   useEffect(() => {
+    const nextPath = publicPaths[activeTab];
+    if (nextPath) {
+      if (window.location.pathname !== nextPath || window.location.hash) {
+        window.history.pushState(null, "", nextPath);
+      }
+      return;
+    }
+
     const nextHash = `#/${activeTab}`;
     if (window.location.hash !== nextHash) window.history.pushState(null, "", nextHash);
   }, [activeTab]);
 
-  const handleAuthSuccess = (user: string, token?: string, refreshToken?: string | null, persistence?: "local" | "session") => {
-    if (token) setAuth(user, token, refreshToken, persistence);
+  useEffect(() => {
+    const meta = seoByTab[activeTab] ?? seoByTab.landing;
+    document.title = meta.title;
+
+    setMetaTag('meta[name="description"]', { name: "description" }, meta.description);
+    setMetaTag('meta[name="keywords"]', { name: "keywords" }, meta.keywords);
+    setMetaTag('meta[property="og:title"]', { property: "og:title" }, meta.title);
+    setMetaTag('meta[property="og:description"]', { property: "og:description" }, meta.description);
+    const canonicalUrl = `https://saarthi-link.netlify.app${publicPaths[activeTab] ?? "/"}`;
+    setMetaTag('meta[property="og:url"]', { property: "og:url" }, canonicalUrl);
+    setMetaTag('meta[property="twitter:title"]', { property: "twitter:title" }, meta.title);
+    setMetaTag('meta[property="twitter:description"]', { property: "twitter:description" }, meta.description);
+
+    const canonical = document.head.querySelector('link[rel="canonical"]') ?? document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    canonical.setAttribute('href', canonicalUrl);
+    if (!document.head.querySelector('link[rel="canonical"]')) {
+      document.head.appendChild(canonical);
+    }
+  }, [activeTab]);
+
+  const handleAuthSuccess = (user: string, token?: string, refreshToken?: string | null, persistence?: "local" | "session", accessRole?: AccessRole) => {
+    if (token) setAuth(user, token, refreshToken, persistence, accessRole === "admin" ? "admin" : "user");
     else enterGuestMode();
     setShowAuthModal(false);
   };
@@ -139,6 +354,7 @@ export default function App() {
           setActiveTab={(tab) => { setActiveTab(tab); setMobileNavOpen(false); }}
           username={username}
           isAuthenticated={authenticated}
+          role={role}
           onLogout={handleLogout}
           onSignIn={handleShowAuth}
           mobileOpen={mobileNavOpen}
@@ -263,27 +479,43 @@ export default function App() {
             {activeTab === "dashboard" && (
               <Dashboard username={username} setActiveTab={setActiveTab} onLogout={handleLogout} />
             )}
-            {activeTab === "profile" && <ProfilePage />}
+            {activeTab === "profile" && (
+              authenticated
+                ? <ProfilePage />
+                : <AuthGate onSignIn={handleShowAuth} featureName="Profile" />
+            )}
             {activeTab === "resume" && <ResumeAnalyzer />}
-            {activeTab === "goals" && <Goals />}
             {activeTab === "jobs" && (
               authenticated
                 ? <JobFinder />
                 : <AuthGate onSignIn={handleShowAuth} featureName="Job Finder" />
             )}
+            {activeTab === "chat" && <ChatCoach />}
             {activeTab === "copilot" && <CareerCopilot />}
+            {activeTab === "goals" && (
+              authenticated
+                ? <Goals />
+                : <AuthGate onSignIn={handleShowAuth} featureName="Goals" />
+            )}
             {activeTab === "interview" && <InterviewCoach />}
             {activeTab === "roadmaps" && <LearningRoadmaps />}
-            {activeTab === "chat" && <ChatCoach />}
             {activeTab === "workspaces" && (
               authenticated
                 ? <Workspaces />
                 : <AuthGate onSignIn={handleShowAuth} featureName="Workspaces" />
             )}
-            {activeTab === "gradhub" && <GraduateHub />}
+            {activeTab === "gradhub" && (
+              authenticated
+                ? <GraduateHub />
+                : <AuthGate onSignIn={handleShowAuth} featureName="Graduate Hub" />
+            )}
             {activeTab === "growthlab" && <GrowthLab />}
             {activeTab === "toolkit" && <CareerToolkit />}
-            {activeTab === "admin" && <AdminPanel />}
+            {activeTab === "admin" && (
+              role === "admin"
+                ? <AdminPanel />
+                : <AdminAccessGate onSignIn={handleShowAuth} isAuthenticated={authenticated} />
+            )}
             {activeTab === "privacy" && <PrivacyPage />}
             {activeTab === "terms" && <TermsPage />}
 

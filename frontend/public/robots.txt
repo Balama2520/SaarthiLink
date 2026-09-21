@@ -1,12 +1,15 @@
 User-agent: *
 Allow: /
 
-# Block auth-only and admin paths from indexing
-Disallow: /#/dashboard
-Disallow: /#/profile
-Disallow: /#/goals
-Disallow: /#/workspaces
-Disallow: /#/admin
-Disallow: /#/chat
+# Keep private application areas out of search results.
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /goals
+Disallow: /workspaces
+Disallow: /admin
+Disallow: /chat
+Disallow: /copilot
+Disallow: /privacy
+Disallow: /terms
 
 Sitemap: https://saarthi-link.netlify.app/sitemap.xml
