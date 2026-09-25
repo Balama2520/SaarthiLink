@@ -53,9 +53,7 @@ class TestHFProviderConfiguration:
     def test_is_not_configured_without_space_id(self):
         """Provider reports not-configured when HF_SPACE_ID is empty."""
         provider = HuggingFaceSaarthiBrain()
-        with patch(
-            "app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")
-        ):
+        with patch("app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")):
             assert provider.is_configured() is False
 
     def test_space_url_slug_conversion(self):
@@ -71,9 +69,7 @@ class TestHFProviderConfiguration:
     def test_no_space_id_returns_none_url(self):
         """Empty HF_SPACE_ID returns None from _get_space_base_url."""
         provider = HuggingFaceSaarthiBrain()
-        with patch(
-            "app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")
-        ):
+        with patch("app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")):
             assert provider._get_space_base_url() is None
 
 
@@ -109,9 +105,7 @@ class TestHFProviderGenerate:
     async def test_generate_not_configured_raises(self):
         """RuntimeError raised when HF_SPACE_ID is not configured."""
         provider = HuggingFaceSaarthiBrain()
-        with patch(
-            "app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")
-        ):
+        with patch("app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")):
             with pytest.raises(RuntimeError, match="not configured"):
                 await provider.generate("test prompt")
 
@@ -154,17 +148,13 @@ class TestHFProviderTimeout:
         with patch(
             "app.ai.providers.huggingface.get_settings",
             return_value=_mock_settings("Balamaneesh2520/saarthi-ai-brain"),
-        ), patch(
-            "app.ai.providers.huggingface.asyncio.sleep", new_callable=AsyncMock
-        ), patch(
+        ), patch("app.ai.providers.huggingface.asyncio.sleep", new_callable=AsyncMock), patch(
             "httpx.AsyncClient"
         ) as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
-            mock_client.post = AsyncMock(
-                side_effect=_httpx.TimeoutException("timed out")
-            )
+            mock_client.post = AsyncMock(side_effect=_httpx.TimeoutException("timed out"))
             mock_client_cls.return_value = mock_client
 
             with pytest.raises(RuntimeError, match="unreachable|attempts"):
@@ -180,17 +170,13 @@ class TestHFProviderTimeout:
         with patch(
             "app.ai.providers.huggingface.get_settings",
             return_value=_mock_settings("Balamaneesh2520/saarthi-ai-brain"),
-        ), patch(
-            "app.ai.providers.huggingface.asyncio.sleep", new_callable=AsyncMock
-        ), patch(
+        ), patch("app.ai.providers.huggingface.asyncio.sleep", new_callable=AsyncMock), patch(
             "httpx.AsyncClient"
         ) as mock_client_cls:
             mock_client = AsyncMock()
             mock_client.__aenter__ = AsyncMock(return_value=mock_client)
             mock_client.__aexit__ = AsyncMock(return_value=False)
-            mock_client.post = AsyncMock(
-                side_effect=_httpx.ConnectError("connection refused")
-            )
+            mock_client.post = AsyncMock(side_effect=_httpx.ConnectError("connection refused"))
             mock_client_cls.return_value = mock_client
 
             with pytest.raises(RuntimeError, match="unreachable|attempts"):
@@ -208,9 +194,7 @@ class TestHFProviderHealthCheck:
     async def test_health_config_required_when_not_configured(self):
         """Health check returns config_required when HF_SPACE_ID not set."""
         provider = HuggingFaceSaarthiBrain()
-        with patch(
-            "app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")
-        ):
+        with patch("app.ai.providers.huggingface.get_settings", return_value=_mock_settings("")):
             result = await provider.health_check()
             assert result["status"] == "config_required"
 
@@ -285,7 +269,5 @@ class TestHFProviderStream:
         with patch.object(provider, "generate", new_callable=AsyncMock) as mock_gen:
             mock_gen.side_effect = RuntimeError("HF Space unreachable after 3 attempts")
             with pytest.raises(RuntimeError):
-                async for _ in provider.generate_stream(
-                    [{"role": "user", "content": "Test"}]
-                ):
+                async for _ in provider.generate_stream([{"role": "user", "content": "Test"}]):
                     pass

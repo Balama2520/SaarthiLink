@@ -322,13 +322,15 @@ def submit_feature_rating_legacy(
     )
     DiscoveryService(db).repo.save_feature_feedbacks(
         profile.id,
-        [{
-            "feature_id": payload.feature_id,
-            "feature_key": feature["key"],
-            "feature_label": feature["label"],
-            "rating": payload.rating,
-            "comment": payload.comment,
-        }],
+        [
+            {
+                "feature_id": payload.feature_id,
+                "feature_key": feature["key"],
+                "feature_label": feature["label"],
+                "rating": payload.rating,
+                "comment": payload.comment,
+            }
+        ],
     )
     return {"status": "success", "feature_id": payload.feature_id}
 

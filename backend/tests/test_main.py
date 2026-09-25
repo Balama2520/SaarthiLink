@@ -7,9 +7,7 @@ def test_root(client):
     assert "status" in data
     assert data["status"] == "ok"
     assert "service" in data
-    assert (
-        "Saarthi" in data["service"]
-    ), "Root endpoint must identify the Saarthi AI service"
+    assert "Saarthi" in data["service"], "Root endpoint must identify the Saarthi AI service"
 
 
 def test_health(client):

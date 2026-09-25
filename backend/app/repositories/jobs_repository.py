@@ -47,15 +47,20 @@ class JobsRepository:
 
         if q:
             term = f"%{q}%"
-            query = query.outerjoin(Job.company).outerjoin(JobSkill, JobSkill.job_id == Job.id).filter(
-                or_(
-                    Job.title.ilike(term),
-                    Company.name.ilike(term),
-                    Job.location.ilike(term),
-                    Job.description.ilike(term),
-                    JobSkill.skill_name.ilike(term),
+            query = (
+                query.outerjoin(Job.company)
+                .outerjoin(JobSkill, JobSkill.job_id == Job.id)
+                .filter(
+                    or_(
+                        Job.title.ilike(term),
+                        Company.name.ilike(term),
+                        Job.location.ilike(term),
+                        Job.description.ilike(term),
+                        JobSkill.skill_name.ilike(term),
+                    )
                 )
-            ).distinct()
+                .distinct()
+            )
         if location:
             query = query.filter(Job.location.ilike(f"%{location}%"))
         if experience:
@@ -64,7 +69,9 @@ class JobsRepository:
             query = query.filter(Job.job_type.ilike(job_type))
         if remote_type:
             if remote_type.lower() == "remote":
-                query = query.filter(or_(Job.remote_type.ilike("%remote%"), Job.employment_type.ilike("%remote%")))
+                query = query.filter(
+                    or_(Job.remote_type.ilike("%remote%"), Job.employment_type.ilike("%remote%"))
+                )
             else:
                 query = query.filter(Job.remote_type.ilike(f"%{remote_type}%"))
 
@@ -83,9 +90,7 @@ class JobsRepository:
         )
 
     def save_job(self, user_id: int, job_id: str) -> SavedJob:
-        existing = (
-            self.db.query(SavedJob).filter_by(user_id=user_id, job_id=job_id).first()
-        )
+        existing = self.db.query(SavedJob).filter_by(user_id=user_id, job_id=job_id).first()
         if existing:
             return existing
         saved_job = SavedJob(user_id=user_id, job_id=job_id)
@@ -95,9 +100,7 @@ class JobsRepository:
         return saved_job
 
     def unsave_job(self, user_id: int, job_id: str) -> bool:
-        saved = (
-            self.db.query(SavedJob).filter_by(user_id=user_id, job_id=job_id).first()
-        )
+        saved = self.db.query(SavedJob).filter_by(user_id=user_id, job_id=job_id).first()
         if not saved:
             return False
         self.db.delete(saved)

@@ -14,21 +14,15 @@ class RedisCache:
 
     async def connect(self):
         if not settings.REDIS_URL or not settings.REDIS_URL.strip():
-            logger.info(
-                "REDIS_URL is not configured. Redis caching disabled (optional layer)."
-            )
+            logger.info("REDIS_URL is not configured. Redis caching disabled (optional layer).")
             self.redis_client = None
             return
         try:
-            self.redis_client = redis.from_url(
-                settings.REDIS_URL, decode_responses=True
-            )
+            self.redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
             await self.redis_client.ping()
             logger.info("Connected to Redis cache.")
         except Exception as e:
-            logger.warning(
-                f"Failed to connect to Redis: {e}. Caching will be disabled."
-            )
+            logger.warning(f"Failed to connect to Redis: {e}. Caching will be disabled.")
             self.redis_client = None
 
     async def get(self, key: str) -> Optional[Any]:

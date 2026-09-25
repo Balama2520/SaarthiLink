@@ -36,9 +36,7 @@ def _fake_ai_pipeline_result():
                 "cgpa": "8.5",
             }
         ],
-        "experience": [
-            {"company": "Acme Corp", "role": "Software Engineer", "duration": "1 year"}
-        ],
+        "experience": [{"company": "Acme Corp", "role": "Software Engineer", "duration": "1 year"}],
         "projects": [
             {
                 "title": "Portfolio",
@@ -275,7 +273,9 @@ class TestJobsFlow:
 
         first = client.post("/api/jobs/apply", json={"job_id": job.id}, headers=auth_headers)
         second = client.post("/api/jobs/apply", json={"job_id": job.id}, headers=auth_headers)
-        applications = db_session.query(JobApplication).filter(JobApplication.job_id == job.id).all()
+        applications = (
+            db_session.query(JobApplication).filter(JobApplication.job_id == job.id).all()
+        )
 
         assert first.status_code == 200
         assert second.status_code == 200
@@ -309,18 +309,22 @@ class TestRoadmapFlow:
         )
         assert response.status_code == 422
 
-    def test_saved_roadmap_is_retrievable_for_owner(self, client, db_session, test_user, auth_headers):
+    def test_saved_roadmap_is_retrievable_for_owner(
+        self, client, db_session, test_user, auth_headers
+    ):
         owner = db_session.query(User).filter(User.username == "testuser").one()
         roadmap = LearningRoadmap(
             user_id=owner.id,
             title="Backend Engineer Roadmap",
             target_role="Backend Engineer",
             duration_days=30,
-            roadmap_json=json.dumps({
-                "target_role": "Backend Engineer",
-                "duration_days": 30,
-                "milestones": [],
-            }),
+            roadmap_json=json.dumps(
+                {
+                    "target_role": "Backend Engineer",
+                    "duration_days": 30,
+                    "milestones": [],
+                }
+            ),
         )
         db_session.add(roadmap)
         db_session.commit()

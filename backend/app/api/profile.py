@@ -267,7 +267,9 @@ def get_completeness(
     portfolio_count = sum(1 for value in portfolio_fields if value)
     sections["Portfolio"] = min(100, portfolio_count * 25)
     if portfolio_count < 2:
-        suggestions.append("Add your GitHub, LinkedIn, or portfolio links to strengthen your profile.")
+        suggestions.append(
+            "Add your GitHub, LinkedIn, or portfolio links to strengthen your profile."
+        )
 
     # Preferences
     prefs = [
@@ -284,9 +286,7 @@ def get_completeness(
     if sections["Preferences"] < 100:
         suggestions.append("Set your preferred domains, industries, locations, and work mode.")
 
-    overall_percentage = int(
-        round(sum(sections.values()) / len(sections))
-    )
+    overall_percentage = int(round(sum(sections.values()) / len(sections)))
     suggestions = list(dict.fromkeys(suggestions))
 
     return {

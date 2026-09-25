@@ -39,7 +39,9 @@ def _verify_ingestion_credentials(
     bearer = authorization.removeprefix("Bearer ").strip() if authorization else ""
     supplied = bearer or (legacy_header or "").strip()
     if not supplied or not hmac.compare_digest(supplied, configured):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ingestion credentials")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ingestion credentials"
+        )
 
 
 def _canonical_city(location: str) -> str:
@@ -47,8 +49,17 @@ def _canonical_city(location: str) -> str:
     return re.sub(r"\s+", " ", city).strip().lower()
 
 
-def _job_fingerprint(company: str, title: str, location: str, source_job_id: Optional[str] = None) -> str:
-    raw = "_".join((company.strip().lower(), title.strip().lower(), _canonical_city(location), (source_job_id or "").strip().lower()))
+def _job_fingerprint(
+    company: str, title: str, location: str, source_job_id: Optional[str] = None
+) -> str:
+    raw = "_".join(
+        (
+            company.strip().lower(),
+            title.strip().lower(),
+            _canonical_city(location),
+            (source_job_id or "").strip().lower(),
+        )
+    )
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
@@ -84,9 +95,15 @@ async def ingest_jobs(
                 existing.job_type = item.job_type or existing.job_type
                 existing.employment_type = item.employment_type or existing.employment_type
                 existing.remote_type = item.remote_type or existing.remote_type
-                existing.experience_required = item.experience_required or existing.experience_required
-                existing.salary_min = item.salary_min if item.salary_min is not None else existing.salary_min
-                existing.salary_max = item.salary_max if item.salary_max is not None else existing.salary_max
+                existing.experience_required = (
+                    item.experience_required or existing.experience_required
+                )
+                existing.salary_min = (
+                    item.salary_min if item.salary_min is not None else existing.salary_min
+                )
+                existing.salary_max = (
+                    item.salary_max if item.salary_max is not None else existing.salary_max
+                )
                 existing.apply_url = item.apply_url or existing.apply_url
                 existing.expires_at = item.expires_at or existing.expires_at
                 existing.source_job_id = item.source_job_id or existing.source_job_id
@@ -95,9 +112,16 @@ async def ingest_jobs(
                 continue
 
             company_name = item.company.strip()
-            company = db.query(Company).filter(func.lower(Company.name) == company_name.lower()).first()
+            company = (
+                db.query(Company).filter(func.lower(Company.name) == company_name.lower()).first()
+            )
             if not company:
-                company = Company(name=company_name, website=item.company_url, careers_url=item.company_url, is_hiring=True)
+                company = Company(
+                    name=company_name,
+                    website=item.company_url,
+                    careers_url=item.company_url,
+                    is_hiring=True,
+                )
                 db.add(company)
                 db.flush()
 

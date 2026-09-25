@@ -57,9 +57,7 @@ class TestRefreshFlow:
         # New access token must work on a protected endpoint
         new_headers = {"Authorization": f"Bearer {new_tokens['access_token']}"}
         profile = client.get("/api/profile", headers=new_headers)
-        assert (
-            profile.status_code == 200
-        ), f"New access token rejected: {profile.json()}"
+        assert profile.status_code == 200, f"New access token rejected: {profile.json()}"
 
     def test_invalid_access_token_then_refresh_works(self, client):
         """Invalid access token -> 401, then refresh still yields a working access token."""
@@ -148,9 +146,7 @@ class TestUserIsolation:
         )
         return repo.create(r)
 
-    def _create_goal_for(
-        self, db: Session, user: User, title: str = "Land an SDE job"
-    ) -> str:
+    def _create_goal_for(self, db: Session, user: User, title: str = "Land an SDE job") -> str:
         g = Goal(
             user_id=user.id,
             title=title,
@@ -171,9 +167,7 @@ class TestUserIsolation:
         authB = _register_login(client, "isola_userB", "Pass123!")
 
         userA = UserRepository(db_session).get_user_by_username("isola_userA")
-        resumeA = self._create_resume_for(
-            db_session, userA, "userA_cv.pdf", "USER A PRIVATE DATA"
-        )
+        resumeA = self._create_resume_for(db_session, userA, "userA_cv.pdf", "USER A PRIVATE DATA")
 
         # Resume history only returns userA's own resumes (sanity check on user isolation in list)
         historyA = client.get("/api/resume/history", headers=authA["headers"])
@@ -223,9 +217,7 @@ class TestUserIsolation:
 
         # UserB direct GET by id: 404
         getB = client.get(f"/api/goals/{goalA_id}", headers=authB["headers"])
-        assert (
-            getB.status_code == 404
-        ), f"IDOR: UserB read UserA goal. Status={getB.status_code}"
+        assert getB.status_code == 404, f"IDOR: UserB read UserA goal. Status={getB.status_code}"
 
         # UserB PUT by id: 404
         putB = client.put(
@@ -239,9 +231,7 @@ class TestUserIsolation:
 
         # UserB DELETE by id: 404
         delB = client.delete(f"/api/goals/{goalA_id}", headers=authB["headers"])
-        assert (
-            delB.status_code == 404
-        ), f"IDOR: UserB deleted UserA goal. Status={delB.status_code}"
+        assert delB.status_code == 404, f"IDOR: UserB deleted UserA goal. Status={delB.status_code}"
 
     def test_user_b_cannot_read_user_a_session_messages(self, client, db_session):
         """UserB GET/DELETE /api/sessions/{UserA_session_id}[/messages] -> 404."""
@@ -299,9 +289,7 @@ class TestAdminAuthMatrix:
         assert res.status_code == 403, f"Expected 403, got {res.status_code}"
 
     @patch("app.core.dependencies.auth.get_settings")
-    def test_admin_user_to_admin_returns_200_with_full_details(
-        self, mock_settings, client
-    ):
+    def test_admin_user_to_admin_returns_200_with_full_details(self, mock_settings, client):
         """Admin-whitelisted user -> GET /api/admin/stats = 200 + full JSON body."""
         from app.core.config import Settings
 
@@ -321,9 +309,7 @@ class TestAdminAuthMatrix:
         admin_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
         res = client.get("/api/admin/stats", headers=admin_headers)
-        assert (
-            res.status_code == 200
-        ), f"Expected 200, got {res.status_code}: {res.text}"
+        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
         data = res.json()
         assert data.get("is_admin") is True
         assert data.get("summary_mode") is False
@@ -354,9 +340,7 @@ class TestRedisUnavailable:
             mock_cache.close = MagicMock()
 
             res = client.get("/api/health")
-            assert (
-                res.status_code == 200
-            ), f"Health crashed! {res.status_code}: {res.text}"
+            assert res.status_code == 200, f"Health crashed! {res.status_code}: {res.text}"
             body = res.json()
             assert "status" in body
             components = body.get("components", {})

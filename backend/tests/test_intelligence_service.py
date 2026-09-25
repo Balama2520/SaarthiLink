@@ -89,7 +89,5 @@ def test_admin_stats_extended_keys(client, admin_headers):
 
 def test_run_pipeline_admin_endpoint_unconfigured(client, admin_headers):
     # When sheets is unconfigured, returns success dry_run summary or 503 error
-    response = client.post(
-        "/api/admin/sheets/run-pipeline?dry_run=true", headers=admin_headers
-    )
+    response = client.post("/api/admin/sheets/run-pipeline?dry_run=true", headers=admin_headers)
     assert response.status_code in (200, 503)

@@ -58,9 +58,7 @@ class TestWorkingMemoryEngine:
 
     def test_retrieve_relevance_boosts_on_keyword_match(self, db_session):
         engine = WorkingMemoryEngine(db_session)
-        _make_memory(
-            db_session, 1, "FACT", "Leetcode", "Practices daily", importance=0.5
-        )
+        _make_memory(db_session, 1, "FACT", "Leetcode", "Practices daily", importance=0.5)
         _make_memory(db_session, 1, "FACT", "Sleep", "Sleeps 8 hours", importance=0.5)
 
         # Query that mentions "leetcode" should boost that memory
@@ -74,9 +72,7 @@ class TestWorkingMemoryEngine:
         for i in range(10):
             _make_memory(db_session, 1, "FACT", f"Fact{i}", f"value{i}")
 
-        results = engine.retrieve_and_rank_memories(
-            user_id=1, query_context="", limit=5
-        )
+        results = engine.retrieve_and_rank_memories(user_id=1, query_context="", limit=5)
         assert len(results) == 5
 
     def test_assemble_context_returns_dict(self, db_session):

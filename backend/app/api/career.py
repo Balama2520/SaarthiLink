@@ -146,9 +146,14 @@ async def skill_gap(
     service: CareerService = Depends(get_career_service),
 ):
     if _is_guest(current_user):
-        raise HTTPException(status_code=401, detail="Upload a resume after signing in to analyze skill gaps.")
+        raise HTTPException(
+            status_code=401, detail="Upload a resume after signing in to analyze skill gaps."
+        )
     if not service.repo.get_latest_resume(current_user.id):
-        raise HTTPException(status_code=422, detail="Upload a resume before running personalized skill-gap analysis.")
+        raise HTTPException(
+            status_code=422,
+            detail="Upload a resume before running personalized skill-gap analysis.",
+        )
     return await service.analyze_skill_gaps(current_user.id, body.target_role)
 
 
@@ -159,9 +164,15 @@ async def learning_plan(
     service: CareerService = Depends(get_career_service),
 ):
     if _is_guest(current_user):
-        raise HTTPException(status_code=401, detail="Upload a resume after signing in to generate a personalized learning plan.")
+        raise HTTPException(
+            status_code=401,
+            detail="Upload a resume after signing in to generate a personalized learning plan.",
+        )
     if not service.repo.get_latest_resume(current_user.id):
-        raise HTTPException(status_code=422, detail="Upload a resume before generating a personalized learning plan.")
+        raise HTTPException(
+            status_code=422,
+            detail="Upload a resume before generating a personalized learning plan.",
+        )
     return await service.generate_learning_plan(current_user.id, body.target_role, body.weeks)
 
 
@@ -175,9 +186,7 @@ async def copilot_stream(
     context = CareerCopilotService(db)._gather_user_context(current_user.id)
     session = (
         db.query(ChatSession)
-        .filter(
-            ChatSession.id == body.session_id, ChatSession.user_id == current_user.id
-        )
+        .filter(ChatSession.id == body.session_id, ChatSession.user_id == current_user.id)
         .first()
         if body.session_id
         else None
@@ -216,9 +225,7 @@ async def copilot_stream(
 
     async def stream():
         answer = ""
-        async for chunk in AIGateway().generate_response_stream(
-            messages, personality="career"
-        ):
+        async for chunk in AIGateway().generate_response_stream(messages, personality="career"):
             answer += chunk
             yield chunk.encode("utf-8")
         db.add(ChatMessage(session_id=session.id, role="assistant", content=answer))

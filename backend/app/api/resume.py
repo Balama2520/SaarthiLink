@@ -80,9 +80,7 @@ async def upload_resume(
 
     # Calculate next version number for this user
     max_version = (
-        db.query(func.max(Resume.version))
-        .filter(Resume.user_id == current_user.id)
-        .scalar()
+        db.query(func.max(Resume.version)).filter(Resume.user_id == current_user.id).scalar()
     )
     version = (max_version or 0) + 1
 
@@ -213,17 +211,13 @@ async def reanalyze_resume(
     Retry AI analysis on an already uploaded resume without re-uploading the file.
     """
     resume = (
-        db.query(Resume)
-        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
-        .first()
+        db.query(Resume).filter(Resume.id == resume_id, Resume.user_id == current_user.id).first()
     )
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found.")
 
     if not resume.raw_text:
-        raise HTTPException(
-            status_code=400, detail="Resume has no extracted text to analyze."
-        )
+        raise HTTPException(status_code=400, detail="Resume has no extracted text to analyze.")
 
     pipeline = ResumeIntelligencePipeline()
     try:
@@ -276,9 +270,7 @@ async def sync_resume_profile(
     Only called after explicit user confirmation from the frontend.
     """
     resume = (
-        db.query(Resume)
-        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
-        .first()
+        db.query(Resume).filter(Resume.id == resume_id, Resume.user_id == current_user.id).first()
     )
     if not resume:
         logger.warning(
@@ -395,7 +387,7 @@ def _strip_markdown_json(text: str) -> str:
     clean = text.strip()
     for prefix in ("```json", "```"):
         if clean.startswith(prefix):
-            clean = clean[len(prefix):]
+            clean = clean[len(prefix) :]
             break
     if clean.endswith("```"):
         clean = clean[:-3]
@@ -423,9 +415,7 @@ async def resume_job_pipeline(
 
     # ── Load resume ──────────────────────────────────────────────────────────
     resume = (
-        db.query(Resume)
-        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
-        .first()
+        db.query(Resume).filter(Resume.id == resume_id, Resume.user_id == current_user.id).first()
     )
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found.")
@@ -484,6 +474,7 @@ async def resume_job_pipeline(
         # ── Normalise & provide safe defaults ────────────────────────────────
         # Compute matched skills from user_skills intersection with job_skills
         from app.models.models import UserSkill, JobSkill  # local import to avoid circularity
+
         user_skill_names = {
             s.skill_name.lower()
             for s in db.query(UserSkill).filter(UserSkill.user_id == current_user.id).all()

@@ -10,9 +10,7 @@ def test_register_user(client):
 
 def test_login_user(client):
     # Register first
-    client.post(
-        "/api/auth/register", json={"username": "loginuser", "password": "password123"}
-    )
+    client.post("/api/auth/register", json={"username": "loginuser", "password": "password123"})
     # Login with form-encoded body
     response = client.post(
         "/api/auth/login", data={"username": "loginuser", "password": "password123"}
@@ -23,9 +21,7 @@ def test_login_user(client):
 
 
 def test_login_user_json(client):
-    client.post(
-        "/api/auth/register", json={"username": "loginjson", "password": "password123"}
-    )
+    client.post("/api/auth/register", json={"username": "loginjson", "password": "password123"})
     response = client.post(
         "/api/auth/login", json={"username": "loginjson", "password": "password123"}
     )
@@ -53,17 +49,9 @@ def test_refresh_and_logout_invalidate_server_session(client):
     assert refreshed.status_code == 200
     assert refreshed.json()["access_token"]
 
+    assert client.post("/api/auth/logout", json={"refresh_token": refresh_token}).status_code == 200
     assert (
-        client.post(
-            "/api/auth/logout", json={"refresh_token": refresh_token}
-        ).status_code
-        == 200
-    )
-    assert (
-        client.post(
-            "/api/auth/refresh", json={"refresh_token": refresh_token}
-        ).status_code
-        == 401
+        client.post("/api/auth/refresh", json={"refresh_token": refresh_token}).status_code == 401
     )
 
 

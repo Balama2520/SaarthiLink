@@ -62,7 +62,9 @@ class InterviewService:
         data = json.loads(session.transcript_json or "{}")
         questions = data.get("questions", [])
         if question_index >= len(questions):
-            raise HTTPException(status_code=422, detail="Question index is outside this interview session")
+            raise HTTPException(
+                status_code=422, detail="Question index is outside this interview session"
+            )
         answers = data.setdefault("answers", [])
         while len(answers) <= question_index:
             answers.append("")
@@ -156,9 +158,7 @@ class InterviewService:
             feedback = parsed_data
 
         except Exception:
-            logger.warning(
-                f"Using fallback interview evaluation for output: {full_text[:100]}"
-            )
+            logger.warning(f"Using fallback interview evaluation for output: {full_text[:100]}")
             feedback = {
                 "score": 78,
                 "strengths": [

@@ -59,11 +59,7 @@ class JobsService:
         import json
 
         # 1. Fetch user profile preferences
-        profile = (
-            self.repo.db.query(UserProfile)
-            .filter(UserProfile.user_id == user_id)
-            .first()
-        )
+        profile = self.repo.db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
         pref_locations = set()
         work_prefs = set()
         if profile:
@@ -71,9 +67,7 @@ class JobsService:
                 if profile.preferred_locations_json:
                     pref_locations = set(json.loads(profile.preferred_locations_json))
                 if profile.work_preferences_json:
-                    work_prefs = set(
-                        [p.lower() for p in json.loads(profile.work_preferences_json)]
-                    )
+                    work_prefs = set([p.lower() for p in json.loads(profile.work_preferences_json)])
             except:
                 pass
 
@@ -90,9 +84,7 @@ class JobsService:
             # Filter by work preferences if strictly specified
             job_remote = job.remote_type.lower() if job.remote_type else ""
             if work_prefs and (
-                "remote" in work_prefs
-                or "hybrid" in work_prefs
-                or "onsite" in work_prefs
+                "remote" in work_prefs or "hybrid" in work_prefs or "onsite" in work_prefs
             ):
                 # Basic preference check (soft filter, we'll just penalize score if mismatch)
                 pass
@@ -154,7 +146,9 @@ class JobsService:
         if expires_at and expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         if job.status != "ACTIVE" or (expires_at and expires_at <= datetime.now(timezone.utc)):
-            raise HTTPException(status_code=410, detail="This job is no longer accepting applications")
+            raise HTTPException(
+                status_code=410, detail="This job is no longer accepting applications"
+            )
 
         application = (
             self.repo.db.query(JobApplication)
@@ -213,14 +207,29 @@ class JobsService:
         full_text = await _collect_stream(stream)
 
         known_skills = [
-            "Python", "FastAPI", "React", "TypeScript", "JavaScript", "Java",
-            "SQL", "PostgreSQL", "Docker", "AWS", "Azure", "Kubernetes",
-            "REST APIs", "GraphQL", "Git", "System Design", "Machine Learning",
+            "Python",
+            "FastAPI",
+            "React",
+            "TypeScript",
+            "JavaScript",
+            "Java",
+            "SQL",
+            "PostgreSQL",
+            "Docker",
+            "AWS",
+            "Azure",
+            "Kubernetes",
+            "REST APIs",
+            "GraphQL",
+            "Git",
+            "System Design",
+            "Machine Learning",
         ]
         resume_lower = resume_text.lower()
         job_lower = job_description.lower()
         keyword_gaps = [
-            skill for skill in known_skills
+            skill
+            for skill in known_skills
             if skill.lower() in job_lower and skill.lower() not in resume_lower
         ]
 
@@ -263,7 +272,8 @@ class JobsService:
                 "missing_skills": keyword_gaps,
                 "recommendation": (
                     "Address the listed missing skills before applying."
-                    if keyword_gaps else "Your resume covers the detected technical keywords for this role."
+                    if keyword_gaps
+                    else "Your resume covers the detected technical keywords for this role."
                 ),
             }
             return fallback

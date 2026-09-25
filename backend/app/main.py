@@ -156,9 +156,7 @@ async def global_security_exception_and_tracing_middleware(request: Request, cal
             "default-src 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
         )
         if not settings.DEBUG:
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         logger.info(
             f"PROD_METRIC {request.method} {request.url.path} -> {response.status_code} ({duration_ms:.2f}ms) [req_id={request_id}]"

@@ -34,9 +34,7 @@ async def generate_note(
     current_user: User = Depends(require_authenticated_user),
     svc: NoteService = Depends(_get_service),
 ):
-    return await svc.generate_note(
-        current_user.id, body.topic, body.depth or "detailed"
-    )
+    return await svc.generate_note(current_user.id, body.topic, body.depth or "detailed")
 
 
 @router.get("/list")
@@ -80,11 +78,7 @@ def update_note(
     db: Session = Depends(get_db),
 ):
     """Update a user-owned note."""
-    note = (
-        db.query(Note)
-        .filter(Note.id == note_id, Note.user_id == current_user.id)
-        .first()
-    )
+    note = db.query(Note).filter(Note.id == note_id, Note.user_id == current_user.id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     note.title, note.content, note.tags, note.workspace_id = (
@@ -114,11 +108,7 @@ def search_notes(
         db.query(Note)
         .filter(
             Note.user_id == current_user.id,
-            (
-                Note.title.ilike(f"%{q}%")
-                | Note.content.ilike(f"%{q}%")
-                | Note.tags.ilike(f"%{q}%")
-            ),
+            (Note.title.ilike(f"%{q}%") | Note.content.ilike(f"%{q}%") | Note.tags.ilike(f"%{q}%")),
         )
         .all()
     )

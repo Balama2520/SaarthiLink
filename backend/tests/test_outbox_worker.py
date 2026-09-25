@@ -84,9 +84,7 @@ class TestOutboxWorker:
             raise RuntimeError("Simulated handler failure")
 
         subscribe("GoalUpdated", broken_handler)
-        worker = OutboxWorker(
-            db_factory=lambda: db_session, poll_interval=0.1, max_retries=2
-        )
+        worker = OutboxWorker(db_factory=lambda: db_session, poll_interval=0.1, max_retries=2)
         asyncio.run(worker._process_batch())
         asyncio.run(worker._process_batch())
 

@@ -25,9 +25,7 @@ class SimpleRateLimiter:
                 redis_key = f"rate_limit:{key}"
                 current = await cache.redis_client.incr(redis_key)
                 if current == 1:
-                    await cache.redis_client.expire(
-                        redis_key, settings.RATE_LIMIT_WINDOW_SECONDS
-                    )
+                    await cache.redis_client.expire(redis_key, settings.RATE_LIMIT_WINDOW_SECONDS)
                 return current <= settings.RATE_LIMIT_REQUESTS_PER_MINUTE
             except Exception as exc:
                 logger.warning(

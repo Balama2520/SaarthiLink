@@ -15,9 +15,7 @@ class InterviewRepository:
     def get_for_user(self, session_id: str, user_id: int) -> InterviewSession | None:
         return (
             self.db.query(InterviewSession)
-            .filter(
-                InterviewSession.id == session_id, InterviewSession.user_id == user_id
-            )
+            .filter(InterviewSession.id == session_id, InterviewSession.user_id == user_id)
             .first()
         )
 

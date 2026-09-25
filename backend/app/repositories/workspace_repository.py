@@ -10,9 +10,7 @@ class WorkspaceRepository:
     def get_by_user(self, user_id: int) -> List[AIWorkspace]:
         return self.db.query(AIWorkspace).filter(AIWorkspace.user_id == user_id).all()
 
-    def get_by_id_and_user(
-        self, workspace_id: str, user_id: int
-    ) -> Optional[AIWorkspace]:
+    def get_by_id_and_user(self, workspace_id: str, user_id: int) -> Optional[AIWorkspace]:
         return (
             self.db.query(AIWorkspace)
             .filter(AIWorkspace.id == workspace_id, AIWorkspace.user_id == user_id)

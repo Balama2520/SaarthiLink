@@ -17,7 +17,9 @@ def _ensure_initialized() -> bool:
 
     if os.getenv("SAARTHI_RAG_ENABLED", "false").lower() != "true":
         _rag_initialized = True
-        logger.info("RAG indexing is disabled; resume processing continues without vector indexing.")
+        logger.info(
+            "RAG indexing is disabled; resume processing continues without vector indexing."
+        )
         return False
 
     try:
@@ -65,12 +67,8 @@ def index_text_content(file_id: str, filename: str, text_content: str) -> bool:
             ids = [f"{file_id}_chunk_{i}" for i in range(len(chunks))]
             metadatas = [{"file_id": file_id, "filename": filename} for _ in chunks]
 
-            collection.add(
-                documents=chunks, embeddings=embeddings, metadatas=metadatas, ids=ids
-            )
-            logger.info(
-                f"RAG: Indexed {len(chunks)} chunks for {filename} -> {file_id}"
-            )
+            collection.add(documents=chunks, embeddings=embeddings, metadatas=metadatas, ids=ids)
+            logger.info(f"RAG: Indexed {len(chunks)} chunks for {filename} -> {file_id}")
             return True
     except Exception as e:
         logger.error(f"RAG: Failed to index file {filename}: {e}")

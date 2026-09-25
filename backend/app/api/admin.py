@@ -39,9 +39,7 @@ def get_stats(
         "hf_configured": bool(settings.HF_SPACE_ID and settings.HF_API_TOKEN),
         "primary_provider": "gemini" if settings.GEMINI_API_KEY else "none",
         "secondary_provider": (
-            "huggingface"
-            if (settings.HF_SPACE_ID and settings.HF_API_TOKEN)
-            else "none"
+            "huggingface" if (settings.HF_SPACE_ID and settings.HF_API_TOKEN) else "none"
         ),
     }
 
@@ -53,10 +51,7 @@ def get_stats(
     total_company_profiles = db.query(CompanyProfile).count()
 
     recent_contacts = (
-        db.query(ContactRequest)
-        .order_by(ContactRequest.created_at.desc())
-        .limit(10)
-        .all()
+        db.query(ContactRequest).order_by(ContactRequest.created_at.desc()).limit(10).all()
     )
     recent_discoveries = (
         db.query(UserDiscoveryProfile)
@@ -65,16 +60,10 @@ def get_stats(
         .all()
     )
     recent_opps = (
-        db.query(OpportunitySignal)
-        .order_by(OpportunitySignal.created_at.desc())
-        .limit(10)
-        .all()
+        db.query(OpportunitySignal).order_by(OpportunitySignal.created_at.desc()).limit(10).all()
     )
     recent_feedbacks = (
-        db.query(ProductFeedback)
-        .order_by(ProductFeedback.created_at.desc())
-        .limit(10)
-        .all()
+        db.query(ProductFeedback).order_by(ProductFeedback.created_at.desc()).limit(10).all()
     )
 
     return {

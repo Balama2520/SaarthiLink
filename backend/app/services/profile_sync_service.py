@@ -211,16 +211,12 @@ class ProfileSyncService:
         soft_skills = parsed_data.get("soft_skills") or []
         if soft_skills:
             existing_soft = json.loads(profile.soft_skills_json or "[]")
-            profile.soft_skills_json = json.dumps(
-                list(dict.fromkeys(existing_soft + soft_skills))
-            )
+            profile.soft_skills_json = json.dumps(list(dict.fromkeys(existing_soft + soft_skills)))
 
         languages = parsed_data.get("languages") or []
         if languages:
             existing_languages = json.loads(profile.languages_json or "[]")
-            profile.languages_json = json.dumps(
-                list(dict.fromkeys(existing_languages + languages))
-            )
+            profile.languages_json = json.dumps(list(dict.fromkeys(existing_languages + languages)))
 
         certifications = parsed_data.get("certifications") or []
         if certifications:

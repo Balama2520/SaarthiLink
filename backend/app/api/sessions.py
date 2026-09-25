@@ -39,8 +39,7 @@ def list_sessions(
         .all()
     )
     return [
-        {"id": s.id, "title": s.title, "created_at": s.created_at.isoformat()}
-        for s in sessions
+        {"id": s.id, "title": s.title, "created_at": s.created_at.isoformat()} for s in sessions
     ]
 
 
@@ -141,9 +140,7 @@ async def chat(
             .limit(12)
             .all()[::-1]
         )
-        messages.extend(
-            {"role": item.role, "content": item.content} for item in history
-        )
+        messages.extend({"role": item.role, "content": item.content} for item in history)
         user_msg = ChatMessage(session_id=session.id, role="user", content=body.message)
         db.add(user_msg)
         db.commit()
@@ -160,7 +157,10 @@ async def chat(
     )
     skills = [
         skill.skill_name
-        for skill in db.query(UserSkill).filter(UserSkill.user_id == current_user.id).limit(40).all()
+        for skill in db.query(UserSkill)
+        .filter(UserSkill.user_id == current_user.id)
+        .limit(40)
+        .all()
     ]
     context = {
         "target_role": profile.target_role if profile else None,
@@ -202,9 +202,7 @@ async def chat(
                 .first()
             )
             if session:
-                ai_msg = ChatMessage(
-                    session_id=session.id, role="assistant", content=accumulated
-                )
+                ai_msg = ChatMessage(session_id=session.id, role="assistant", content=accumulated)
                 db.add(ai_msg)
                 db.commit()
 
@@ -230,9 +228,7 @@ async def chat_local(body: LocalChatBody):
     messages = [{"role": "system", "content": system_prompt + "\n" + profile_ctx}]
 
     for h in body.local_history or []:
-        messages.append(
-            {"role": h.get("role", "user"), "content": h.get("content", "")}
-        )
+        messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
     messages.append({"role": "user", "content": body.message})
 
     async def stream_gen():

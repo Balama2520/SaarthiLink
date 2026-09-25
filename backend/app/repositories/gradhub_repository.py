@@ -14,13 +14,9 @@ class GradhubRepository:
         return course
 
     def get_user_degree_courses(self, user_id: int) -> List[DegreeTracker]:
-        return (
-            self.db.query(DegreeTracker).filter(DegreeTracker.user_id == user_id).all()
-        )
+        return self.db.query(DegreeTracker).filter(DegreeTracker.user_id == user_id).all()
 
-    def get_degree_course(
-        self, course_id: str, user_id: int
-    ) -> Optional[DegreeTracker]:
+    def get_degree_course(self, course_id: str, user_id: int) -> Optional[DegreeTracker]:
         return (
             self.db.query(DegreeTracker)
             .filter(DegreeTracker.id == course_id, DegreeTracker.user_id == user_id)
@@ -65,20 +61,12 @@ class GradhubRepository:
         return placement
 
     def get_user_placements(self, user_id: int) -> List[PlacementTracker]:
-        return (
-            self.db.query(PlacementTracker)
-            .filter(PlacementTracker.user_id == user_id)
-            .all()
-        )
+        return self.db.query(PlacementTracker).filter(PlacementTracker.user_id == user_id).all()
 
-    def get_placement(
-        self, placement_id: str, user_id: int
-    ) -> Optional[PlacementTracker]:
+    def get_placement(self, placement_id: str, user_id: int) -> Optional[PlacementTracker]:
         return (
             self.db.query(PlacementTracker)
-            .filter(
-                PlacementTracker.id == placement_id, PlacementTracker.user_id == user_id
-            )
+            .filter(PlacementTracker.id == placement_id, PlacementTracker.user_id == user_id)
             .first()
         )
 

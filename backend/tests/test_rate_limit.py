@@ -42,9 +42,7 @@ def test_rate_limiter_under_limit_passes(tiny_window):
     results = []
     for i in range(cap - 1):  # 2 calls
         results.append(asyncio.run(limiter.allow("client-under")))
-    assert (
-        all(results) is True
-    ), f"Expected every under-limit call to pass, got {results}"
+    assert all(results) is True, f"Expected every under-limit call to pass, got {results}"
 
 
 def test_rate_limiter_over_limit_blocks(tiny_window):
@@ -60,18 +58,14 @@ def test_rate_limiter_over_limit_blocks(tiny_window):
 
     # Request #4 inside the SAME 0.1s window — MUST block
     blocked = asyncio.run(limiter.allow("client-over"))
-    assert (
-        blocked is False
-    ), "Request N+1 inside the unexpired window must be rejected (False)"
+    assert blocked is False, "Request N+1 inside the unexpired window must be rejected (False)"
 
     # After window expires, allow again
     import time as _t
 
     _t.sleep(tiny_window.RATE_LIMIT_WINDOW_SECONDS + 0.02)
     allowed_after = asyncio.run(limiter.allow("client-over"))
-    assert (
-        allowed_after is True
-    ), "After rolling window elapses requests must pass again"
+    assert allowed_after is True, "After rolling window elapses requests must pass again"
 
 
 def test_rate_limiter_disabled_allow_all(tiny_window):
@@ -96,9 +90,7 @@ def test_429_response_shape_has_detail_and_request_id(client):
         mock_svc.allow = AsyncMock(return_value=False)
         # Any /api/* endpoint triggers the middleware branch (starts with /api)
         res = client.get("/api/health")
-    assert (
-        res.status_code == 429
-    ), f"Expected 429 when limiter blocks, got {res.status_code}"
+    assert res.status_code == 429, f"Expected 429 when limiter blocks, got {res.status_code}"
     body = res.json()
     assert (
         body.get("detail") == "Too many requests"

@@ -112,20 +112,18 @@ class CareerService:
             "target_role": target_role,
             "headline": f"Your next focus areas for {target_role}",
             "strengths": strengths,
-            "gaps": [skill for skill in focus_areas if not present_in_resume(skill)] or ["Advanced role-specific practice"],
+            "gaps": [skill for skill in focus_areas if not present_in_resume(skill)]
+            or ["Advanced role-specific practice"],
             "next_actions": next_actions,
             "resume_ready": bool(resume and resume.parsing_status == "completed"),
             "analysis_source": (
-                "resume-grounded" if resume and (parsed_resume or resume.raw_text)
-                else "rule-based"
+                "resume-grounded" if resume and (parsed_resume or resume.raw_text) else "rule-based"
             ),
             "resume_skills": resume_skills,
             "profile_stage": profile.career_stage if profile else "unknown",
         }
 
-    async def generate_learning_plan(
-        self, user_id: int, target_role: str, weeks: int = 4
-    ) -> dict:
+    async def generate_learning_plan(self, user_id: int, target_role: str, weeks: int = 4) -> dict:
         focus_areas, next_actions = self._role_focus(target_role)
         plan = []
         for week in range(1, max(1, weeks) + 1):
@@ -150,16 +148,10 @@ class CareerService:
         all_goals = self.repo.get_goals(user_id, 10_000)
         goals = all_goals[:3]
         mission = self.get_mission_status(user_id)
-        applications, interviews, latest_resume = self.repo.get_dashboard_records(
-            user_id
-        )
+        applications, interviews, latest_resume = self.repo.get_dashboard_records(user_id)
 
-        target_role = (
-            profile.target_role if profile and profile.target_role else "career"
-        )
-        career_stage = (
-            profile.career_stage if profile and profile.career_stage else "Growing"
-        )
+        target_role = profile.target_role if profile and profile.target_role else "career"
+        career_stage = profile.career_stage if profile and profile.career_stage else "Growing"
 
         focus_areas, next_actions = self._role_focus(target_role)
 
@@ -175,14 +167,10 @@ class CareerService:
                 "Add a target role to your profile to get personalized AI insights"
             )
         else:
-            dynamic_actions.append(
-                "Complete one mission task today to build your streak"
-            )
+            dynamic_actions.append("Complete one mission task today to build your streak")
 
         if goals:
-            dynamic_actions.append(
-                f"Update progress on your top goal: {goals[0].title}"
-            )
+            dynamic_actions.append(f"Update progress on your top goal: {goals[0].title}")
         else:
             dynamic_actions.append("Set your first career goal in the Navigator")
 
@@ -228,9 +216,7 @@ class CareerService:
                 "applications": len(applications),
                 "interviews": len(interviews),
                 "ats_score": latest_resume.ats_score if latest_resume else 0,
-                "goals_in_progress": sum(
-                    goal.status != "completed" for goal in all_goals
-                ),
+                "goals_in_progress": sum(goal.status != "completed" for goal in all_goals),
             },
             "activity": activity[:5],
         }
@@ -245,9 +231,7 @@ class CareerService:
 
         return CareerCopilotService(self.repo.db).compute_career_health(user_id)
 
-    async def generate_star_bullets(
-        self, project_or_exp: str, description: str
-    ) -> list[str]:
+    async def generate_star_bullets(self, project_or_exp: str, description: str) -> list[str]:
         prompt = PromptManager.load(
             "career/star_bullets",
             project_or_exp=project_or_exp,
@@ -365,9 +349,7 @@ class CareerService:
             }
 
     async def get_salary_insight(self, role: str, location: str) -> dict:
-        prompt = PromptManager.load(
-            "career/salary_insight", role=role, location=location
-        )
+        prompt = PromptManager.load("career/salary_insight", role=role, location=location)
         messages = [{"role": "user", "content": prompt}]
         stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)

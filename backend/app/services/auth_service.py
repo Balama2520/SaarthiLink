@@ -18,17 +18,13 @@ class AuthService:
 
     def _role_for_user(self, username: str) -> str:
         configured_admins = {
-            admin.strip().lower()
-            for admin in settings.ADMIN_USERNAMES.split(",")
-            if admin.strip()
+            admin.strip().lower() for admin in settings.ADMIN_USERNAMES.split(",") if admin.strip()
         }
         return "admin" if username.strip().lower() in configured_admins else "user"
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         try:
-            return bcrypt.checkpw(
-                plain_password.encode("utf-8"), hashed_password.encode("utf-8")
-            )
+            return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
         except ValueError:
             return False
 
@@ -43,9 +39,7 @@ class AuthService:
         hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
         return hashed.decode("utf-8")
 
-    def create_access_token(
-        self, data: dict, expires_delta: Optional[timedelta] = None
-    ) -> str:
+    def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
         to_encode = data.copy()
         now = datetime.now(timezone.utc)
         if expires_delta:
@@ -53,17 +47,13 @@ class AuthService:
         else:
             expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode.update({"exp": int(expire.timestamp())})
-        encoded_jwt = jwt.encode(
-            to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
-        )
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
 
     def create_refresh_token_for_user(self, user_id: int) -> str:
         token = secrets.token_urlsafe(32)
         expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-        refresh_token = RefreshToken(
-            user_id=user_id, token=token, expires_at=expires_at
-        )
+        refresh_token = RefreshToken(user_id=user_id, token=token, expires_at=expires_at)
         self.user_repo.create_refresh_token(refresh_token)
         return token
 
@@ -72,9 +62,7 @@ class AuthService:
         if db_user:
             raise HTTPException(status_code=400, detail="Username already registered")
 
-        new_user = User(
-            username=username, hashed_password=self.get_password_hash(password)
-        )
+        new_user = User(username=username, hashed_password=self.get_password_hash(password))
         new_user = self.user_repo.create_user(new_user)
 
         access_token = self.create_access_token(data={"sub": new_user.username})
@@ -91,9 +79,7 @@ class AuthService:
         if not user or not self.verify_password(password, user.hashed_password):
             # An authentication failure is not a malformed request. Returning
             # 401 lets clients consistently handle expired/invalid credentials.
-            raise HTTPException(
-                status_code=401, detail="Incorrect username or password"
-            )
+            raise HTTPException(status_code=401, detail="Incorrect username or password")
 
         access_token = self.create_access_token(data={"sub": user.username})
         refresh_token = self.create_refresh_token_for_user(user.id)
@@ -133,9 +119,7 @@ class AuthService:
 
     def get_user_from_token(self, token: str) -> Optional[User]:
         try:
-            payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-            )
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             username: str = payload.get("sub")
             if username is None:
                 return None

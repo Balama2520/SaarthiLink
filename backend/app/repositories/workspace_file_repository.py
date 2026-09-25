@@ -8,15 +8,11 @@ class WorkspaceFileRepository:
 
     def get_item_counts(self, workspace_id: str) -> dict:
         return {
-            "resumes": self.db.query(Resume)
-            .filter(Resume.workspace_id == workspace_id)
-            .count(),
+            "resumes": self.db.query(Resume).filter(Resume.workspace_id == workspace_id).count(),
             "documents": self.db.query(Document)
             .filter(Document.workspace_id == workspace_id)
             .count(),
-            "notes": self.db.query(Note)
-            .filter(Note.workspace_id == workspace_id)
-            .count(),
+            "notes": self.db.query(Note).filter(Note.workspace_id == workspace_id).count(),
             "jobs": self.db.query(JobApplication)
             .filter(JobApplication.workspace_id == workspace_id)
             .count(),
@@ -32,17 +28,13 @@ class WorkspaceFileRepository:
         self.db.query(Note).filter(Note.workspace_id == workspace_id).update(
             {Note.workspace_id: None}
         )
-        self.db.query(JobApplication).filter(
-            JobApplication.workspace_id == workspace_id
-        ).update({JobApplication.workspace_id: None})
+        self.db.query(JobApplication).filter(JobApplication.workspace_id == workspace_id).update(
+            {JobApplication.workspace_id: None}
+        )
         self.db.commit()
 
     def get_resume(self, item_id: str, user_id: int):
-        return (
-            self.db.query(Resume)
-            .filter(Resume.id == item_id, Resume.user_id == user_id)
-            .first()
-        )
+        return self.db.query(Resume).filter(Resume.id == item_id, Resume.user_id == user_id).first()
 
     def get_document(self, item_id: str, user_id: int):
         return (
@@ -52,11 +44,7 @@ class WorkspaceFileRepository:
         )
 
     def get_note(self, item_id: int, user_id: int):
-        return (
-            self.db.query(Note)
-            .filter(Note.id == item_id, Note.user_id == user_id)
-            .first()
-        )
+        return self.db.query(Note).filter(Note.id == item_id, Note.user_id == user_id).first()
 
     def get_job(self, item_id: str, user_id: int):
         return (
@@ -105,31 +93,20 @@ class WorkspaceFileRepository:
             .filter(Document.workspace_id == None, Document.user_id == user_id)
             .all()
         )
-        notes = (
-            self.db.query(Note)
-            .filter(Note.workspace_id == None, Note.user_id == user_id)
-            .all()
-        )
+        notes = self.db.query(Note).filter(Note.workspace_id == None, Note.user_id == user_id).all()
         jobs = (
             self.db.query(JobApplication)
-            .filter(
-                JobApplication.workspace_id == None, JobApplication.user_id == user_id
-            )
+            .filter(JobApplication.workspace_id == None, JobApplication.user_id == user_id)
             .all()
         )
         return {
             "resumes": [{"id": r.id, "filename": r.filename} for r in resumes],
             "docs": [{"id": d.id, "filename": d.filename} for d in docs],
             "notes": [{"id": n.id, "title": n.title} for n in notes],
-            "jobs": [
-                {"id": j.id, "job_title": j.job_title, "company": j.company}
-                for j in jobs
-            ],
+            "jobs": [{"id": j.id, "job_title": j.job_title, "company": j.company} for j in jobs],
         }
 
-    def link_item(
-        self, workspace_id: str, item_type: str, item_id: str, user_id: int
-    ) -> None:
+    def link_item(self, workspace_id: str, item_type: str, item_id: str, user_id: int) -> None:
         """Assign an existing user-owned item to a workspace."""
         from fastapi import HTTPException
 
@@ -140,9 +117,7 @@ class WorkspaceFileRepository:
             "job": (JobApplication, "id"),
         }
         if item_type not in type_map:
-            raise HTTPException(
-                status_code=400, detail=f"Unknown item_type: {item_type}"
-            )
+            raise HTTPException(status_code=400, detail=f"Unknown item_type: {item_type}")
         model, id_col = type_map[item_type]
         obj = (
             self.db.query(model)

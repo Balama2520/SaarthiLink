@@ -14,6 +14,4 @@ class ExperimentRepository:
         return exp
 
     def get_user_experiments(self, user_id: int) -> List[ExperimentLog]:
-        return (
-            self.db.query(ExperimentLog).filter(ExperimentLog.user_id == user_id).all()
-        )
+        return self.db.query(ExperimentLog).filter(ExperimentLog.user_id == user_id).all()

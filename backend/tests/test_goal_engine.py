@@ -21,9 +21,7 @@ def _create_goal(
 ) -> Goal:
     due_date = None
     if due_days_from_now is not None:
-        due_date = (
-            datetime.now(timezone.utc) + timedelta(days=due_days_from_now)
-        ).isoformat()
+        due_date = (datetime.now(timezone.utc) + timedelta(days=due_days_from_now)).isoformat()
 
     goal = Goal(
         user_id=user_id,
@@ -60,9 +58,7 @@ class TestGoalEngineHealth:
     def test_high_progress_partially_restores_health(self, db_session):
         engine = GoalEngine(db_session)
         # Overdue but high progress
-        goal = _create_goal(
-            db_session, 1, "G1", status="ACTIVE", due_days_from_now=-3, progress=90
-        )
+        goal = _create_goal(db_session, 1, "G1", status="ACTIVE", due_days_from_now=-3, progress=90)
         health_high = engine.calculate_health(goal)
         goal2 = _create_goal(
             db_session, 1, "G2", status="ACTIVE", due_days_from_now=-3, progress=10
@@ -72,9 +68,7 @@ class TestGoalEngineHealth:
 
     def test_health_clamped_between_0_and_1(self, db_session):
         engine = GoalEngine(db_session)
-        goal = _create_goal(
-            db_session, 1, "G1", status="ACTIVE", due_days_from_now=-100
-        )
+        goal = _create_goal(db_session, 1, "G1", status="ACTIVE", due_days_from_now=-100)
         health = engine.calculate_health(goal)
         assert 0.0 <= health <= 1.0
 
@@ -94,18 +88,14 @@ class TestGoalEnginePlanningState:
     def test_active_milestone_surfaced(self, db_session):
         engine = GoalEngine(db_session)
         parent = _create_goal(db_session, 1, "Become SWE", status="ACTIVE")
-        _create_goal(
-            db_session, 1, "Learn Python", "MILESTONE", "ACTIVE", parent_id=parent.id
-        )
+        _create_goal(db_session, 1, "Learn Python", "MILESTONE", "ACTIVE", parent_id=parent.id)
         state = engine.get_planning_state(user_id=1)
         assert state["active_milestone"]["title"] == "Learn Python"
 
     def test_overdue_tasks_detected(self, db_session):
         engine = GoalEngine(db_session)
         parent = _create_goal(db_session, 1, "Become SWE", status="ACTIVE")
-        milestone = _create_goal(
-            db_session, 1, "M1", "MILESTONE", "ACTIVE", parent_id=parent.id
-        )
+        milestone = _create_goal(db_session, 1, "M1", "MILESTONE", "ACTIVE", parent_id=parent.id)
         _create_goal(
             db_session,
             1,
@@ -140,12 +130,8 @@ class TestGoalEngineMilestoneCompletion:
     def test_completing_milestone_updates_parent_progress(self, db_session):
         engine = GoalEngine(db_session)
         parent = _create_goal(db_session, 2, "Top Goal", status="ACTIVE")
-        m1 = _create_goal(
-            db_session, 2, "M1", "MILESTONE", "COMPLETED", parent_id=parent.id
-        )
-        m2 = _create_goal(
-            db_session, 2, "M2", "MILESTONE", "ACTIVE", parent_id=parent.id
-        )
+        m1 = _create_goal(db_session, 2, "M1", "MILESTONE", "COMPLETED", parent_id=parent.id)
+        m2 = _create_goal(db_session, 2, "M2", "MILESTONE", "ACTIVE", parent_id=parent.id)
 
         engine.process_milestone_completion(m2.id)
         db_session.refresh(parent)

@@ -26,38 +26,24 @@ class User(Base):
     full_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
     target_role = Column(String, nullable=True)
-    persona = Column(
-        String, default="undergrad"
-    )  # undergrad, mtech, phd, ms_abroad, professional
+    persona = Column(String, default="undergrad")  # undergrad, mtech, phd, ms_abroad, professional
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    sessions = relationship(
-        "ChatSession", back_populates="owner", cascade="all, delete-orphan"
-    )
-    resumes = relationship(
-        "Resume", back_populates="owner", cascade="all, delete-orphan"
-    )
-    projects = relationship(
-        "Project", back_populates="owner", cascade="all, delete-orphan"
-    )
-    documents = relationship(
-        "Document", back_populates="owner", cascade="all, delete-orphan"
-    )
+    sessions = relationship("ChatSession", back_populates="owner", cascade="all, delete-orphan")
+    resumes = relationship("Resume", back_populates="owner", cascade="all, delete-orphan")
+    projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="owner", cascade="all, delete-orphan")
     job_applications = relationship(
         "JobApplication", back_populates="owner", cascade="all, delete-orphan"
     )
     interview_sessions = relationship(
         "InterviewSession", back_populates="owner", cascade="all, delete-orphan"
     )
-    roadmaps = relationship(
-        "LearningRoadmap", back_populates="owner", cascade="all, delete-orphan"
-    )
+    roadmaps = relationship("LearningRoadmap", back_populates="owner", cascade="all, delete-orphan")
     notifications = relationship(
         "Notification", back_populates="owner", cascade="all, delete-orphan"
     )
-    workspaces = relationship(
-        "AIWorkspace", back_populates="owner", cascade="all, delete-orphan"
-    )
+    workspaces = relationship("AIWorkspace", back_populates="owner", cascade="all, delete-orphan")
     degree_trackers = relationship(
         "DegreeTracker", back_populates="owner", cascade="all, delete-orphan"
     )
@@ -114,12 +100,8 @@ class AIWorkspace(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="workspaces")
-    resumes = relationship(
-        "Resume", back_populates="workspace", cascade="all, delete-orphan"
-    )
-    documents = relationship(
-        "Document", back_populates="workspace", cascade="all, delete-orphan"
-    )
+    resumes = relationship("Resume", back_populates="workspace", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="workspace", cascade="all, delete-orphan")
     job_applications = relationship(
         "JobApplication", back_populates="workspace", cascade="all, delete-orphan"
     )
@@ -137,9 +119,7 @@ class Resume(Base):
     parsing_status = Column(String, default="pending")  # pending, completed, failed
     ats_score = Column(Integer, default=0)
     raw_text = Column(Text, nullable=True)
-    parsed_json = Column(
-        Text, nullable=True
-    )  # Stores section analysis as stringified JSON
+    parsed_json = Column(Text, nullable=True)  # Stores section analysis as stringified JSON
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="resumes")
@@ -168,9 +148,7 @@ class ChatSession(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="sessions")
-    messages = relationship(
-        "ChatMessage", back_populates="session", cascade="all, delete-orphan"
-    )
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
 
 
 class ChatMessage(Base):
@@ -182,9 +160,7 @@ class ChatMessage(Base):
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     session = relationship("ChatSession", back_populates="messages")
-    __table_args__ = (
-        Index("ix_messages_session_timestamp", "session_id", "timestamp"),
-    )
+    __table_args__ = (Index("ix_messages_session_timestamp", "session_id", "timestamp"),)
 
 
 class Document(Base):
@@ -212,9 +188,7 @@ class JobApplication(Base):
     description = Column(Text, nullable=True)
     match_percentage = Column(Integer, default=0)
     missing_skills = Column(String, nullable=True)
-    status = Column(
-        String, default="matched"
-    )  # matched, applied, interviewing, offered, rejected
+    status = Column(String, default="matched")  # matched, applied, interviewing, offered, rejected
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     owner = relationship("User", back_populates="job_applications")
@@ -416,9 +390,7 @@ class Goal(Base):
 class Note(Base):
     __tablename__ = "notes"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=True)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
@@ -533,9 +505,7 @@ class UserProfile(Base):
     certifications_json = Column(Text, nullable=True, default="[]")
 
     # New Resume Metadata
-    current_resume_id = Column(
-        String, ForeignKey("resumes.id", ondelete="SET NULL"), nullable=True
-    )
+    current_resume_id = Column(String, ForeignKey("resumes.id", ondelete="SET NULL"), nullable=True)
     resume_version = Column(Integer, default=1)
     resume_ats_score = Column(Integer, default=0)
     resume_last_parsed = Column(DateTime, nullable=True)
@@ -606,9 +576,7 @@ class Company(Base):
     domain = Column(String(255), nullable=True)
     logo_url = Column(String(512), nullable=True)
     industry = Column(String(100), nullable=True)
-    company_size = Column(
-        String(50), nullable=True
-    )  # e.g. "1-50", "500-1000", "10000+"
+    company_size = Column(String(50), nullable=True)  # e.g. "1-50", "500-1000", "10000+"
     headquarters = Column(String(255), nullable=True)
     website = Column(String(512), nullable=True)
     careers_url = Column(String(512), nullable=True)
@@ -626,9 +594,7 @@ class Job(Base):
     __tablename__ = "jobs"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    company_id = Column(
-        String, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
-    )
+    company_id = Column(String, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     location = Column(String(255), nullable=True)
@@ -638,9 +604,7 @@ class Job(Base):
     status = Column(String(20), nullable=False, default="ACTIVE")  # ACTIVE, EXPIRED
     salary_min = Column(Integer, nullable=True)
     salary_max = Column(Integer, nullable=True)
-    experience_required = Column(
-        String(50), nullable=True
-    )  # e.g. "0-1 years", "Fresher"
+    experience_required = Column(String(50), nullable=True)  # e.g. "0-1 years", "Fresher"
     apply_url = Column(String(512), nullable=True)
     source = Column(String(100), nullable=True)  # "seed", "admin", "api"
     source_job_id = Column(String(255), nullable=True, index=True)
@@ -656,12 +620,8 @@ class Job(Base):
     )
 
     company = relationship("Company", back_populates="jobs")
-    skills = relationship(
-        "JobSkill", back_populates="job", cascade="all, delete-orphan"
-    )
-    saved_by = relationship(
-        "SavedJob", back_populates="job", cascade="all, delete-orphan"
-    )
+    skills = relationship("JobSkill", back_populates="job", cascade="all, delete-orphan")
+    saved_by = relationship("SavedJob", back_populates="job", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_jobs_status_expires", "status", "expires_at"),
@@ -677,9 +637,7 @@ class JobSkill(Base):
     __tablename__ = "job_skills"
 
     job_id = Column(String, ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True)
-    skill_name = Column(
-        String(100), primary_key=True
-    )  # Always stored in canonical form
+    skill_name = Column(String(100), primary_key=True)  # Always stored in canonical form
     is_required = Column(Boolean, default=True)
 
     job = relationship("Job", back_populates="skills")
@@ -692,23 +650,17 @@ class UserSkill(Base):
 
     __tablename__ = "user_skills"
 
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     skill_name = Column(String(100), primary_key=True)  # Canonical form
     proficiency = Column(Integer, default=1)  # 1=Beginner … 5=Expert
-    source = Column(
-        String(50), nullable=True, default="resume"
-    )  # resume, manual, ai_inferred
+    source = Column(String(50), nullable=True, default="resume")  # resume, manual, ai_inferred
     updated_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    owner = relationship(
-        "User", backref=backref("user_skills", cascade="all, delete-orphan")
-    )
+    owner = relationship("User", backref=backref("user_skills", cascade="all, delete-orphan"))
 
     __table_args__ = (
         Index("ix_user_skills_user_id", "user_id"),
@@ -721,15 +673,11 @@ class SavedJob(Base):
 
     __tablename__ = "saved_jobs"
 
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     job_id = Column(String, ForeignKey("jobs.id", ondelete="CASCADE"), primary_key=True)
     saved_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    owner = relationship(
-        "User", backref=backref("saved_jobs", cascade="all, delete-orphan")
-    )
+    owner = relationship("User", backref=backref("saved_jobs", cascade="all, delete-orphan"))
     job = relationship("Job", back_populates="saved_by")
 
 
@@ -744,9 +692,7 @@ class ConsentRecord(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String, nullable=False, index=True)  # anonymous session token
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     consent_given = Column(Boolean, default=True)
     consent_version = Column(String(20), default="1.0")
     ip_hash = Column(String(64), nullable=True)  # sha256(ip) — never raw IP
@@ -770,9 +716,7 @@ class UserDiscoveryProfile(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String, nullable=False, unique=True, index=True)
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     consent_id = Column(String, ForeignKey("consent_records.id"), nullable=True)
 
     # User type (Student, Job Seeker, Working Professional, etc.)
@@ -781,9 +725,7 @@ class UserDiscoveryProfile(Base):
 
     # Source (web, discover_page, api)
     source = Column(String(50), default="discover_page")
-    status = Column(
-        String(30), default="in_progress"
-    )  # in_progress, completed, partial
+    status = Column(String(30), default="in_progress")  # in_progress, completed, partial
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
@@ -793,9 +735,7 @@ class UserDiscoveryProfile(Base):
     )
 
     # Relationships
-    intents = relationship(
-        "UserIntent", back_populates="profile", cascade="all, delete-orphan"
-    )
+    intents = relationship("UserIntent", back_populates="profile", cascade="all, delete-orphan")
     challenges = relationship(
         "CareerChallenge", back_populates="profile", cascade="all, delete-orphan"
     )
@@ -823,9 +763,7 @@ class UserIntent(Base):
         index=True,
     )
 
-    intent_key = Column(
-        String(100), nullable=False
-    )  # e.g. "find_first_job", "improve_resume"
+    intent_key = Column(String(100), nullable=False)  # e.g. "find_first_job", "improve_resume"
     intent_label = Column(String(255), nullable=True)  # Human-readable label
     is_primary = Column(Boolean, default=False)  # "Most important" flag
     free_text = Column(Text, nullable=True)  # "Other" description
@@ -867,9 +805,7 @@ class CareerChallenge(Base):
     knowing_what_to_learn = Column(Integer, nullable=True)
 
     biggest_difficulty = Column(Text, nullable=True)  # Free-text biggest challenge
-    one_problem_to_solve = Column(
-        Text, nullable=True
-    )  # "If Saarthi could solve ONE problem..."
+    one_problem_to_solve = Column(Text, nullable=True)  # "If Saarthi could solve ONE problem..."
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -983,17 +919,13 @@ class OpportunitySignal(Base):
     location = Column(String(255), nullable=True)
     skills = Column(Text, nullable=True)  # Comma-separated or JSON
     additional_context = Column(Text, nullable=True)
-    submitter_email = Column(
-        String(255), nullable=True
-    )  # Optional, only if user consented
+    submitter_email = Column(String(255), nullable=True)  # Optional, only if user consented
 
     # Validation / ingestion lifecycle
     validation_status = Column(
         String(30), default="pending"
     )  # pending | valid | invalid | duplicate
-    ingestion_status = Column(
-        String(30), default="pending"
-    )  # pending | staged | rejected
+    ingestion_status = Column(String(30), default="pending")  # pending | staged | rejected
     dedup_hash = Column(String(64), nullable=True, index=True)
 
     status = Column(String(20), default="active")
@@ -1020,9 +952,7 @@ class CompanyProfile(Base):
     consent_id = Column(String, ForeignKey("consent_records.id"), nullable=True)
 
     company_name = Column(String(255), nullable=True)
-    company_type = Column(
-        String(100), nullable=True
-    )  # startup, enterprise, agency, etc.
+    company_type = Column(String(100), nullable=True)  # startup, enterprise, agency, etc.
     industry = Column(String(100), nullable=True)
     company_size = Column(String(50), nullable=True)
     hiring_locations = Column(Text, nullable=True)  # JSON array
@@ -1086,9 +1016,7 @@ class HiringSignal(Base):
     wants_candidate_recommendations = Column(Boolean, default=False)
     wants_hiring_intelligence = Column(Boolean, default=False)
 
-    what_platforms_miss = Column(
-        Text, nullable=True
-    )  # "What Saarthi should understand..."
+    what_platforms_miss = Column(Text, nullable=True)  # "What Saarthi should understand..."
 
     status = Column(String(20), default="active")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -1129,13 +1057,9 @@ class JobSubmission(Base):
     additional_information = Column(Text, nullable=True)
 
     # Pipeline lifecycle
-    validation_status = Column(
-        String(30), default="pending"
-    )  # pending | valid | invalid
+    validation_status = Column(String(30), default="pending")  # pending | valid | invalid
     dedup_status = Column(String(30), default="pending")  # pending | unique | duplicate
-    sync_status = Column(
-        String(30), default="pending"
-    )  # pending | staged | synced | rejected
+    sync_status = Column(String(30), default="pending")  # pending | staged | synced | rejected
     validation_errors = Column(Text, nullable=True)  # JSON list
 
     dedup_hash = Column(String(64), nullable=True, index=True)
@@ -1159,9 +1083,7 @@ class ContactRequest(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     session_id = Column(String, nullable=True, index=True)
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     consent_id = Column(String, ForeignKey("consent_records.id"), nullable=True)
 
     name = Column(String(255), nullable=False)
@@ -1214,9 +1136,7 @@ class FeedbackEvent(Base):
     entity_id = Column(String(100), nullable=True)  # feature_key, challenge_key, etc.
 
     session_id = Column(String, nullable=True, index=True)
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     payload_json = Column(Text, nullable=True)
 
     # Aggregated metrics
@@ -1241,6 +1161,4 @@ class FeedbackEvent(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    __table_args__ = (
-        Index("ix_feedback_events_type_entity", "event_type", "entity_id"),
-    )
+    __table_args__ = (Index("ix_feedback_events_type_entity", "event_type", "entity_id"),)

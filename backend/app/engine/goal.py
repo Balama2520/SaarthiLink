@@ -64,11 +64,7 @@ class GoalEngine:
                 pass
 
         # Blocked Dependency Penalty
-        dependencies = (
-            self.db.query(GoalDependency)
-            .filter(GoalDependency.goal_id == goal.id)
-            .all()
-        )
+        dependencies = self.db.query(GoalDependency).filter(GoalDependency.goal_id == goal.id).all()
         for dep in dependencies:
             dep_goal = self.db.query(Goal).filter(Goal.id == dep.depends_on_id).first()
             if dep_goal and dep_goal.status != "COMPLETED":
@@ -89,9 +85,7 @@ class GoalEngine:
         """
         Template -> Personalization -> Milestones -> JIT Tasks
         """
-        template = (
-            self.db.query(GoalTemplate).filter(GoalTemplate.id == template_id).first()
-        )
+        template = self.db.query(GoalTemplate).filter(GoalTemplate.id == template_id).first()
         if not template:
             raise ValueError("Template not found")
 
@@ -129,9 +123,7 @@ class GoalEngine:
         self.db.commit()
 
         # Activate first milestone
-        first_milestone = (
-            self.db.query(Goal).filter(Goal.parent_id == top_goal.id).first()
-        )
+        first_milestone = self.db.query(Goal).filter(Goal.parent_id == top_goal.id).first()
         if first_milestone:
             first_milestone.status = "ACTIVE"
             self.db.commit()
@@ -213,9 +205,7 @@ class GoalEngine:
                         parent.status = "COMPLETED"
 
                 # Activate next milestone if needed
-                next_milestone = next(
-                    (s for s in siblings if s.status == "DRAFT"), None
-                )
+                next_milestone = next((s for s in siblings if s.status == "DRAFT"), None)
                 if next_milestone:
                     next_milestone.status = "ACTIVE"
                     self.db.commit()
@@ -230,9 +220,7 @@ class GoalEngine:
         # Get active goal
         current_goal = (
             self.db.query(Goal)
-            .filter(
-                Goal.user_id == user_id, Goal.type == "GOAL", Goal.status == "ACTIVE"
-            )
+            .filter(Goal.user_id == user_id, Goal.type == "GOAL", Goal.status == "ACTIVE")
             .order_by(Goal.priority)
             .first()
         )
@@ -261,9 +249,7 @@ class GoalEngine:
 
         # Get tasks
         tasks = (
-            self.db.query(Goal)
-            .filter(Goal.parent_id == milestone_id, Goal.type == "TASK")
-            .all()
+            self.db.query(Goal).filter(Goal.parent_id == milestone_id, Goal.type == "TASK").all()
         )
         overdue_tasks = []
         now = datetime.now(timezone.utc)

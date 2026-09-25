@@ -57,9 +57,22 @@ def _build_fallback_analysis(text: str) -> dict:
     """Keep resume analysis useful when the model returns malformed output."""
     lowered = text.lower()
     known_skills = [
-        "python", "javascript", "typescript", "react", "node.js", "fastapi",
-        "sql", "postgresql", "docker", "kubernetes", "aws", "azure", "java",
-        "c++", "machine learning", "git",
+        "python",
+        "javascript",
+        "typescript",
+        "react",
+        "node.js",
+        "fastapi",
+        "sql",
+        "postgresql",
+        "docker",
+        "kubernetes",
+        "aws",
+        "azure",
+        "java",
+        "c++",
+        "machine learning",
+        "git",
     ]
     skills = [skill for skill in known_skills if skill in lowered]
     word_count = len(text.split())
@@ -94,8 +107,13 @@ def _build_fallback_analysis(text: str) -> dict:
             "linkedin": next((link for link in links if "linkedin" in link.lower()), None),
             "portfolio": None,
         },
-        "strengths": ["Resume text was extracted successfully.", "Technical keywords were detected."],
-        "weaknesses": ["Full AI structuring is temporarily unavailable; retry analysis for richer insights."],
+        "strengths": [
+            "Resume text was extracted successfully.",
+            "Technical keywords were detected.",
+        ],
+        "weaknesses": [
+            "Full AI structuring is temporarily unavailable; retry analysis for richer insights."
+        ],
         "skill_gaps": [],
         "recommendations": ["Add quantified achievements and detailed project outcomes."],
         "summary": text.strip()[:500] or "Resume text was extracted successfully.",
@@ -106,6 +124,7 @@ def _build_fallback_analysis(text: str) -> dict:
 
 def _normalize_analysis_shape(parsed: dict, word_count: int) -> dict:
     """Coerce common provider shape drift into the frontend contract."""
+
     def as_dict(value):
         if isinstance(value, dict):
             return value
@@ -117,8 +136,16 @@ def _normalize_analysis_shape(parsed: dict, word_count: int) -> dict:
     parsed["personal_info"] = as_dict(parsed.get("personal_info"))
     parsed["links"] = as_dict(parsed.get("links"))
     for key in (
-        "education", "experience", "projects", "tech_skills", "soft_skills",
-        "certifications", "languages", "strengths", "weaknesses", "skill_gaps",
+        "education",
+        "experience",
+        "projects",
+        "tech_skills",
+        "soft_skills",
+        "certifications",
+        "languages",
+        "strengths",
+        "weaknesses",
+        "skill_gaps",
         "recommendations",
     ):
         if not isinstance(parsed.get(key), list):
@@ -145,9 +172,7 @@ class ResumeIntelligencePipeline:
         self.profile_sync = ProfileSyncService()
 
     # ── Stage 1: Validate ─────────────────────────────────────────────────────
-    def validate_file(
-        self, file_bytes: bytes, filename: str, content_type: str
-    ) -> None:
+    def validate_file(self, file_bytes: bytes, filename: str, content_type: str) -> None:
         """Validates size and extension. Raises HTTPException on failure."""
         if len(file_bytes) > self.MAX_SIZE_BYTES:
             logger.warning(
@@ -202,9 +227,7 @@ class ResumeIntelligencePipeline:
                             import PyPDF2
 
                             reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
-                            text = "\n".join(
-                                p.extract_text() or "" for p in reader.pages
-                            )
+                            text = "\n".join(p.extract_text() or "" for p in reader.pages)
                         except Exception:
                             text = ""
 
@@ -261,9 +284,7 @@ class ResumeIntelligencePipeline:
     async def analyze_with_ai(self, text: str, target_role: Optional[str]) -> dict:
         """Calls AI gateway, returns structured ATS analysis."""
         if not text.strip():
-            raise HTTPException(
-                status_code=400, detail="The document contains no readable text."
-            )
+            raise HTTPException(status_code=400, detail="The document contains no readable text.")
 
         word_count = len(text.split())
         prompt = f"""
@@ -286,9 +307,7 @@ integer from 0 to 100 for overall_ats_score.
         t0 = time.perf_counter()
         try:
             messages = [{"role": "user", "content": prompt}]
-            stream = self.ai_gateway.generate_response_stream(
-                messages, personality="career"
-            )
+            stream = self.ai_gateway.generate_response_stream(messages, personality="career")
             raw = await _collect_stream(stream)
             duration_ms = (time.perf_counter() - t0) * 1000
 
@@ -318,9 +337,7 @@ integer from 0 to 100 for overall_ats_score.
                 "Stage 3: AI analysis failed",
                 extra={"error": str(exc), "request_id": get_request_id()},
             )
-            raise HTTPException(
-                status_code=502, detail="AI analysis failed. Please try again."
-            )
+            raise HTTPException(status_code=502, detail="AI analysis failed. Please try again.")
 
     # ── Stage 4: Skill Normalization ──────────────────────────────────────────
     def normalize_skills(self, parsed_data: dict) -> dict:
