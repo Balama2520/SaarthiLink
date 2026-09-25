@@ -147,12 +147,7 @@ async def skill_gap(
 ):
     if _is_guest(current_user):
         raise HTTPException(
-            status_code=401, detail="Upload a resume after signing in to analyze skill gaps."
-        )
-    if not service.repo.get_latest_resume(current_user.id):
-        raise HTTPException(
-            status_code=422,
-            detail="Upload a resume before running personalized skill-gap analysis.",
+            status_code=401, detail="Sign in to analyze skill gaps."
         )
     return await service.analyze_skill_gaps(current_user.id, body.target_role)
 
@@ -166,14 +161,10 @@ async def learning_plan(
     if _is_guest(current_user):
         raise HTTPException(
             status_code=401,
-            detail="Upload a resume after signing in to generate a personalized learning plan.",
-        )
-    if not service.repo.get_latest_resume(current_user.id):
-        raise HTTPException(
-            status_code=422,
-            detail="Upload a resume before generating a personalized learning plan.",
+            detail="Sign in to generate a personalized learning plan.",
         )
     return await service.generate_learning_plan(current_user.id, body.target_role, body.weeks)
+
 
 
 @router.post("/copilot/stream")

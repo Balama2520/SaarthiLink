@@ -420,7 +420,7 @@ export default function App() {
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
                 <span className="font-semibold">Saarthi Career Intelligence Engine</span>
-                <span className="text-[10px] text-muted-foreground font-mono">v1.0</span>
+                <span className="text-[10px] text-muted-foreground font-mono">v2.1</span>
               </div>
             </div>
 
@@ -488,11 +488,7 @@ export default function App() {
                 : <AuthGate onSignIn={handleShowAuth} featureName="Profile" />
             )}
             {activeTab === "resume" && <ResumeAnalyzer />}
-            {activeTab === "jobs" && (
-              authenticated
-                ? <JobFinder />
-                : <AuthGate onSignIn={handleShowAuth} featureName="Job Finder" />
-            )}
+            {activeTab === "jobs" && <JobFinder />}
             {activeTab === "chat" && <ChatCoach />}
             {activeTab === "copilot" && <CareerCopilot />}
             {activeTab === "goals" && (
