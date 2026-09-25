@@ -78,12 +78,15 @@ class JobOut(JobBase):
 
 
 class JobListOut(BaseModel):
-    """Lightweight list view — omits the long description."""
+    """List view containing fields needed by search, filters, and Match IQ."""
 
     id: str
     title: str
+    description: Optional[str]
     location: Optional[str]
     job_type: Optional[str]
+    employment_type: Optional[str]
+    remote_type: Optional[str]
     status: str
     salary_min: Optional[int]
     salary_max: Optional[int]
@@ -94,6 +97,51 @@ class JobListOut(BaseModel):
     skills: list[JobSkillOut] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class JobIngestItem(BaseModel):
+    """Normalized job payload accepted from Sheets and other feed adapters."""
+
+    company: str = Field(..., min_length=1, max_length=255)
+    title: str = Field(..., min_length=1, max_length=255)
+    location: Optional[str] = Field("Remote", max_length=255)
+    country: Optional[str] = Field(None, max_length=100)
+    remote_type: Optional[str] = Field(None, max_length=50)
+    employment_type: Optional[str] = Field(None, max_length=50)
+    job_type: Optional[str] = Field("Full-time", max_length=50)
+    experience_required: Optional[str] = Field(None, max_length=50)
+    experience_min: Optional[int] = Field(None, ge=0)
+    experience_max: Optional[int] = Field(None, ge=0)
+    description: Optional[str] = None
+    salary_min: Optional[int] = Field(None, ge=0)
+    salary_max: Optional[int] = Field(None, ge=0)
+    salary_currency: Optional[str] = Field(None, max_length=8)
+    apply_url: Optional[str] = None
+    source_url: Optional[str] = None
+    company_url: Optional[str] = None
+    source_job_id: Optional[str] = Field(None, max_length=255)
+    fingerprint: Optional[str] = Field(None, min_length=64, max_length=64)
+    posted_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    skills: list[str] = []
+
+
+class JobIngestBatchRequest(BaseModel):
+    source: str = Field("GoogleSheets", min_length=1, max_length=100)
+    source_id: Optional[str] = Field(None, max_length=100)
+    run_id: Optional[str] = Field(None, max_length=100)
+    jobs: list[JobIngestItem] = Field(..., min_length=1, max_length=200)
+
+
+class JobIngestResponse(BaseModel):
+    status: str
+    source: str
+    processed: int
+    inserted: int
+    updated: int
+    duplicates: int
+    errors: int = 0
+    failed_ids: list[str] = []
 
 
 # ---------------------------------------------------------------------------

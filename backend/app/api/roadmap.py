@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from typing import Literal
+from pydantic import BaseModel, Field
 
 from app.core.dependencies.auth import (
     get_optional_current_user,
@@ -13,8 +14,8 @@ router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 
 
 class RoadmapRequest(BaseModel):
-    target_role: str
-    duration_days: int = 30
+    target_role: str = Field(min_length=2, max_length=120)
+    duration_days: Literal[30, 90] = 30
 
 
 class RoadmapMilestone(BaseModel):
@@ -45,9 +46,18 @@ async def generate_roadmap(
     )
 
 
+@router.get("/saved", response_model=list[RoadmapResponse])
+def list_saved_roadmaps(
+    current_user: User = Depends(require_authenticated_user),
+    roadmap_svc: RoadmapService = Depends(get_roadmap_service),
+):
+    """Return the current user's saved roadmaps, newest first."""
+    return roadmap_svc.list_roadmaps(current_user.id)
+
+
 class ProgressRequest(BaseModel):
-    milestone_index: int
-    task_index: int
+    milestone_index: int = Field(ge=0)
+    task_index: int = Field(ge=0)
     completed: bool
 
 

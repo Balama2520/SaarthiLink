@@ -31,6 +31,14 @@ class RoadmapService:
     def __init__(self, repo: RoadmapRepository):
         self.repo = repo
 
+    def list_roadmaps(self, user_id: int) -> list[dict]:
+        roadmaps = []
+        for saved in self.repo.list_for_user(user_id):
+            data = json.loads(saved.roadmap_json or "{}")
+            data["roadmap_id"] = saved.id
+            roadmaps.append(data)
+        return roadmaps
+
     @staticmethod
     def _normalize(data: dict, target_role: str, duration_days: int) -> dict:
         milestones = data.get("milestones", [])
@@ -141,7 +149,7 @@ class RoadmapService:
             raise HTTPException(status_code=404, detail="Roadmap not found")
         data = json.loads(roadmap.roadmap_json or "{}")
         milestones = data.get("milestones", [])
-        if milestone_index >= len(milestones) or task_index >= len(
+        if milestone_index < 0 or task_index < 0 or milestone_index >= len(milestones) or task_index >= len(
             milestones[milestone_index].get("tasks", [])
         ):
             raise HTTPException(status_code=422, detail="Invalid roadmap task")

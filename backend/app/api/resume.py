@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
+from typing import Optional
 import json
 import logging
 import time
 
 from app.core.dependencies.auth import require_authenticated_user
-from app.models.models import User, Resume
+from app.models.models import User, Resume, Job
 from app.engine.resume_pipeline import ResumeIntelligencePipeline
 from app.services.profile_sync_service import ProfileSyncService
 from app.services.career_copilot_service import CareerCopilotService
@@ -15,6 +16,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.logging import get_request_id
 from app.rag.rag import index_text_content
+from app.ai.gateway import AIGateway
+from app.ai.prompt_manager import PromptManager
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 logger = logging.getLogger(__name__)
@@ -332,3 +335,209 @@ async def get_resume_history(
         }
         for r in resumes
     ]
+
+
+@router.get("/latest")
+async def get_latest_resume(
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """Return the user's most recently uploaded resume (metadata + skills).
+
+    Frontend uses this to auto-populate Job Match IQ and Prep Kit flows
+    without requiring the user to know or store their resume_id.
+    """
+    resume = (
+        db.query(Resume)
+        .filter(
+            Resume.user_id == current_user.id,
+            Resume.parsing_status == "completed",
+        )
+        .order_by(Resume.created_at.desc())
+        .first()
+    )
+    if not resume:
+        raise HTTPException(
+            status_code=404,
+            detail="No analyzed resume found. Please upload and analyze a resume first.",
+        )
+
+    tech_skills: list = []
+    if resume.parsed_json:
+        try:
+            parsed = json.loads(resume.parsed_json)
+            tech_skills = parsed.get("tech_skills", [])
+        except json.JSONDecodeError:
+            pass
+
+    return {
+        "resume_id": resume.id,
+        "filename": resume.filename,
+        "version": resume.version,
+        "ats_score": resume.ats_score,
+        "parsing_status": resume.parsing_status,
+        "tech_skills": tech_skills,
+        "has_raw_text": bool(resume.raw_text),
+        "raw_text": resume.raw_text or "",
+        "created_at": resume.created_at,
+    }
+
+
+# ── Helper ────────────────────────────────────────────────────────────────────
+async def _collect_stream(stream) -> str:
+    chunks = []
+    async for chunk in stream:
+        chunks.append(chunk)
+    return "".join(chunks)
+
+
+def _strip_markdown_json(text: str) -> str:
+    clean = text.strip()
+    for prefix in ("```json", "```"):
+        if clean.startswith(prefix):
+            clean = clean[len(prefix):]
+            break
+    if clean.endswith("```"):
+        clean = clean[:-3]
+    return clean.strip()
+
+
+class JobPipelineRequest(BaseModel):
+    job_id: str
+
+
+@router.post("/{resume_id}/job-pipeline")
+async def resume_job_pipeline(
+    resume_id: str,
+    request: JobPipelineRequest,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """One-shot AI pipeline: resume + job → match score + cover letter +
+    interview questions + roadmap focus.
+
+    Replaces the manual 4-page workflow (Job Match IQ → Interview Coach →
+    Roadmap → cover letter writing) with a single endpoint call.
+    """
+    t0 = time.perf_counter()
+
+    # ── Load resume ──────────────────────────────────────────────────────────
+    resume = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    if not resume.raw_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Resume has no extracted text. Please reanalyze it first.",
+        )
+
+    # ── Load job ─────────────────────────────────────────────────────────────
+    job = db.query(Job).filter(Job.id == request.job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found.")
+
+    job_description = job.description or ""
+    company_name = job.company.name if job.company else "the company"
+    job_title = job.title
+
+    logger.info(
+        "Job pipeline started",
+        extra={
+            "user_id": current_user.id,
+            "resume_id": resume_id,
+            "job_id": request.job_id,
+            "request_id": get_request_id(),
+        },
+    )
+
+    # ── Single AI call — all outputs generated together ───────────────────────
+    try:
+        prompt = PromptManager.load(
+            "resume/job_pipeline",
+            job_title=job_title,
+            company_name=company_name,
+            resume_text=resume.raw_text[:5000],
+            job_description=job_description[:3000],
+        )
+        messages = [{"role": "user", "content": prompt}]
+        stream = AIGateway().generate_response_stream(messages, personality="career")
+        raw = await _collect_stream(stream)
+
+        try:
+            clean = _strip_markdown_json(raw)
+            data = json.loads(clean)
+        except json.JSONDecodeError:
+            # Attempt to salvage a partial JSON object
+            start = raw.find("{")
+            if start >= 0:
+                try:
+                    data, _ = json.JSONDecoder().raw_decode(raw[start:])
+                except json.JSONDecodeError:
+                    data = {}
+            else:
+                data = {}
+
+        # ── Normalise & provide safe defaults ────────────────────────────────
+        # Compute matched skills from user_skills intersection with job_skills
+        from app.models.models import UserSkill, JobSkill  # local import to avoid circularity
+        user_skill_names = {
+            s.skill_name.lower()
+            for s in db.query(UserSkill).filter(UserSkill.user_id == current_user.id).all()
+        }
+        job_skill_names = {s.skill_name.lower() for s in job.skills}
+
+        matched_from_db = [
+            s.skill_name for s in job.skills if s.skill_name.lower() in user_skill_names
+        ]
+        missing_from_db = [
+            s.skill_name for s in job.skills if s.skill_name.lower() not in user_skill_names
+        ]
+
+        duration_ms = (time.perf_counter() - t0) * 1000
+        logger.info(
+            "Job pipeline completed",
+            extra={
+                "user_id": current_user.id,
+                "resume_id": resume_id,
+                "job_id": request.job_id,
+                "match_score": data.get("match_score"),
+                "duration_ms": round(duration_ms, 2),
+                "request_id": get_request_id(),
+            },
+        )
+
+        return {
+            "resume_id": resume_id,
+            "job_id": request.job_id,
+            "job_title": job_title,
+            "company_name": company_name,
+            # AI-computed values
+            "match_score": data.get("match_score", 0),
+            "matched_skills": data.get("matched_skills") or matched_from_db,
+            "missing_skills": data.get("missing_skills") or missing_from_db,
+            "cover_letter": data.get("cover_letter", ""),
+            "interview_questions": data.get("interview_questions", []),
+            "roadmap_focus": data.get("roadmap_focus", []),
+            "roadmap_target_role": data.get("roadmap_target_role", job_title),
+            "recommendation": data.get("recommendation", ""),
+        }
+
+    except Exception as exc:
+        logger.error(
+            "Job pipeline failed: %s",
+            exc,
+            extra={
+                "user_id": current_user.id,
+                "resume_id": resume_id,
+                "job_id": request.job_id,
+                "request_id": get_request_id(),
+            },
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="AI pipeline failed. Please try again in a moment.",
+        )

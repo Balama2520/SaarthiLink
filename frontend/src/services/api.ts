@@ -341,6 +341,28 @@ export const api = {
     return res.json();
   },
 
+  async getLatestResume() {
+    const res = await fetch(`${API_BASE}/resume/latest`, {
+      headers: getHeaders(),
+    });
+    if (res.status === 404) return null; // no resume yet — soft fail
+    if (!res.ok) throw new Error("Failed to load latest resume");
+    return parseJsonSafe(res);
+  },
+
+  async resumeJobPipeline(resumeId: string, jobId: string) {
+    const res = await fetch(`${API_BASE}/resume/${resumeId}/job-pipeline`, {
+      method: "POST",
+      headers: getHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    if (!res.ok) {
+      const data = await parseJsonSafe(res);
+      throw new Error(data?.detail || "Prep Kit generation failed");
+    }
+    return parseJsonSafe(res);
+  },
+
   // Voice to text
   async voiceToText(audioBlob: Blob) {
     const formData = new FormData();
@@ -368,6 +390,12 @@ export const api = {
     return res.json();
   },
 
+  async getSavedRoadmaps() {
+    const res = await fetch(`${API_BASE}/roadmap/saved`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to load saved roadmaps");
+    return res.json();
+  },
+
   async updateRoadmapProgress(roadmapId: string, milestoneIndex: number, taskIndex: number, completed: boolean) {
     const res = await fetch(`${API_BASE}/roadmap/${roadmapId}/progress`, { method: "PATCH", headers: getHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ milestone_index: milestoneIndex, task_index: taskIndex, completed }) });
     if (!res.ok) throw new Error("Failed to save roadmap progress");
@@ -383,11 +411,21 @@ export const api = {
     return res.json();
   },
 
-  async searchJobs(q: string = "", location: string = "", experience: string = "", skip: number = 0, limit: number = 20) {
+  async getJob(jobId: string) {
+    const res = await fetch(`${API_BASE}/jobs/${encodeURIComponent(jobId)}`, {
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to load job details");
+    return res.json();
+  },
+
+  async searchJobs(q: string = "", location: string = "", experience: string = "", skip: number = 0, limit: number = 20, jobType: string = "", remoteType: string = "") {
     let url = `${API_BASE}/jobs/search?skip=${skip}&limit=${limit}`;
     if (q) url += `&q=${encodeURIComponent(q)}`;
     if (location) url += `&location=${encodeURIComponent(location)}`;
     if (experience) url += `&experience=${encodeURIComponent(experience)}`;
+    if (jobType) url += `&job_type=${encodeURIComponent(jobType)}`;
+    if (remoteType) url += `&remote_type=${encodeURIComponent(remoteType)}`;
     const res = await fetch(url, { headers: getHeaders() });
     if (!res.ok) throw new Error("Failed to search jobs");
     return res.json();
@@ -441,6 +479,15 @@ export const api = {
     return res.json();
   },
 
+  async unsaveJob(jobId: string) {
+    const res = await fetch(`${API_BASE}/jobs/saved/${jobId}`, {
+      method: "DELETE",
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to remove saved job");
+    return res.json();
+  },
+
   async getSavedJobs() {
     const res = await fetch(`${API_BASE}/jobs/saved`, {
       headers: getHeaders(),
@@ -459,12 +506,12 @@ export const api = {
     return res.json();
   },
 
-  async matchJob(resumeText: string, jobDescription: string, companyName: string, jobTitle: string) {
+  async matchJob(resumeText: string | null, jobDescription: string, companyName: string, jobTitle: string) {
     const res = await fetch(`${API_BASE}/jobs/match`, {
       method: "POST",
       headers: getHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
-        resume_text: resumeText,
+        ...(resumeText ? { resume_text: resumeText } : {}), // omit key to trigger auto-fetch
         job_description: jobDescription,
         company_name: companyName,
         job_title: jobTitle,

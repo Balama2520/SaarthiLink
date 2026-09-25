@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc
+from sqlalchemy import desc, func, or_
 from typing import Optional, List
-from app.models.models import Job, SavedJob, UserSkill
+from app.models.models import Company, Job, JobSkill, SavedJob, UserSkill
 
 
 class JobsRepository:
@@ -21,6 +21,7 @@ class JobsRepository:
             self.db.query(Job)
             .options(joinedload(Job.company), joinedload(Job.skills))
             .filter(Job.status == "ACTIVE")
+            .filter(or_(Job.expires_at.is_(None), Job.expires_at > func.now()))
             .order_by(desc(Job.posted_at))
             .offset(skip)
             .limit(limit)
@@ -41,18 +42,31 @@ class JobsRepository:
             self.db.query(Job)
             .options(joinedload(Job.company), joinedload(Job.skills))
             .filter(Job.status == "ACTIVE")
+            .filter(or_(Job.expires_at.is_(None), Job.expires_at > func.now()))
         )
 
         if q:
-            query = query.filter(Job.title.ilike(f"%{q}%"))
+            term = f"%{q}%"
+            query = query.outerjoin(Job.company).outerjoin(JobSkill, JobSkill.job_id == Job.id).filter(
+                or_(
+                    Job.title.ilike(term),
+                    Company.name.ilike(term),
+                    Job.location.ilike(term),
+                    Job.description.ilike(term),
+                    JobSkill.skill_name.ilike(term),
+                )
+            ).distinct()
         if location:
             query = query.filter(Job.location.ilike(f"%{location}%"))
         if experience:
             query = query.filter(Job.experience_required.ilike(f"%{experience}%"))
         if job_type:
-            query = query.filter(Job.job_type == job_type)
+            query = query.filter(Job.job_type.ilike(job_type))
         if remote_type:
-            query = query.filter(Job.remote_type == remote_type)
+            if remote_type.lower() == "remote":
+                query = query.filter(or_(Job.remote_type.ilike("%remote%"), Job.employment_type.ilike("%remote%")))
+            else:
+                query = query.filter(Job.remote_type.ilike(f"%{remote_type}%"))
 
         return query.order_by(desc(Job.posted_at)).offset(skip).limit(limit).all()
 

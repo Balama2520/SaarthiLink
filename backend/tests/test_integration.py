@@ -7,7 +7,9 @@ All external services (AI, Redis) are mocked.
 import json
 import io
 import pytest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, AsyncMock, MagicMock
+from app.models.models import Company, Job, JobSkill, JobApplication, LearningRoadmap, User
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -222,3 +224,107 @@ class TestJobsFlow:
         r = client.get("/api/jobs/recommended", headers=auth_headers)
         assert r.status_code == 200
         assert isinstance(r.json(), list)
+
+    def test_search_matches_company_and_skills_but_excludes_expired_jobs(self, client, db_session):
+        company = Company(name="Acme Platform")
+        db_session.add(company)
+        db_session.flush()
+        active = Job(
+            company_id=company.id,
+            title="Platform Engineer",
+            description="Build reliable services",
+            location="Bengaluru",
+            job_type="Full-time",
+            remote_type="Hybrid",
+            status="ACTIVE",
+            posted_at=datetime.now(timezone.utc),
+        )
+        expired = Job(
+            company_id=company.id,
+            title="Old Python Role",
+            description="Python maintenance",
+            location="Bengaluru",
+            job_type="Full-time",
+            status="ACTIVE",
+            expires_at=datetime.now(timezone.utc) - timedelta(days=1),
+            posted_at=datetime.now(timezone.utc) - timedelta(days=2),
+        )
+        db_session.add_all([active, expired])
+        db_session.flush()
+        db_session.add(JobSkill(job_id=active.id, skill_name="python", is_required=True))
+        db_session.commit()
+
+        company_search = client.get("/api/jobs/search?q=Acme")
+        skill_search = client.get("/api/jobs/search?q=python")
+        assert [job["id"] for job in company_search.json()] == [active.id]
+        assert [job["id"] for job in skill_search.json()] == [active.id]
+
+    def test_application_tracking_is_idempotent_per_job(self, client, db_session, auth_headers):
+        company = Company(name="Application Co")
+        db_session.add(company)
+        db_session.flush()
+        job = Job(
+            company_id=company.id,
+            title="Backend Engineer",
+            location="Remote",
+            status="ACTIVE",
+            posted_at=datetime.now(timezone.utc),
+        )
+        db_session.add(job)
+        db_session.commit()
+
+        first = client.post("/api/jobs/apply", json={"job_id": job.id}, headers=auth_headers)
+        second = client.post("/api/jobs/apply", json={"job_id": job.id}, headers=auth_headers)
+        applications = db_session.query(JobApplication).filter(JobApplication.job_id == job.id).all()
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert first.json()["id"] == second.json()["id"]
+        assert len(applications) == 1
+
+
+class TestInterviewCoachFlow:
+    def test_answer_rejects_question_index_outside_session(self, client, auth_headers):
+        session_response = client.post(
+            "/api/interview/session",
+            json={"role": "Backend Developer", "company": "Acme", "difficulty": "medium"},
+            headers=auth_headers,
+        )
+        assert session_response.status_code == 200
+        session = session_response.json()
+        response = client.post(
+            f"/api/interview/session/{session['id']}/answer",
+            json={"answer": "test answer", "question_index": len(session["questions"]) + 1},
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+
+
+class TestRoadmapFlow:
+    def test_roadmap_rejects_invalid_duration(self, client, auth_headers):
+        response = client.post(
+            "/api/roadmap/generate",
+            json={"target_role": "Backend Engineer", "duration_days": 45},
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+
+    def test_saved_roadmap_is_retrievable_for_owner(self, client, db_session, test_user, auth_headers):
+        owner = db_session.query(User).filter(User.username == "testuser").one()
+        roadmap = LearningRoadmap(
+            user_id=owner.id,
+            title="Backend Engineer Roadmap",
+            target_role="Backend Engineer",
+            duration_days=30,
+            roadmap_json=json.dumps({
+                "target_role": "Backend Engineer",
+                "duration_days": 30,
+                "milestones": [],
+            }),
+        )
+        db_session.add(roadmap)
+        db_session.commit()
+
+        saved = client.get("/api/roadmap/saved", headers=auth_headers)
+        assert saved.status_code == 200
+        assert any(item["roadmap_id"] == roadmap.id for item in saved.json())

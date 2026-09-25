@@ -88,7 +88,7 @@ class ProfileResponse(BaseModel):
 
     technical_skills: Optional[List[Dict[str, Any]]] = None
 
-    current_resume_id: Optional[int] = None
+    current_resume_id: Optional[str] = None
     resume_version: Optional[int] = None
     resume_ats_score: Optional[int] = None
     resume_last_parsed: Optional[Any] = None

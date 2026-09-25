@@ -104,6 +104,32 @@ def _build_fallback_analysis(text: str) -> dict:
     }
 
 
+def _normalize_analysis_shape(parsed: dict, word_count: int) -> dict:
+    """Coerce common provider shape drift into the frontend contract."""
+    def as_dict(value):
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, list):
+            return next((item for item in value if isinstance(item, dict)), {})
+        return {}
+
+    parsed["section_scores"] = as_dict(parsed.get("section_scores"))
+    parsed["personal_info"] = as_dict(parsed.get("personal_info"))
+    parsed["links"] = as_dict(parsed.get("links"))
+    for key in (
+        "education", "experience", "projects", "tech_skills", "soft_skills",
+        "certifications", "languages", "strengths", "weaknesses", "skill_gaps",
+        "recommendations",
+    ):
+        if not isinstance(parsed.get(key), list):
+            parsed[key] = []
+    if not isinstance(parsed.get("summary"), str):
+        parsed["summary"] = str(parsed.get("summary") or "")
+    parsed["word_count"] = word_count
+    parsed["analysis_source"] = "ai"
+    return parsed
+
+
 # ── Pipeline ──────────────────────────────────────────────────────────────────
 class ResumeIntelligencePipeline:
 
@@ -267,8 +293,7 @@ integer from 0 to 100 for overall_ats_score.
             duration_ms = (time.perf_counter() - t0) * 1000
 
             parsed = _parse_json_response(raw)
-            parsed["word_count"] = word_count
-            parsed["analysis_source"] = "ai"
+            parsed = _normalize_analysis_shape(parsed, word_count)
 
             logger.info(
                 "Stage 3: AI analysis completed",

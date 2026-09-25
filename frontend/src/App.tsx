@@ -266,6 +266,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [showCmdPalette, setShowCmdPalette] = useState(false);
+  const [routeReady, setRouteReady] = useState(false);
 
   useEffect(() => {
     if (activeTab === "admin") {
@@ -276,6 +277,7 @@ export default function App() {
   useEffect(() => {
     const syncFromAddress = () => setActiveTab(tabFromHash());
     syncFromAddress();
+    setRouteReady(true);
     window.addEventListener("hashchange", syncFromAddress);
     window.addEventListener("popstate", syncFromAddress);
     return () => {
@@ -294,6 +296,7 @@ export default function App() {
   }, [enterGuestMode]);
 
   useEffect(() => {
+    if (!routeReady) return;
     const nextPath = publicPaths[activeTab];
     if (nextPath) {
       if (window.location.pathname !== nextPath || window.location.hash) {
@@ -304,7 +307,7 @@ export default function App() {
 
     const nextHash = `#/${activeTab}`;
     if (window.location.hash !== nextHash) window.history.pushState(null, "", nextHash);
-  }, [activeTab]);
+  }, [activeTab, routeReady]);
 
   useEffect(() => {
     const meta = seoByTab[activeTab] ?? seoByTab.landing;

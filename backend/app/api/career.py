@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -146,7 +146,9 @@ async def skill_gap(
     service: CareerService = Depends(get_career_service),
 ):
     if _is_guest(current_user):
-        return await service.analyze_skill_gaps(0, body.target_role)
+        raise HTTPException(status_code=401, detail="Upload a resume after signing in to analyze skill gaps.")
+    if not service.repo.get_latest_resume(current_user.id):
+        raise HTTPException(status_code=422, detail="Upload a resume before running personalized skill-gap analysis.")
     return await service.analyze_skill_gaps(current_user.id, body.target_role)
 
 
@@ -156,8 +158,11 @@ async def learning_plan(
     current_user: User = Depends(get_current_user),
     service: CareerService = Depends(get_career_service),
 ):
-    user_id = 0 if _is_guest(current_user) else current_user.id
-    return await service.generate_learning_plan(user_id, body.target_role, body.weeks)
+    if _is_guest(current_user):
+        raise HTTPException(status_code=401, detail="Upload a resume after signing in to generate a personalized learning plan.")
+    if not service.repo.get_latest_resume(current_user.id):
+        raise HTTPException(status_code=422, detail="Upload a resume before generating a personalized learning plan.")
+    return await service.generate_learning_plan(current_user.id, body.target_role, body.weeks)
 
 
 @router.post("/copilot/stream")
@@ -192,6 +197,9 @@ async def copilot_stream(
     facts = {
         "target_role": context.get("target_role"),
         "skills": context.get("skills", [])[:20],
+        "resume_skills": (context.get("parsed_resume") or {}).get("tech_skills", [])[:20],
+        "resume_summary": (context.get("parsed_resume") or {}).get("summary", "")[:1000],
+        "resume_ats_score": context.get("resume").ats_score if context.get("resume") else None,
         "goals": [goal.title for goal in context.get("goals", [])[:5]],
         "resume_available": bool(context.get("resume")),
     }

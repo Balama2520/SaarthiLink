@@ -21,6 +21,14 @@ class RoadmapRepository:
             .first()
         )
 
+    def list_for_user(self, user_id: int) -> list[LearningRoadmap]:
+        return (
+            self.db.query(LearningRoadmap)
+            .filter(LearningRoadmap.user_id == user_id)
+            .order_by(LearningRoadmap.created_at.desc())
+            .all()
+        )
+
     def save(self, roadmap: LearningRoadmap) -> LearningRoadmap:
         self.db.add(roadmap)
         self.db.commit()

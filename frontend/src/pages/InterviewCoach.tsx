@@ -43,6 +43,23 @@ function estimateClarity(answers: string[]): number {
   return Math.round(50 + (wellFormed / sentences.length) * 45);
 }
 
+function buildLocalFeedback(answers: string[]): InterviewFeedback {
+  const answered = answers.filter((answer) => answer.trim().length > 0);
+  const confidence = estimateConfidence(answers);
+  const clarity = estimateClarity(answers);
+  const score = Math.round((confidence + clarity + Math.min(answered.length / Math.max(answers.length, 1), 1) * 100) / 3);
+  return {
+    score,
+    confidence,
+    grammar: clarity,
+    technical_accuracy: Math.max(0, Math.min(100, score - 5)),
+    speaking_speed: estimateWpm(answers, 0) ?? undefined,
+    strengths: answered.length > 0 ? ["You completed the practice round", "Your responses can be reviewed without an AI provider"] : ["You started the interview practice"],
+    areas_for_improvement: answered.length < answers.length ? ["Answer every question before submitting", "Add specific examples and measurable outcomes"] : ["Add specific examples and measurable outcomes", "Use a clear structure such as STAR"],
+    feedback: "This offline report is based on response coverage, clarity, and confidence signals. Connect an AI provider for deeper technical feedback.",
+  };
+}
+
 interface InterviewFeedback {
   score: number; strengths: string[]; areas_for_improvement: string[];
   feedback: string; confidence?: number; speaking_speed?: number; grammar?: number; technical_accuracy?: number;
@@ -306,6 +323,37 @@ export default function InterviewCoach() {
   useEffect(() => { questionIdxRef.current = questionIdx; }, [questionIdx]);
 
   useEffect(() => {
+    const prepCompany = sessionStorage.getItem("saarthi_prep_company");
+    const prepRole = sessionStorage.getItem("saarthi_prep_role");
+    const prepQuestions = sessionStorage.getItem("saarthi_prep_questions");
+
+    if (prepRole) {
+      setRole(prepRole);
+      sessionStorage.removeItem("saarthi_prep_role");
+    }
+    if (prepCompany) {
+      setCompany(prepCompany);
+      sessionStorage.removeItem("saarthi_prep_company");
+    }
+    if (prepQuestions) {
+      try {
+        const parsed = JSON.parse(prepQuestions);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setQuestions(parsed);
+          setAnswers(Array(parsed.length).fill(""));
+          setQuestionIdx(0);
+          setSimStartedAt(Date.now());
+          setSimActive(true);
+          toast(`Loaded prep kit questions for ${prepRole || "Role"}!`, "success");
+        }
+      } catch (e) {
+        console.error("Failed to parse prep questions", e);
+      }
+      sessionStorage.removeItem("saarthi_prep_questions");
+    }
+  }, [toast]);
+
+  useEffect(() => {
     const recognitionWindow = window as SpeechRecognitionWindow;
     const Ctor = recognitionWindow.SpeechRecognition || recognitionWindow.webkitSpeechRecognition;
     if (!Ctor) return;
@@ -333,6 +381,7 @@ export default function InterviewCoach() {
     try {
       if (getToken()) {
         const session = await api.createInterviewSession(role, company || null, difficulty);
+        if (!Array.isArray(session.questions) || session.questions.length === 0) throw new Error("Interview session returned no questions");
         setSessionId(session.id);
         generatedQuestions = session.questions;
       } else setSessionId(null);
@@ -355,7 +404,16 @@ export default function InterviewCoach() {
   const handleNext = async () => {
     if (isRecording && recognitionRef.current) { recognitionRef.current.stop(); setIsRecording(false); }
     if (questionIdx < questions.length - 1) {
-      if (sessionId) await api.answerInterviewSession(sessionId, answers[questionIdx] ?? "No response", questionIdx);
+      if (sessionId) {
+        try {
+          await api.answerInterviewSession(sessionId, answers[questionIdx] ?? "No response", questionIdx);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "We couldn't save this answer.";
+          setError(message);
+          toast("Your answer was not saved. Please try again.", "error");
+          return;
+        }
+      }
       setQuestionIdx(p => p + 1);
     } else {
       setSimActive(false); evaluateSimulation();
@@ -370,8 +428,9 @@ export default function InterviewCoach() {
       let data: InterviewFeedback;
       if (sessionId) {
         const persisted = await api.answerInterviewSession(sessionId, answers[questionIdx] ?? "No response", questionIdx);
-        data = persisted.feedback;
-      } else data = await api.evaluateInterview(transcript, role);
+        data = persisted.feedback || buildLocalFeedback(answers);
+      } else if (getToken()) data = await api.evaluateInterview(transcript, role);
+      else data = buildLocalFeedback(answers);
       setFeedback({ ...data, confidence: estimateConfidence(answers), speaking_speed: estimateWpm(answers, elapsed) ?? undefined, grammar: estimateClarity(answers), technical_accuracy: data.score });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Evaluation failed. Please try again.");

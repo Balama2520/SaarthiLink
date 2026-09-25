@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timezone
 from fastapi import HTTPException
 from typing import List, Optional
 from app.repositories.jobs_repository import JobsRepository
@@ -149,21 +150,39 @@ class JobsService:
         job = self.repo.get_job_by_id(job_id)
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
+        expires_at = job.expires_at
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if job.status != "ACTIVE" or (expires_at and expires_at <= datetime.now(timezone.utc)):
+            raise HTTPException(status_code=410, detail="This job is no longer accepting applications")
 
         application = (
             self.repo.db.query(JobApplication)
             .filter(
                 JobApplication.user_id == user_id,
-                JobApplication.job_title == job.title,
-                JobApplication.company == job.company.name,
+                JobApplication.job_id == job.id,
             )
             .first()
         )
+        if not application:
+            application = (
+                self.repo.db.query(JobApplication)
+                .filter(
+                    JobApplication.user_id == user_id,
+                    JobApplication.job_id.is_(None),
+                    JobApplication.job_title == job.title,
+                    JobApplication.company == job.company.name,
+                )
+                .first()
+            )
+            if application:
+                application.job_id = job.id
         if application:
             application.status = "applied"
         else:
             application = JobApplication(
                 user_id=user_id,
+                job_id=job.id,
                 job_title=job.title,
                 company=job.company.name,
                 description=job.description,
@@ -193,9 +212,32 @@ class JobsService:
         stream = AIGateway().generate_response_stream(messages, personality="career")
         full_text = await _collect_stream(stream)
 
+        known_skills = [
+            "Python", "FastAPI", "React", "TypeScript", "JavaScript", "Java",
+            "SQL", "PostgreSQL", "Docker", "AWS", "Azure", "Kubernetes",
+            "REST APIs", "GraphQL", "Git", "System Design", "Machine Learning",
+        ]
+        resume_lower = resume_text.lower()
+        job_lower = job_description.lower()
+        keyword_gaps = [
+            skill for skill in known_skills
+            if skill.lower() in job_lower and skill.lower() not in resume_lower
+        ]
+
         try:
             clean = _strip_markdown_json(full_text)
             parsed_data = json.loads(clean)
+            missing_skills = parsed_data.get("missing_skills", [])
+            placeholder_skills = any(
+                isinstance(skill, str) and skill.lower() in {"skill a", "skill b"}
+                for skill in missing_skills
+            )
+            if not isinstance(missing_skills, list) or placeholder_skills:
+                parsed_data["missing_skills"] = keyword_gaps
+            else:
+                parsed_data["missing_skills"] = [
+                    skill for skill in missing_skills if isinstance(skill, str)
+                ]
 
             if user_id != -1:
                 # Store it as an application context (for the existing flow)
@@ -212,8 +254,16 @@ class JobsService:
 
             return parsed_data
 
-        except json.JSONDecodeError:
-            logger.error(f"Failed to decode LLM JSON. Raw output: {full_text}")
-            raise HTTPException(
-                status_code=500, detail="Failed to match job. Please try again."
-            )
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            logger.warning("Job match AI output was not valid JSON; using keyword fallback")
+            fallback = {
+                "match_percentage": round(
+                    100 * (len(known_skills) - len(keyword_gaps)) / len(known_skills)
+                ),
+                "missing_skills": keyword_gaps,
+                "recommendation": (
+                    "Address the listed missing skills before applying."
+                    if keyword_gaps else "Your resume covers the detected technical keywords for this role."
+                ),
+            }
+            return fallback

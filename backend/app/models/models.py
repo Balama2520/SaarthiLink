@@ -205,6 +205,7 @@ class JobApplication(Base):
     __tablename__ = "job_applications"
     id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    job_id = Column(String, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True, index=True)
     workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=True)
     job_title = Column(String)
     company = Column(String)
@@ -642,6 +643,7 @@ class Job(Base):
     )  # e.g. "0-1 years", "Fresher"
     apply_url = Column(String(512), nullable=True)
     source = Column(String(100), nullable=True)  # "seed", "admin", "api"
+    source_job_id = Column(String(255), nullable=True, index=True)
     # Duplicate detection hash: sha256(company_name + title + location)
     dedup_hash = Column(String(64), nullable=True, unique=True)
     posted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

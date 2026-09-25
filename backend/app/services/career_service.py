@@ -78,19 +78,48 @@ class CareerService:
         skills = self.repo.get_user_skills(user_id)
         resume = self.repo.get_latest_resume(user_id)
         focus_areas, next_actions = self._role_focus(target_role)
-        strengths = (
-            [skill.skill_name for skill in skills[:3]]
-            if skills
-            else ["Foundational fundamentals"]
-        )
+
+        parsed_resume = {}
+        resume_skills = []
+        if resume and resume.parsed_json:
+            try:
+                parsed_resume = json.loads(resume.parsed_json)
+            except (TypeError, json.JSONDecodeError):
+                parsed_resume = {}
+            for skill in parsed_resume.get("tech_skills", []):
+                if isinstance(skill, str):
+                    resume_skills.append(skill)
+                elif isinstance(skill, dict):
+                    name = skill.get("skill_name") or skill.get("name")
+                    if name:
+                        resume_skills.append(str(name))
+
+        stored_skills = [skill.skill_name for skill in skills]
+        evidence_skills = list(dict.fromkeys(stored_skills + resume_skills))
+        evidence_lower = {skill.lower() for skill in evidence_skills}
+        resume_text = (resume.raw_text or "").lower() if resume else ""
+
+        def present_in_resume(skill: str) -> bool:
+            return skill.lower() in evidence_lower or skill.lower() in resume_text
+
+        strengths = [skill for skill in focus_areas if present_in_resume(skill)]
+        if not strengths and evidence_skills:
+            strengths = evidence_skills[:3]
+        elif not strengths:
+            strengths = ["Foundational fundamentals"]
 
         return {
             "target_role": target_role,
             "headline": f"Your next focus areas for {target_role}",
             "strengths": strengths,
-            "gaps": focus_areas,
+            "gaps": [skill for skill in focus_areas if not present_in_resume(skill)] or ["Advanced role-specific practice"],
             "next_actions": next_actions,
-            "resume_ready": bool(resume),
+            "resume_ready": bool(resume and resume.parsing_status == "completed"),
+            "analysis_source": (
+                "resume-grounded" if resume and (parsed_resume or resume.raw_text)
+                else "rule-based"
+            ),
+            "resume_skills": resume_skills,
             "profile_stage": profile.career_stage if profile else "unknown",
         }
 

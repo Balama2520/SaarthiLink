@@ -111,33 +111,62 @@ class GoalService:
         try:
             parsed = json.loads(_strip_markdown_json(full_text))
             validated = AIPlanResponse(**parsed)
+        except (json.JSONDecodeError, TypeError, ValueError) as error:
+            logger.warning("AI plan was not valid JSON; using deterministic fallback: %s", error)
+            validated = AIPlanResponse(
+                strategy=f"Build momentum toward: {goal.title}",
+                estimated_weeks=4,
+                milestones=[
+                    {
+                        "title": "Clarify the outcome",
+                        "description": goal.description or "Define what success looks like and how it will be measured.",
+                        "tasks": [
+                            {"title": "Write the target outcome and success criteria"},
+                            {"title": "Choose one measurable milestone for week 1"},
+                        ],
+                    },
+                    {
+                        "title": "Build the first working version",
+                        "description": "Create a small, testable deliverable connected to the goal.",
+                        "tasks": [
+                            {"title": "Complete the first focused work session"},
+                            {"title": "Review the result and record what is missing"},
+                        ],
+                    },
+                    {
+                        "title": "Validate and improve",
+                        "description": "Use feedback or evidence to strengthen the result.",
+                        "tasks": [
+                            {"title": "Get feedback from a mentor, peer, or real test"},
+                            {"title": "Apply the highest-impact improvement"},
+                        ],
+                    },
+                ],
+            )
 
-            for m in validated.milestones:
-                milestone = Goal(
+        for milestone_data in validated.milestones:
+            milestone = Goal(
+                user_id=user_id,
+                parent_id=goal.id,
+                type="MILESTONE",
+                title=milestone_data.title,
+                description=milestone_data.description,
+                due_date=milestone_data.due_date,
+            )
+            self.repo.save(milestone)
+
+            for task_data in milestone_data.tasks:
+                task = Goal(
                     user_id=user_id,
-                    parent_id=goal.id,
-                    type="MILESTONE",
-                    title=m.title,
-                    description=m.description,
-                    due_date=m.due_date,
+                    parent_id=milestone.id,
+                    type="TASK",
+                    title=task_data.title,
+                    description=task_data.description,
+                    due_date=task_data.due_date,
                 )
-                self.repo.save(milestone)
+                self.repo.save(task)
 
-                for t in m.tasks:
-                    task = Goal(
-                        user_id=user_id,
-                        parent_id=milestone.id,
-                        type="TASK",
-                        title=t.title,
-                        description=t.description,
-                        due_date=t.due_date,
-                    )
-                    self.repo.save(task)
-
-            return {"success": True, "plan": validated.model_dump()}
-        except Exception as e:
-            logger.error(f"Failed to generate/parse AI plan: {e}")
-            raise HTTPException(status_code=500, detail="Failed to generate AI plan")
+        return {"success": True, "plan": validated.model_dump()}
 
     def update_goal(self, goal_id: str, goal_in: GoalUpdate, user_id: int) -> Goal:
         goal = self.get_goal(goal_id, user_id)

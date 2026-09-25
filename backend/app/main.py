@@ -33,8 +33,7 @@ from app.core.logging import set_request_context
 from app.database.connection import SessionLocal
 from app.engine.outbox_worker import OutboxWorker
 
-# Sub-routers for Job Ingestion Engine and Back-Channel Enterprise Module
-from app.routes.jobs import router as jobs_router
+# Sub-router for the Back-Channel Enterprise Module
 from app.routes.enterprise import router as enterprise_router
 
 # Initialize Configuration & Standard Python Logging
@@ -194,10 +193,7 @@ async def global_security_exception_and_tracing_middleware(request: Request, cal
 # 1. Main API Router
 app.include_router(api_router, prefix=settings.API_PREFIX)
 
-# 2. Job Ingestion Engine Sub-Router (/api/v1/jobs)
-app.include_router(jobs_router, prefix=f"{settings.API_PREFIX}")
-
-# 3. Back-Channel Enterprise Module Sub-Router (/api/v1/enterprise)
+# 2. Back-Channel Enterprise Module Sub-Router (/api/enterprise)
 app.include_router(enterprise_router, prefix=f"{settings.API_PREFIX}")
 
 

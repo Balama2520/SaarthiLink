@@ -7,6 +7,7 @@ import {
 import { api } from "../services/api";
 import { GearRecommendCard } from "../components/GearRecommendCard";
 import { useProfile } from "../hooks/useProfile";
+import { getToken } from "../lib/auth";
 
 interface Milestone {
   day_range: string;
@@ -51,6 +52,7 @@ function MilestoneCard({
   const isLast = index === total - 1;
 
   const toggleCheck = (i: number) => {
+    const wasChecked = checked.has(i);
     setChecked(prev => {
       const next = new Set(prev);
       if (next.has(i)) {
@@ -60,7 +62,16 @@ function MilestoneCard({
       }
       return next;
     });
-    if (roadmapId) void api.updateRoadmapProgress(roadmapId, index, i, !checked.has(i));
+    if (roadmapId) {
+      void api.updateRoadmapProgress(roadmapId, index, i, !wasChecked).catch(() => {
+        setChecked(prev => {
+          const restored = new Set(prev);
+          if (wasChecked) restored.add(i);
+          else restored.delete(i);
+          return restored;
+        });
+      });
+    }
   };
 
   return (
@@ -144,13 +155,26 @@ export default function LearningRoadmaps() {
   const [duration, setDuration] = useState<30 | 90>(30);
   const [loading, setLoading] = useState(false);
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
+  const [savedRoadmaps, setSavedRoadmaps] = useState<Roadmap[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { data: profile } = useProfile();
 
   useEffect(() => {
+    if (!getToken()) return;
+    void api.getSavedRoadmaps().then(setSavedRoadmaps).catch(() => setSavedRoadmaps([]));
+  }, []);
+
+  useEffect(() => {
+    const prepRole = sessionStorage.getItem("saarthi_roadmap_role") || sessionStorage.getItem("saarthi_prep_role");
+    if (prepRole) {
+      setTargetRole(prepRole);
+      sessionStorage.removeItem("saarthi_roadmap_role");
+      void handleGenerate(prepRole);
+      return;
+    }
     const profileRole = (profile?.target_role as string | undefined)?.trim();
     if (profileRole && !targetRole) setTargetRole(profileRole);
-  }, [profile, targetRole]);
+  }, [profile]);
 
   const handleGenerate = async (role?: string) => {
     const finalRole = role ?? targetRole;
@@ -161,6 +185,9 @@ export default function LearningRoadmaps() {
     try {
       const data = await api.generateRoadmap(finalRole, duration);
       setRoadmap(data);
+      if (data.roadmap_id) {
+        setSavedRoadmaps((previous) => [data, ...previous.filter((item) => item.roadmap_id !== data.roadmap_id)]);
+      }
       if (role) setTargetRole(role);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -290,6 +317,24 @@ export default function LearningRoadmaps() {
                 })}
               </div>
             </div>
+
+            {savedRoadmaps.length > 0 && (
+              <div className="fade-in-up rounded-2xl border border-border bg-card/40 p-4">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">Saved Roadmaps</p>
+                <div className="space-y-1.5">
+                  {savedRoadmaps.slice(0, 5).map((saved) => (
+                    <button
+                      key={saved.roadmap_id}
+                      onClick={() => { setRoadmap(saved); setTargetRole(saved.target_role); setDuration(saved.duration_days === 90 ? 90 : 30); setError(null); }}
+                      className="w-full rounded-xl border border-border bg-background/30 px-3 py-2 text-left text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-primary transition-all"
+                    >
+                      <span className="block truncate">{saved.target_role}</span>
+                      <span className="text-[10px] opacity-70">{saved.duration_days} days · {saved.milestones.length} milestones</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Roadmap Display ─────────────────────────────── */}

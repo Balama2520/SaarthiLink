@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import { useAppStore } from "../store/useAppStore";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown, Sparkles, Briefcase, Mic, Route, History, FileText, ArrowRight } from "lucide-react";
 import { useStreamingText } from "../hooks/useStreamingText";
 
 function StreamingSummary({ text }: { text: string }) {
@@ -122,6 +122,21 @@ export default function ResumeAnalyzer() {
   const [roleOpen, setRoleOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [history, setHistory] = useState<Array<{ id: string; filename: string; version: number; ats_score: number; created_at: string; parsed_data: AnalysisResult }>>([]);
+
+  const loadHistory = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const data = await api.getResumeHistory();
+      if (Array.isArray(data)) setHistory(data);
+    } catch {
+      /* silent fallback */
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -226,6 +241,7 @@ export default function ResumeAnalyzer() {
       setResult({ parsed_data: data.parsed_data, resume_id: data.resume_id });
       toast("Resume parsed successfully!", "success");
       setShowSyncModal(true);
+      void loadHistory();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message || "Something went wrong");
@@ -360,6 +376,42 @@ export default function ResumeAnalyzer() {
                 {error}
               </div>
             )}
+
+            {/* Resume History List */}
+            {history.length > 0 && !result && (
+              <div className="mt-8 border-t border-border/50 pt-6">
+                <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                  <History className="w-4 h-4 text-primary" /> Previously Analyzed Resumes ({history.length})
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {history.slice(0, 4).map((h) => (
+                    <div
+                      key={h.id}
+                      onClick={() => setResult({ parsed_data: h.parsed_data, resume_id: h.id })}
+                      className="flex items-center justify-between p-3.5 rounded-2xl bg-card/40 border border-border hover:border-primary/40 cursor-pointer transition-all group"
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="truncate">
+                          <p className="text-xs font-semibold text-foreground truncate">{h.filename}</p>
+                          <p className="text-[10px] text-muted-foreground">Version {h.version} • {new Date(h.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${
+                          h.ats_score >= 75 ? "bg-green-500/10 text-green-400" : h.ats_score >= 50 ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-400"
+                        }`}>
+                          {h.ats_score} ATS
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -394,6 +446,47 @@ export default function ResumeAnalyzer() {
                     <ScoreRing score={result.parsed_data.section_scores.education || 0} size="sm" label="Education" />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Quick Action Navigation Buttons */}
+            <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-transparent border border-primary/20 rounded-3xl p-6 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h4 className="font-bold text-foreground text-base flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" /> What would you like to do with this resume?
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use your extracted skills and target role ({targetRole || "Software Engineer"}) across Saarthi.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3 shrink-0">
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem("saarthi_match_role", targetRole || "Software Engineer");
+                    window.location.hash = "#jobs";
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:opacity-90 transition-all shadow-md"
+                >
+                  <Briefcase className="w-4 h-4" /> Find Matching Jobs <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem("saarthi_prep_role", targetRole || "Software Engineer");
+                    window.location.hash = "#interview";
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground font-semibold text-xs hover:opacity-90 transition-all shadow-md"
+                >
+                  <Mic className="w-4 h-4" /> Practice Interview <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem("saarthi_copilot_role", targetRole || "Software Engineer");
+                    window.location.hash = "#/copilot";
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-secondary text-secondary-foreground font-semibold text-xs hover:bg-muted transition-all border border-border"
+                >
+                  <Route className="w-4 h-4" /> Open Career Copilot <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 

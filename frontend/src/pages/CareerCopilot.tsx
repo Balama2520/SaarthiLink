@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Compass, GraduationCap, ListChecks, Send, Sparkles, Target } from "lucide-react";
+import { Compass, FileUp, GraduationCap, ListChecks, Send, Sparkles, Target } from "lucide-react";
 import { api } from "../services/api";
 import { useProfile } from "../hooks/useProfile";
 import { useAppStore } from "../store/useAppStore";
@@ -12,6 +12,8 @@ interface SkillGap {
   gaps: string[];
   next_actions: string[];
   resume_ready: boolean;
+  analysis_source?: "resume-grounded" | "rule-based";
+  resume_skills?: string[];
   profile_stage?: string;
 }
 
@@ -24,13 +26,19 @@ interface LearningPlan {
 export default function CareerCopilot() {
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const { data: profile } = useProfile();
+  const { data: latestResume, isLoading: resumeLoading } = useQuery({
+    queryKey: ["latestResume"],
+    queryFn: api.getLatestResume,
+    enabled: isAuthenticated,
+  });
   const profileRole = (profile?.target_role as string | undefined) || "";
-  const [role, setRole] = useState("");
+  const [role, setRole] = useState(() => sessionStorage.getItem("saarthi_copilot_role") || "");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
   const [copilotSessionId, setCopilotSessionId] = useState<string | null>(null);
   const targetRole = role.trim() || profileRole || "Software Engineer";
+  const hasResume = Boolean(latestResume);
 
   const { data: summary } = useQuery({
     queryKey: ["careerDashboard"],
@@ -55,6 +63,12 @@ export default function CareerCopilot() {
     return "Set a target role on your profile, or enter one here. Copilot uses your existing career data — it is not a generic chat.";
   }, [profileRole]);
 
+  const runAnalysis = () => {
+    if (!hasResume) return;
+    gapMutation.mutate();
+    planMutation.mutate();
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-background px-4 py-8 sm:px-6 lg:px-10 custom-scrollbar">
       <div className="mx-auto max-w-6xl space-y-8">
@@ -64,10 +78,46 @@ export default function CareerCopilot() {
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{intro}</p>
         </header>
 
+        <section className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3">
+          {[
+            { step: "1", title: "Resume ATS", detail: "Upload real evidence", route: "#/resume" },
+            { step: "2", title: "Career Copilot", detail: "Find role-specific gaps", route: "#/copilot" },
+            { step: "3", title: "Roadmap & Goals", detail: "Turn gaps into action", route: "#/goals" },
+          ].map((item, index) => {
+            const active = index === 0 ? hasResume : index === 1 ? Boolean(gap) : Boolean(plan);
+            return (
+              <button
+                key={item.step}
+                type="button"
+                onClick={() => { window.location.hash = item.route; }}
+                className={`flex items-start gap-3 rounded-lg border p-3 text-left transition-colors ${active ? "border-primary/40 bg-primary/10" : "border-border/70 bg-muted/20 hover:border-primary/30"}`}
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">{item.step}</span>
+                <span>
+                  <span className="block text-xs font-bold text-foreground">{item.title}</span>
+                  <span className="mt-1 block text-[11px] text-muted-foreground">{item.detail}</span>
+                </span>
+              </button>
+            );
+          })}
+        </section>
+
         {!isAuthenticated && (
           <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
             Guest mode can preview role-based gaps. Sign in so Copilot can use your resume, skills, and goals.
           </div>
+        )}
+
+        {isAuthenticated && !resumeLoading && !hasResume && (
+          <section className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Resume required for personalized Copilot analysis</p>
+              <p className="mt-1 text-xs text-muted-foreground">Upload your resume so Skill Gap and Roadmap use your actual experience and skills.</p>
+            </div>
+            <button type="button" onClick={() => { window.location.hash = "#/resume"; }} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground">
+              <FileUp className="h-4 w-4" /> Upload Resume
+            </button>
+          </section>
         )}
 
         {summary && (
@@ -100,10 +150,11 @@ export default function CareerCopilot() {
             />
             <button
               type="button"
-              onClick={() => { gapMutation.mutate(); planMutation.mutate(); }}
-              className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+              onClick={runAnalysis}
+              disabled={!hasResume || resumeLoading}
+              className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Analyze path
+              {hasResume ? "Analyze path" : "Upload resume first"}
             </button>
           </div>
         </section>
@@ -130,6 +181,11 @@ export default function CareerCopilot() {
             {gap && (
               <div className="space-y-4">
                 <p className="text-sm text-foreground">{gap.headline}</p>
+                <p className="text-xs text-muted-foreground">
+                  {gap.analysis_source === "resume-grounded"
+                    ? "Grounded in your uploaded resume and saved skills."
+                    : "Based on role guidance. Upload a parsed resume for personalized gaps."}
+                </p>
                 <div>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Already strong</p>
                   <div className="flex flex-wrap gap-2">

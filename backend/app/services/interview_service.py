@@ -31,10 +31,14 @@ class InterviewService:
     def __init__(self, repo: InterviewRepository):
         self.repo = repo
 
-    def create_session(
+    async def create_session(
         self, user_id: int, role: str, company: str | None, difficulty: str
     ) -> InterviewSession:
-        questions = self._questions_for(role, difficulty)
+        """Create a persisted interview session with AI-generated, role-specific questions.
+
+        Falls back to static questions if AI call fails so the session always starts.
+        """
+        questions = await self._generate_questions_with_ai(role, difficulty, company)
         return self.repo.create(
             InterviewSession(
                 user_id=user_id,
@@ -56,11 +60,13 @@ class InterviewService:
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
         data = json.loads(session.transcript_json or "{}")
+        questions = data.get("questions", [])
+        if question_index >= len(questions):
+            raise HTTPException(status_code=422, detail="Question index is outside this interview session")
         answers = data.setdefault("answers", [])
         while len(answers) <= question_index:
             answers.append("")
         answers[question_index] = answer
-        questions = data.get("questions", [])
         transcript = "\n\n".join(
             f"Interviewer: {question}\nCandidate: {answers[index] if index < len(answers) else ''}"
             for index, question in enumerate(questions)
@@ -74,8 +80,41 @@ class InterviewService:
         session.transcript_json = json.dumps(data)
         return self.repo.save(session)
 
+    async def _generate_questions_with_ai(
+        self, role: str, difficulty: str, company: str | None
+    ) -> list[str]:
+        """Call the generate_questions prompt to get AI-tailored interview questions.
+
+        Falls back to static questions on any failure so the session always starts.
+        """
+        company_context = f"at {company}" if company else ""
+        try:
+            prompt = PromptManager.load(
+                "interview/generate_questions",
+                role=role,
+                difficulty=difficulty,
+                company_context=company_context,
+            )
+            messages = [{"role": "user", "content": prompt}]
+            stream = AIGateway().generate_response_stream(messages, personality="interview")
+            full_text = await _collect_stream(stream)
+            clean = _strip_markdown_json(full_text)
+            data = json.loads(clean)
+            questions = data.get("questions", [])
+            if questions and isinstance(questions, list):
+                return [q for q in questions if isinstance(q, str)]
+        except Exception as exc:
+            logger.warning(
+                "AI question generation failed for role=%s difficulty=%s; using static fallback: %s",
+                role,
+                difficulty,
+                exc,
+            )
+        return self._questions_for(role, difficulty)
+
     @staticmethod
     def _questions_for(role: str, difficulty: str) -> list[str]:
+        """Static fallback questions used when AI call fails."""
         level = difficulty.lower()
         prompts = {
             "easy": [
@@ -114,23 +153,13 @@ class InterviewService:
             clean = _strip_markdown_json(full_text)
             parsed_data = json.loads(clean)
 
-            if persist and user_id != -1:
-                db_interview = InterviewSession(
-                    user_id=user_id,
-                    role=target_role,
-                    feedback=json.dumps(parsed_data),
-                    score=parsed_data.get("score", 0),
-                    transcript_json=json.dumps({"transcript": transcript}),
-                )
-                self.repo.create(db_interview)
-
-            return parsed_data
+            feedback = parsed_data
 
         except Exception:
             logger.warning(
                 f"Using fallback interview evaluation for output: {full_text[:100]}"
             )
-            return {
+            feedback = {
                 "score": 78,
                 "strengths": [
                     "Clear communication",
@@ -142,3 +171,14 @@ class InterviewService:
                 ],
                 "feedback": "Solid response covering core technical requirements. Adding quantifiable project outcomes will strengthen your impact.",
             }
+
+        if persist and user_id != -1:
+            db_interview = InterviewSession(
+                user_id=user_id,
+                role=target_role,
+                feedback=json.dumps(feedback),
+                score=int(feedback.get("score", 0)),
+                transcript_json=json.dumps({"transcript": transcript}),
+            )
+            self.repo.create(db_interview)
+        return feedback

@@ -45,13 +45,13 @@ async def evaluate_interview(
 
 
 @router.post("/session")
-def create_interview_session(
+async def create_interview_session(
     request: CreateInterviewSessionRequest,
     current_user: User = Depends(require_authenticated_user),
     interview_svc: InterviewService = Depends(get_interview_service),
 ):
-    """Create a persisted interview session with difficulty-tailored questions."""
-    session = interview_svc.create_session(
+    """Create a persisted interview session with AI-generated, role-specific questions."""
+    session = await interview_svc.create_session(
         current_user.id, request.role, request.company, request.difficulty
     )
     return {

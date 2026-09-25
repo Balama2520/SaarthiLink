@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     # Admin access is opt-in.  Generic account names must not become admins
     # merely because a deployment omitted this setting.
     ADMIN_USERNAMES: str = os.getenv("ADMIN_USERNAMES", "")
+    INGEST_API_KEY: str = os.getenv("INGEST_API_KEY", "")
+    INGEST_WEBHOOK_TOKEN: str = os.getenv("INGEST_WEBHOOK_TOKEN", "")
 
     # CORS Configuration
     ALLOWED_ORIGINS: str = os.getenv(

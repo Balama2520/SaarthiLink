@@ -9,11 +9,15 @@
 
 // Configuration constants
 var CONFIG = {
-  WEBHOOK_URL: "https://saarthilink.onrender.com/api/jobs/ingest",
-  INGEST_TOKEN: "saarthi-ingest-secure-token-2026",
   STAGING_TAB_NAME: "09_JOBS_STAGING",
   BATCH_SIZE: 50
 };
+
+function getConfigValue(key) {
+  var value = PropertiesService.getScriptProperties().getProperty(key);
+  if (!value) throw new Error("Missing Script Property: " + key);
+  return value;
+}
 
 /**
  * Main Trigger Function — Invoked manually or via Hourly Time-Driven Trigger.
@@ -115,14 +119,14 @@ function sendBatchToBackend(jobsArray) {
     method: "post",
     contentType: "application/json",
     headers: {
-      "X-Saarthi-Ingest-Token": CONFIG.INGEST_TOKEN
+      "Authorization": "Bearer " + getConfigValue("SAARTHI_INGEST_API_KEY")
     },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   };
   
   try {
-    var response = UrlFetchApp.fetch(CONFIG.WEBHOOK_URL, options);
+    var response = UrlFetchApp.fetch(getConfigValue("SAARTHI_INGEST_URL"), options);
     var code = response.getResponseCode();
     var content = response.getContentText();
     

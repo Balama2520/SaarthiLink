@@ -1,20 +1,143 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+import hashlib
+import hmac
+import re
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, Header, Query, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional
+from sqlalchemy.orm import Session
 
 from app.core.dependencies.auth import get_current_user, require_authenticated_user
 from app.models.models import User
 from app.services.jobs_service import JobsService
 from app.core.dependencies.services import get_jobs_service
+from app.database.connection import get_db
 from app.schemas.jobs import (
     JobOut,
     JobListOut,
     JobRecommendationOut,
     SavedJobOut,
     SaveJobRequest,
+    JobIngestBatchRequest,
+    JobIngestResponse,
 )
+from app.models.models import Company, Job, JobSkill
+from app.core.config import get_settings
+from sqlalchemy import func
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
+
+def _verify_ingestion_credentials(
+    authorization: Optional[str],
+    legacy_header: Optional[str],
+) -> None:
+    settings = get_settings()
+    configured = settings.INGEST_API_KEY or settings.INGEST_WEBHOOK_TOKEN
+    if not configured:
+        raise HTTPException(status_code=503, detail="Job ingestion is not configured")
+    bearer = authorization.removeprefix("Bearer ").strip() if authorization else ""
+    supplied = bearer or (legacy_header or "").strip()
+    if not supplied or not hmac.compare_digest(supplied, configured):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid ingestion credentials")
+
+
+def _canonical_city(location: str) -> str:
+    city = re.split(r"[,/]", location or "Remote", maxsplit=1)[0]
+    return re.sub(r"\s+", " ", city).strip().lower()
+
+
+def _job_fingerprint(company: str, title: str, location: str, source_job_id: Optional[str] = None) -> str:
+    raw = "_".join((company.strip().lower(), title.strip().lower(), _canonical_city(location), (source_job_id or "").strip().lower()))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+@router.post("/ingest", response_model=JobIngestResponse, status_code=status.HTTP_201_CREATED)
+async def ingest_jobs(
+    payload: JobIngestBatchRequest,
+    authorization: Optional[str] = Header(None),
+    x_saarthi_ingest_token: Optional[str] = Header(None, alias="X-Saarthi-Ingest-Token"),
+    db: Session = Depends(get_db),
+):
+    """Validate and idempotently upsert jobs from a configured ingestion source."""
+    _verify_ingestion_credentials(authorization, x_saarthi_ingest_token)
+    inserted = updated = duplicates = 0
+    now = datetime.now(timezone.utc)
+
+    try:
+        for item in payload.jobs:
+            location = (item.location or "Remote").strip() or "Remote"
+            ingest_source = payload.source_id or payload.source
+            fingerprint = _job_fingerprint(item.company, item.title, location, item.source_job_id)
+            existing_query = db.query(Job)
+            if item.source_job_id:
+                existing_query = existing_query.filter(
+                    Job.source == ingest_source,
+                    Job.source_job_id == item.source_job_id,
+                )
+            else:
+                existing_query = existing_query.filter(Job.dedup_hash == fingerprint)
+            existing = existing_query.first()
+            if existing:
+                existing.description = item.description or existing.description
+                existing.location = location
+                existing.job_type = item.job_type or existing.job_type
+                existing.employment_type = item.employment_type or existing.employment_type
+                existing.remote_type = item.remote_type or existing.remote_type
+                existing.experience_required = item.experience_required or existing.experience_required
+                existing.salary_min = item.salary_min if item.salary_min is not None else existing.salary_min
+                existing.salary_max = item.salary_max if item.salary_max is not None else existing.salary_max
+                existing.apply_url = item.apply_url or existing.apply_url
+                existing.expires_at = item.expires_at or existing.expires_at
+                existing.source_job_id = item.source_job_id or existing.source_job_id
+                duplicates += 1
+                updated += 1
+                continue
+
+            company_name = item.company.strip()
+            company = db.query(Company).filter(func.lower(Company.name) == company_name.lower()).first()
+            if not company:
+                company = Company(name=company_name, website=item.company_url, careers_url=item.company_url, is_hiring=True)
+                db.add(company)
+                db.flush()
+
+            job = Job(
+                company_id=company.id,
+                title=item.title.strip(),
+                description=item.description,
+                location=location,
+                job_type=item.job_type,
+                employment_type=item.employment_type,
+                remote_type=item.remote_type or item.employment_type,
+                status="ACTIVE",
+                salary_min=item.salary_min,
+                salary_max=item.salary_max,
+                experience_required=item.experience_required,
+                apply_url=item.apply_url,
+                source=ingest_source,
+                source_job_id=item.source_job_id,
+                dedup_hash=fingerprint,
+                posted_at=item.posted_at or now,
+                expires_at=item.expires_at,
+            )
+            db.add(job)
+            db.flush()
+            for skill in {skill.strip().lower() for skill in item.skills if skill.strip()}:
+                db.add(JobSkill(job_id=job.id, skill_name=skill, is_required=True))
+            inserted += 1
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Job ingestion failed")
+
+    return JobIngestResponse(
+        status="success",
+        source=payload.source,
+        processed=len(payload.jobs),
+        inserted=inserted,
+        updated=updated,
+        duplicates=duplicates,
+    )
 
 
 @router.get("", response_model=List[JobListOut])
@@ -92,7 +215,7 @@ async def get_job(job_id: str, jobs_svc: JobsService = Depends(get_jobs_service)
 
 
 class JobMatchRequest(BaseModel):
-    resume_text: str
+    resume_text: Optional[str] = None  # Optional — auto-loaded from DB if authenticated
     job_description: str
     company_name: str
     job_title: str
@@ -124,11 +247,38 @@ async def match_job(
     request: JobMatchRequest,
     current_user: User = Depends(get_current_user),
     jobs_svc: JobsService = Depends(get_jobs_service),
+    db: Session = Depends(get_db),
 ):
-    """(Existing) AI analysis of a job description against resume text."""
+    """AI analysis of a job description against resume text.
+
+    If resume_text is omitted and the user is authenticated,
+    the latest analyzed resume is fetched automatically from the DB.
+    """
+    from app.models.models import Resume
+
+    resume_text = request.resume_text
+    if not resume_text and current_user.id != -1:
+        latest = (
+            db.query(Resume)
+            .filter(
+                Resume.user_id == current_user.id,
+                Resume.parsing_status == "completed",
+            )
+            .order_by(Resume.created_at.desc())
+            .first()
+        )
+        if latest and latest.raw_text:
+            resume_text = latest.raw_text
+
+    if not resume_text:
+        raise HTTPException(
+            status_code=400,
+            detail="No resume text provided and no analyzed resume found. Please upload a resume first.",
+        )
+
     return await jobs_svc.match_job(
         current_user.id,
-        request.resume_text,
+        resume_text,
         request.job_description,
         request.company_name,
         request.job_title,
