@@ -91,6 +91,364 @@ def upsert_job(db: Session, company: Company, data: dict, skills: list[dict]) ->
 # ---------------------------------------------------------------------------
 
 SEED_DATA: list[dict] = [
+    # ── 09_JOBS_STAGING Google Sheet Board Imports ────────────────────────────────
+    {
+        "company": {
+            "name": "Razorpay",
+            "domain": "razorpay.com",
+            "logo_url": "https://logo.clearbit.com/razorpay.com",
+            "industry": "Fintech / Payments",
+            "company_size": "1000-5000",
+            "headquarters": "Bengaluru, India",
+            "website": "https://razorpay.com",
+            "careers_url": "https://razorpay.com/jobs",
+            "linkedin_url": "https://linkedin.com/company/razorpay",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Graduate Engineer Trainee",
+                    "description": "Join Razorpay's engineering core team. Build scalable payment gateway services, merchant dashboards, and banking integrations.",
+                    "location": "Bengaluru, India",
+                    "job_type": "Full-time",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Fresher (0-1y)",
+                    "salary_min": 1200000,
+                    "salary_max": 1600000,
+                    "apply_url": "https://razorpay.com/jobs",
+                },
+                "skills": [
+                    {"name": "java", "required": True},
+                    {"name": "golang", "required": True},
+                    {"name": "sql", "required": True},
+                    {"name": "rest api", "required": False},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "Postman",
+            "domain": "postman.com",
+            "logo_url": "https://logo.clearbit.com/postman.com",
+            "industry": "API Development / Software",
+            "company_size": "500-1000",
+            "headquarters": "Bengaluru, India",
+            "website": "https://postman.com",
+            "careers_url": "https://postman.com/careers",
+            "linkedin_url": "https://linkedin.com/company/postman-platform",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Junior Software Engineer",
+                    "description": "Build features for the Postman API Platform used by 25M+ developers. Work across Node.js, React, and cloud infrastructure.",
+                    "location": "Bengaluru, India",
+                    "job_type": "Full-time",
+                    "employment_type": "Hybrid",
+                    "remote_type": "Hybrid",
+                    "experience_required": "Entry (0-2y)",
+                    "salary_min": 800000,
+                    "salary_max": 1400000,
+                    "apply_url": "https://postman.com/careers",
+                },
+                "skills": [
+                    {"name": "python", "required": True},
+                    {"name": "javascript", "required": True},
+                    {"name": "sql", "required": True},
+                    {"name": "react", "required": False},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "Navi",
+            "domain": "navi.com",
+            "logo_url": "https://logo.clearbit.com/navi.com",
+            "industry": "Fintech / Financial Services",
+            "company_size": "1000-5000",
+            "headquarters": "Bengaluru, India",
+            "website": "https://navi.com",
+            "careers_url": "https://navi.com/careers",
+            "linkedin_url": "https://linkedin.com/company/navi-tech",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Data Analyst",
+                    "description": "Analyze credit, insurance, and lending data. Work closely with business and risk teams using SQL, Excel, and Tableau dashboards.",
+                    "location": "Bengaluru, India",
+                    "job_type": "Full-time",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Fresher (0-1y)",
+                    "salary_min": 600000,
+                    "salary_max": 1000000,
+                    "apply_url": "https://navi.com/careers",
+                },
+                "skills": [
+                    {"name": "excel", "required": True},
+                    {"name": "sql", "required": True},
+                    {"name": "tableau", "required": True},
+                    {"name": "python", "required": False},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "Tantranzm",
+            "domain": "tantranzm.com",
+            "logo_url": "https://logo.clearbit.com/tantranzm.com",
+            "industry": "Enterprise Technology & Consulting",
+            "company_size": "100-500",
+            "headquarters": "Gurugram, India",
+            "website": "https://tantranzm.com",
+            "careers_url": "https://tantranzm.com/careers",
+            "linkedin_url": "https://linkedin.com/company/tantranzm",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Fresher – Cloud, AI & Enterprise Technology Associate",
+                    "description": "Entry-level engineering role working with Python, Java, cloud services, and REST APIs for enterprise clients.",
+                    "location": "Gurugram, India",
+                    "job_type": "Full-time",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Fresher (0-1y)",
+                    "salary_min": 400000,
+                    "salary_max": 700000,
+                    "apply_url": "https://tantranzm.com/careers",
+                },
+                "skills": [
+                    {"name": "python", "required": True},
+                    {"name": "java", "required": True},
+                    {"name": "javascript", "required": True},
+                    {"name": "c++", "required": False},
+                    {"name": "databases", "required": True},
+                    {"name": "apis", "required": True},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "pharma&",
+            "domain": "pharmaand.com",
+            "logo_url": "https://logo.clearbit.com/pharmaand.com",
+            "industry": "Healthcare / Life Sciences AI",
+            "company_size": "100-500",
+            "headquarters": "Hyderabad, India",
+            "website": "https://pharmaand.com",
+            "careers_url": "https://pharmaand.com/careers",
+            "linkedin_url": "https://linkedin.com/company/pharma-and",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "AI & Machine Learning Intern",
+                    "description": "Assist in building ML data pipelines, NLP models, and data extraction pipelines for pharmaceutical research data.",
+                    "location": "Hyderabad, India",
+                    "job_type": "Internship",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Fresher (0-1y)",
+                    "salary_min": 180000,
+                    "salary_max": 240000,
+                    "apply_url": "https://pharmaand.com/careers",
+                },
+                "skills": [
+                    {"name": "python", "required": True},
+                    {"name": "pandas", "required": True},
+                    {"name": "numpy", "required": True},
+                    {"name": "machine learning", "required": False},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "Swiggy",
+            "domain": "swiggy.com",
+            "logo_url": "https://logo.clearbit.com/swiggy.com",
+            "industry": "Food Tech",
+            "company_size": "5000-10000",
+            "headquarters": "Bengaluru, India",
+            "website": "https://swiggy.com",
+            "careers_url": "https://careers.swiggy.com",
+            "linkedin_url": "https://linkedin.com/company/swiggy",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Senior Engineering Manager",
+                    "description": "Lead engineering teams building high-throughput logistics, search, and ordering engines at massive scale.",
+                    "location": "Bengaluru, India",
+                    "job_type": "Full-time",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Senior (8y+)",
+                    "salary_min": 4000000,
+                    "salary_max": 6000000,
+                    "apply_url": "https://careers.swiggy.com",
+                },
+                "skills": [
+                    {"name": "architecture", "required": True},
+                    {"name": "management", "required": True},
+                    {"name": "system design", "required": True},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "BBL Consultants",
+            "domain": "bblconsultants.com",
+            "logo_url": "https://logo.clearbit.com/bblconsultants.com",
+            "industry": "IT Consulting & Data",
+            "company_size": "50-200",
+            "headquarters": "Chennai, India",
+            "website": "https://bblconsultants.com",
+            "careers_url": "https://bblconsultants.com/careers",
+            "linkedin_url": "https://linkedin.com/company/bbl-consultants",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Data Engineer Trainer",
+                    "description": "Train and architect big data solutions using Databricks, Apache Spark, Delta Lake, and cloud data warehouses.",
+                    "location": "Chennai, India",
+                    "job_type": "Full-time",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Mid (2y+)",
+                    "salary_min": 800000,
+                    "salary_max": 1500000,
+                    "apply_url": "https://bblconsultants.com/careers",
+                },
+                "skills": [
+                    {"name": "databricks", "required": True},
+                    {"name": "apache spark", "required": True},
+                    {"name": "delta lake", "required": True},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "micro1",
+            "domain": "micro1.ai",
+            "logo_url": "https://logo.clearbit.com/micro1.ai",
+            "industry": "AI & Offshore Engineering Platform",
+            "company_size": "100-500",
+            "headquarters": "Remote / San Francisco, CA",
+            "website": "https://micro1.ai",
+            "careers_url": "https://micro1.ai/careers",
+            "linkedin_url": "https://linkedin.com/company/micro1",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Senior Platform Engineer",
+                    "description": "Build cloud platform infrastructure, Kubernetes clusters, and automated developer tooling.",
+                    "location": "Remote, US",
+                    "job_type": "Full-time",
+                    "employment_type": "Remote",
+                    "remote_type": "Fully Remote",
+                    "experience_required": "Mid (3y+)",
+                    "salary_min": 5000000,
+                    "salary_max": 10000000,
+                    "apply_url": "https://micro1.ai/careers",
+                },
+                "skills": [
+                    {"name": "cloud infrastructure", "required": True},
+                    {"name": "platform engineering", "required": True},
+                    {"name": "devops", "required": True},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "Infosys Finacle",
+            "domain": "edgeverve.com",
+            "logo_url": "https://logo.clearbit.com/edgeverve.com",
+            "industry": "Banking Technology / SaaS",
+            "company_size": "5000-10000",
+            "headquarters": "Chennai, India",
+            "website": "https://edgeverve.com",
+            "careers_url": "https://edgeverve.com/careers",
+            "linkedin_url": "https://linkedin.com/company/infosys-finacle",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Data Scientist - AI/ML Engineer",
+                    "description": "Develop Generative AI, LLM, and RAG solutions for core banking and financial analytics products.",
+                    "location": "Chennai, India",
+                    "job_type": "Full-time",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Senior (6y+)",
+                    "salary_min": 1500000,
+                    "salary_max": 2800000,
+                    "apply_url": "https://edgeverve.com/careers",
+                },
+                "skills": [
+                    {"name": "genai", "required": True},
+                    {"name": "python", "required": True},
+                    {"name": "llm & rag", "required": True},
+                ],
+            }
+        ],
+    },
+    {
+        "company": {
+            "name": "Wayfair",
+            "domain": "wayfair.com",
+            "logo_url": "https://logo.clearbit.com/wayfair.com",
+            "industry": "E-Commerce / Tech",
+            "company_size": "10000+",
+            "headquarters": "Boston, MA",
+            "website": "https://wayfair.com",
+            "careers_url": "https://wayfair.com/careers",
+            "linkedin_url": "https://linkedin.com/company/wayfair",
+            "is_hiring": True,
+        },
+        "jobs": [
+            {
+                "info": {
+                    "title": "Machine Learning II",
+                    "description": "Develop ranking algorithms, visual search, and recommendation engines for e-commerce catalog search.",
+                    "location": "Bengaluru, India",
+                    "job_type": "Full-time",
+                    "employment_type": "On-site",
+                    "remote_type": "On-site",
+                    "experience_required": "Mid (3y+)",
+                    "salary_min": 1800000,
+                    "salary_max": 3200000,
+                    "apply_url": "https://wayfair.com/careers",
+                },
+                "skills": [
+                    {"name": "python", "required": True},
+                    {"name": "machine learning", "required": True},
+                    {"name": "nlp", "required": True},
+                ],
+            }
+        ],
+    },
     # ── Google ────────────────────────────────────────────────────────────────
     {
         "company": {
