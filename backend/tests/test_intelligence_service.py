@@ -84,7 +84,7 @@ def test_admin_stats_extended_keys(client, admin_headers):
     assert "total_company_profiles" in data
     assert "sheets_status" in data
     assert "ai_status" in data
-    assert data["ai_status"]["primary_provider"] in ("gemini", "none")
+    assert data["ai_status"]["primary_provider"] in ("huggingface", "gemini", "none")
 
 
 def test_run_pipeline_admin_endpoint_unconfigured(client, admin_headers):

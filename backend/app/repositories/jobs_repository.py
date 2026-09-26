@@ -64,7 +64,41 @@ class JobsRepository:
         if location:
             query = query.filter(Job.location.ilike(f"%{location}%"))
         if experience:
-            query = query.filter(Job.experience_required.ilike(f"%{experience}%"))
+            exp_term = experience.strip()
+            if exp_term == "2-3":
+                query = query.filter(
+                    or_(
+                        Job.experience_required.ilike("%2-3%"),
+                        Job.experience_required.ilike("%3-2%"),
+                        Job.experience_required.ilike("%1-3%"),
+                        Job.experience_required.ilike("%2y%"),
+                        Job.experience_required.ilike("%3y%"),
+                        Job.experience_required.ilike("%mid%"),
+                    )
+                )
+            elif exp_term == "1-3":
+                query = query.filter(
+                    or_(
+                        Job.experience_required.ilike("%1-3%"),
+                        Job.experience_required.ilike("%3-1%"),
+                        Job.experience_required.ilike("%2-3%"),
+                        Job.experience_required.ilike("%3-2%"),
+                        Job.experience_required.ilike("%0-1%"),
+                        Job.experience_required.ilike("%1-2%"),
+                    )
+                )
+            elif exp_term.lower() == "fresher":
+                query = query.filter(
+                    or_(
+                        Job.experience_required.ilike("%fresher%"),
+                        Job.experience_required.ilike("%0-1%"),
+                        Job.experience_required.ilike("%0 yrs%"),
+                        Job.experience_required.ilike("%entry%"),
+                        Job.experience_required.ilike("%graduate%"),
+                    )
+                )
+            else:
+                query = query.filter(Job.experience_required.ilike(f"%{exp_term}%"))
         if job_type:
             query = query.filter(Job.job_type.ilike(job_type))
         if remote_type:

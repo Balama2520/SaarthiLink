@@ -42,14 +42,10 @@ class AIGateway:
         if image_data and processed_messages and processed_messages[-1]["role"] == "user":
             processed_messages[-1]["images"] = [image_data]
 
-        # Prefer the configured Hugging Face Space when available, then try
-        # Gemini and Ollama in order so one stale provider cannot stop recovery.
-        has_hf_space = bool(getattr(settings, "HF_SPACE_ID", ""))
+        # Always prioritize Hugging Face as the primary AI Brain, followed by Gemini & Ollama
         has_gemini_key = bool(settings.GEMINI_API_KEY)
 
-        providers = []
-        if has_hf_space:
-            providers.append(("huggingface", model or settings.DEFAULT_MODEL))
+        providers = [("huggingface", model or settings.DEFAULT_MODEL)]
         if has_gemini_key:
             providers.append(("gemini", settings.GEMINI_MODEL))
         providers.append(("ollama", model or settings.DEFAULT_MODEL))

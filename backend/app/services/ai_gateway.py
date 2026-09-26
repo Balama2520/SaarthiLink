@@ -60,30 +60,32 @@ class AIGatewayService:
         system_instruction: str = "You are Saarthi, an expert Career & Resume Copilot.",
     ) -> Dict[str, Any]:
         """
-        Routes generation to primary Gemini API. Falls back to Hugging Face Qwen if unreachable.
+        Routes generation to primary Hugging Face API (Qwen2.5-3B-Instruct).
+        Falls back to Google Gemini if HF is unreachable or times out.
         """
         truncated_history = truncate_chat_context(chat_history or [])
 
-        # Try Gemini API first if configured
+        # 1. Try Hugging Face first (Primary AI Brain)
+        try:
+            return await self._call_huggingface_qwen(prompt, truncated_history, system_instruction)
+        except Exception as exc:
+            logger.warning(
+                f"Hugging Face Inference invocation failed or timed out: {exc}. Falling back to Gemini."
+            )
+
+        # 2. Fallback to Gemini API if configured
         if self.gemini_key:
             try:
                 return await self._call_gemini_api(prompt, truncated_history, system_instruction)
             except Exception as exc:
-                logger.warning(
-                    f"Gemini API invocation failed or timed out: {exc}. Falling back to Hugging Face Qwen."
-                )
+                logger.error(f"Gemini API fallback invocation failed: {exc}")
 
-        # Fallback to Hugging Face (Qwen2.5-3B-Instruct)
-        try:
-            return await self._call_huggingface_qwen(prompt, truncated_history, system_instruction)
-        except Exception as exc:
-            logger.error(f"Hugging Face Inference invocation failed: {exc}")
-            # Graceful degraded fallback
-            return {
-                "response": "I am experiencing high traffic right now. Here is a quick strategy: Focus on your core DSA, review resume keywords, and practice star-format interview questions.",
-                "provider": "fallback_offline",
-                "status": "degraded",
-            }
+        # 3. Graceful degraded fallback if all remote providers fail
+        return {
+            "response": "I am experiencing high traffic right now. Here is a quick strategy: Focus on your core DSA, review resume keywords, and practice star-format interview questions.",
+            "provider": "fallback_offline",
+            "status": "degraded",
+        }
 
     async def _call_gemini_api(
         self,

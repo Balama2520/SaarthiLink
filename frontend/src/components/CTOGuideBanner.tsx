@@ -14,7 +14,7 @@ export const CTOGuideBanner: React.FC<CTOGuideBannerProps> = ({
   subtitle,
   steps,
   ctoTip,
-  defaultExpanded = true,
+  defaultExpanded = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 

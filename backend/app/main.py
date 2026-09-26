@@ -62,14 +62,12 @@ async def lifespan(fastapi_app: FastAPI):
     _worker_task = asyncio.create_task(_outbox_worker.start())
     logger.info("Outbox Worker Task initialized.")
 
-    # Auto-seed database if empty
+    # Auto-sync job catalog with live Google Sheets staging board on startup
     try:
         db = SessionLocal()
-        from app.models.models import Job
-        if db.query(Job).count() == 0:
-            logger.info("0 jobs found in database. Seeding initial job catalog...")
-            from scripts.seed_jobs import run_seed
-            run_seed()
+        logger.info("Syncing job catalog with live Google Sheets staging board...")
+        from scripts.seed_jobs import run_seed
+        run_seed()
         db.close()
     except Exception as seed_exc:
         logger.warning("Auto-seeding initial jobs skipped: %s", seed_exc)

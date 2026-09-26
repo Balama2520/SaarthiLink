@@ -56,12 +56,14 @@ class Settings(BaseSettings):
     # Integrations & Communications
     SAARTHI_CONTACT_EMAIL: str = os.getenv("SAARTHI_CONTACT_EMAIL", "saarthi.ai.team@gmail.com")
     HF_SPACE_ID: str = Field(
-        default="",
+        default="Balamaneesh2520/saarthi-ai-brain",
         validation_alias=AliasChoices("HF_SPACE_ID", "SAARTHI_AI_SPACE"),
     )
     HF_API_TOKEN: str = os.getenv("HF_API_TOKEN", "")
     HF_API_NAME: str = os.getenv("HF_API_NAME", "generate")
-    GOOGLE_SHEETS_SPREADSHEET_ID: str = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "")
+    GOOGLE_SHEETS_SPREADSHEET_ID: str = os.getenv(
+        "GOOGLE_SHEETS_SPREADSHEET_ID", "1qPGJYxq_Nq-33xda4ZYA7DkX9pP2_VrMlWQAaviiI44"
+    )
     GOOGLE_SERVICE_ACCOUNT_JSON: str = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")

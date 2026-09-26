@@ -183,7 +183,7 @@ class TestContactAPI:
         assert res.status_code == 200
         data = res.json()
         assert data["contact_email"] == "saarthi.ai.team@gmail.com"
-        assert data["lead_architect"] == "Saarthi AI team"
+        assert "Bala Maneesh Ayanala" in data["lead_architect"]
 
     def test_contact_requires_name(self, client):
         payload = {

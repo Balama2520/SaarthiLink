@@ -10,7 +10,6 @@ import { api } from "../services/api";
 import { getToken } from "../lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "../hooks/useToast";
-import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface JobMatch {
   match_percentage: number;
@@ -57,6 +56,7 @@ interface RadarJob {
   salary_max?: number;
   experience_required?: string;
   posted_at?: string;
+  expires_at?: string;
   created_at?: string;
   skills?: Array<string | { skill_name: string; is_required: boolean }>;
 }
@@ -78,7 +78,49 @@ function formatSalary(min?: number, max?: number): string | null {
   if (min == null && max == null) return null;
   const lower = min ?? max ?? 0;
   const upper = max ?? min ?? 0;
-  return `₹${(lower / 100000).toFixed(1)}L - ₹${(upper / 100000).toFixed(1)}L`;
+  if (lower === 0 && upper === 0) return null;
+  if (lower >= 100000) {
+    const minL = (lower / 100000).toFixed(lower % 100000 === 0 ? 0 : 1);
+    const maxL = (upper / 100000).toFixed(upper % 100000 === 0 ? 0 : 1);
+    return minL === maxL ? `₹${minL} LPA` : `₹${minL} LPA - ₹${maxL} LPA`;
+  } else if (lower > 0) {
+    return `₹${lower.toLocaleString()}/mo`;
+  }
+  return null;
+}
+
+const CompanyLogoBadge = ({ name, logoUrl }: { name?: string; logoUrl?: string }) => {
+  const [imgError, setImgError] = useState(false);
+  const initials = (name || "Company")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+
+  if (logoUrl && !imgError) {
+    return (
+      <img
+        src={logoUrl}
+        alt={name || ""}
+        onError={() => setImgError(true)}
+        className="w-7 h-7 object-contain"
+      />
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-gradient-to-br from-primary/25 via-primary/15 to-amber-500/15 text-primary font-bold text-xs flex items-center justify-center font-mono">
+      {initials}
+    </div>
+  );
+};
+
+function cleanExperience(exp?: string): string | null {
+  if (!exp) return null;
+  if (exp === "3-2 yrs" || exp === "3-2 Yrs" || exp === "3-2yrs") return "2–3 yrs";
+  if (exp === "8-12 yrs" || exp === "8-12 Yrs") return "8–12 yrs";
+  return exp;
 }
 
 function formatRelativeDate(value?: string): string | null {
@@ -90,6 +132,17 @@ function formatRelativeDate(value?: string): string | null {
   if (days === 1) return "Posted yesterday";
   if (days < 30) return `Posted ${days} days ago`;
   return `Posted ${date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}`;
+}
+
+function formatDeadlineDate(value?: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const diffDays = Math.ceil((date.getTime() - Date.now()) / 86400000);
+  if (diffDays <= 0) return "Deadline passed";
+  if (diffDays === 1) return "Closes tomorrow";
+  if (diffDays < 30) return `Apply in ${diffDays} days`;
+  return `Apply by ${date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 const mapPlacementsToCrm = (apps: PlacementRecord[]): Array<{ id: string; company: string; role: string; status: CrmStatus }> =>
@@ -508,6 +561,7 @@ export default function JobFinder() {
                     ["Experience", jobDetails.experience_required],
                     ["Salary", jobDetails.salary_min || jobDetails.salary_max ? `₹${((jobDetails.salary_min || 0) / 100000).toFixed(1)}L–₹${((jobDetails.salary_max || jobDetails.salary_min || 0) / 100000).toFixed(1)}L` : undefined],
                     ["Posted", formatRelativeDate(jobDetails.posted_at || jobDetails.created_at)],
+                    ["Deadline", formatDeadlineDate(jobDetails.expires_at)],
                   ].map(([label, value]) => value && (
                     <div key={label} className="p-3 bg-border border border-border rounded-xl">
                       <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">{label}</p>
@@ -728,18 +782,13 @@ export default function JobFinder() {
           </div>
         </div>
 
-        <div className="mt-6">
-          <CTOGuideBanner
-            title="Job Radar & Match IQ Guide"
-            subtitle="Search verified job listings, evaluate your fit against any job description, and generate 1-click Prep Kits."
-            steps={[
-              { title: "Browse Radar", desc: "Filter active openings by keywords, location, remote work, or experience level." },
-              { title: "Check Fit Score", desc: "Click 'Check My Match' or paste any job description to calculate your Match IQ score." },
-              { title: "Generate Prep Kit", desc: "Click 'Generate Prep Kit' on any role card for a tailored cover letter and interview questions." },
-              { title: "Save & Apply", desc: "Bookmark top choices to your Saved tab and track application progress." },
-            ]}
-            ctoTip="Make sure to upload your resume on the Resume ATS page first so Job Match IQ auto-populates your technical skills!"
-          />
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+            <Sparkles className="w-3.5 h-3.5 text-primary" /> Live Ingestion Active
+          </div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Verified Opportunities
+          </div>
         </div>
       </div>
 
@@ -826,10 +875,11 @@ export default function JobFinder() {
                   className="bg-border border border-border rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary/50 w-full sm:w-44 transition-all"
                 >
                   <option value="">Any experience</option>
-                  <option value="Fresher">Fresher</option>
-                  <option value="0-1">0-1 years</option>
-                  <option value="1-3">1-3 years</option>
-                  <option value="3-5">3-5 years</option>
+                  <option value="Fresher">Fresher (0-1 yrs)</option>
+                  <option value="0-1">0–1 years</option>
+                  <option value="1-3">1–3 years</option>
+                  <option value="2-3">2–3 years</option>
+                  <option value="3-5">3–5 years</option>
                   <option value="5+">5+ years</option>
                 </select>
                 <button
@@ -855,13 +905,14 @@ export default function JobFinder() {
                   const matchScore = isRecommendedJob(item) ? item.match_score : undefined;
                   const salary = formatSalary(job.salary_min, job.salary_max);
                   const postedDate = formatRelativeDate(job.posted_at || job.created_at);
+                  const deadlineDate = formatDeadlineDate(job.expires_at);
                   const skills = (job.skills || []).map(getSkillName).filter(Boolean).slice(0, 5);
                   
                   return (
-                  <div key={job.id} className="p-5 bg-border border border-border rounded-2xl hover:border-primary/30 transition-all group">
+                  <div key={job.id} className="p-5 bg-border/60 border border-border rounded-2xl hover:border-primary/40 transition-all group hover:shadow-lg hover:shadow-primary/5">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center shrink-0 overflow-hidden">
-                        {job.company?.logo_url ? <img src={job.company.logo_url} alt="" className="w-8 h-8 object-contain" /> : <Briefcase className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />}
+                      <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
+                        <CompanyLogoBadge name={job.company?.name} logoUrl={job.company?.logo_url} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -871,11 +922,12 @@ export default function JobFinder() {
                           )}
                         </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1 font-medium text-foreground"><Building className="w-3 h-3"/> {job.company?.name || "Company"}</span>
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {job.location || "Remote"}</span>
-                          {(job.employment_type || job.remote_type) && <span className="bg-card border border-border px-2 py-0.5 rounded">{job.employment_type || job.remote_type}</span>}
-                          {job.experience_required && <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {job.experience_required}</span>}
-                          {postedDate && <span className="text-muted-foreground">{postedDate}</span>}
+                          <span className="flex items-center gap-1 font-medium text-foreground"><Building className="w-3 h-3 text-primary/70"/> {job.company?.name || "Company"}</span>
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-muted-foreground"/> {job.location || "Remote"}</span>
+                          {(job.employment_type || job.remote_type) && <span className="bg-card border border-border px-2 py-0.5 rounded font-mono text-[10px]">{job.employment_type || job.remote_type}</span>}
+                          {job.experience_required && <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-muted-foreground" /> {cleanExperience(job.experience_required)}</span>}
+                          {postedDate && <span className="text-muted-foreground/80">{postedDate}</span>}
+                          {deadlineDate && <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold text-[10px]">{deadlineDate}</span>}
                         </div>
                         {(salary || skills.length > 0) && <div className="mt-3 flex flex-wrap items-center gap-2">
                           {salary && <span className="text-xs font-bold text-emerald-400">{salary}</span>}

@@ -35,12 +35,14 @@ def get_stats(
     sheets_status_info = sheets_service.status()
 
     ai_status = {
+        "hf_configured": bool(settings.HF_SPACE_ID or getattr(settings, "HF_API_KEY", None)),
         "gemini_configured": bool(settings.GEMINI_API_KEY),
-        "hf_configured": bool(settings.HF_SPACE_ID and settings.HF_API_TOKEN),
-        "primary_provider": "gemini" if settings.GEMINI_API_KEY else "none",
-        "secondary_provider": (
-            "huggingface" if (settings.HF_SPACE_ID and settings.HF_API_TOKEN) else "none"
+        "primary_provider": (
+            "huggingface"
+            if (settings.HF_SPACE_ID or getattr(settings, "HF_API_KEY", None))
+            else ("gemini" if settings.GEMINI_API_KEY else "none")
         ),
+        "secondary_provider": "gemini" if settings.GEMINI_API_KEY else "none",
     }
 
     total_jobs = db.query(Job).count() if db.query(Job) else 0

@@ -63,6 +63,18 @@ def _job_fingerprint(
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+@router.get("/sync-sheets")
+def sync_sheets_now(db: Session = Depends(get_db)):
+    """Triggers immediate re-sync of Google Sheet 09_JOBS_STAGING board into database."""
+    from scripts.seed_jobs import run_seed
+    try:
+        run_seed()
+        total = db.query(Job).count()
+        return {"status": "ok", "message": "Successfully synced live Google Sheets staging board", "total_jobs_in_db": total}
+    except Exception as err:
+        raise HTTPException(status_code=500, detail=f"Failed to sync sheets: {err}")
+
+
 @router.post("/ingest", response_model=JobIngestResponse, status_code=status.HTTP_201_CREATED)
 async def ingest_jobs(
     payload: JobIngestBatchRequest,

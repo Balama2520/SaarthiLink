@@ -63,12 +63,14 @@ def upsert_job(db: Session, company: Company, data: dict, skills: list[dict]) ->
     if existing:
         return existing, False
 
+    posted_at = data.pop("posted_at", datetime.now(timezone.utc))
+    expires_at = data.pop("expires_at", datetime.now(timezone.utc) + timedelta(days=90))
     job = Job(
         company_id=company.id,
         dedup_hash=dedup,
         source="09_JOBS_STAGING",
-        posted_at=datetime.now(timezone.utc),
-        expires_at=datetime.now(timezone.utc) + timedelta(days=90),
+        posted_at=posted_at,
+        expires_at=expires_at,
         **data,
     )
     db.add(job)
@@ -493,6 +495,23 @@ def fetch_public_sheets_jobs(spreadsheet_id: str = "1qPGJYxq_Nq-33xda4ZYA7DkX9pP
 
             domain_name = (row.get("company_url") or "").replace("https://", "").replace("http://", "").split("/")[0] or f"{company_name.lower().replace(' ', '')}.com"
 
+            posted_val = row.get("posted_at") or ""
+            expires_val = row.get("expires_at") or ""
+
+            try:
+                posted_dt = datetime.fromisoformat(posted_val.strip()) if posted_val.strip() else datetime.now(timezone.utc)
+                if posted_dt.tzinfo is None:
+                    posted_dt = posted_dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                posted_dt = datetime.now(timezone.utc)
+
+            try:
+                expires_dt = datetime.fromisoformat(expires_val.strip()) if expires_val.strip() else datetime.now(timezone.utc) + timedelta(days=30)
+                if expires_dt.tzinfo is None:
+                    expires_dt = expires_dt.replace(tzinfo=timezone.utc)
+            except Exception:
+                expires_dt = datetime.now(timezone.utc) + timedelta(days=30)
+
             entries.append({
                 "company": {
                     "name": company_name,
@@ -519,6 +538,8 @@ def fetch_public_sheets_jobs(spreadsheet_id: str = "1qPGJYxq_Nq-33xda4ZYA7DkX9pP
                             "salary_min": sal_min,
                             "salary_max": sal_max,
                             "apply_url": row.get("apply_url") or "https://saarthi-link.netlify.app",
+                            "posted_at": posted_dt,
+                            "expires_at": expires_dt,
                         },
                         "skills": skill_list,
                     }
@@ -568,7 +589,7 @@ def run_seed() -> None:
 
         elapsed = time.perf_counter() - start
         logger.info("=" * 60)
-        logger.info("✅  Live Google Sheets Seed Complete")
+        logger.info("[SUCCESS] Live Google Sheets Seed Complete")
         logger.info("   Companies tracked : %d", len(entries_to_seed))
         logger.info("   Jobs inserted     : %d", stats["jobs_inserted"])
         logger.info("   Skills inserted   : %d", stats["skills_inserted"])

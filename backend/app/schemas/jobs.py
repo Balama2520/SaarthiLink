@@ -93,6 +93,7 @@ class JobListOut(BaseModel):
     experience_required: Optional[str]
     apply_url: Optional[str]
     posted_at: datetime
+    expires_at: Optional[datetime] = None
     company: CompanyOut
     skills: list[JobSkillOut] = []
 
