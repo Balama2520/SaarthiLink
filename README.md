@@ -1,5 +1,11 @@
 <div align="center">
 
+<a href="https://saarthi-link.netlify.app">
+  <img src="https://saarthi-link.netlify.app/og-banner.jpg" alt="Saarthi AI — AI Career Operating System" width="100%" />
+</a>
+
+<br />
+
 # 🧭 Saarthi AI
 
 ### From career uncertainty to connected action.
@@ -507,3 +513,4 @@ Do not force-push `master`. Production changes should be traceable to a reviewed
 [Live Product](https://saarthi-link.netlify.app) · [API Docs](https://saarthilink.onrender.com/docs) · [GitHub](https://github.com/Balama2520/SaarthiLink) · [AI Brain](https://huggingface.co/spaces/Balamaneesh2520/saarthi-ai-brain) · [Contact](mailto:saarthi.ai.team@gmail.com)
 
 </div>
+
