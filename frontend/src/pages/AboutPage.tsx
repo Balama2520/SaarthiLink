@@ -69,25 +69,27 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Team / Product Info */}
-      <div className="rounded-3xl border border-border bg-gradient-to-r from-card via-card to-background p-8 md:p-10 space-y-6">
+      {/* Founder & Leadership */}
+      <div className="rounded-3xl border border-primary/30 bg-gradient-to-r from-primary/10 via-card to-background p-8 md:p-10 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-primary">Engineering & Product Team</div>
-            <h3 className="text-2xl font-bold text-foreground font-display">Built for candidates, recruiters, and career teams</h3>
-            <p className="text-sm text-muted-foreground max-w-xl">
-              Saarthi AI is designed by a product and engineering team focused on career intelligence, recruiter workflows, and practical job-readiness support across the full hiring journey.
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/20 px-3 py-0.5 text-xs font-bold text-primary">
+              Founder & Chief Architect
+            </div>
+            <h3 className="text-3xl font-extrabold text-foreground font-display">Bala Maneesh Ayanala</h3>
+            <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
+              Founded and architected by <strong className="text-foreground">Bala Maneesh Ayanala</strong>, Saarthi AI is built to turn fragmented job postings, resume evaluations, and interview preparation into an integrated, end-to-end career operating system.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-2xl border border-border bg-background/80 px-4 py-3 text-center">
-              <div className="text-lg font-bold text-foreground">185+</div>
+            <div className="rounded-2xl border border-border bg-background/80 px-4 py-3 text-center min-w-[110px]">
+              <div className="text-xl font-bold text-foreground">199+</div>
               <div className="text-[10px] text-muted-foreground uppercase font-semibold">Passing Tests</div>
             </div>
-            <div className="rounded-2xl border border-border bg-background/80 px-4 py-3 text-center">
-              <div className="text-lg font-bold text-emerald-400">34</div>
-              <div className="text-[10px] text-muted-foreground uppercase font-semibold">Core Features</div>
+            <div className="rounded-2xl border border-border bg-background/80 px-4 py-3 text-center min-w-[110px]">
+              <div className="text-xl font-bold text-emerald-400">15+</div>
+              <div className="text-[10px] text-muted-foreground uppercase font-semibold">Core Modules</div>
             </div>
           </div>
         </div>

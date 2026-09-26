@@ -8,6 +8,7 @@ import { api } from "../services/api";
 import { GearRecommendCard } from "../components/GearRecommendCard";
 import { useProfile } from "../hooks/useProfile";
 import { getToken } from "../lib/auth";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface Milestone {
   day_range: string;
@@ -228,6 +229,20 @@ export default function LearningRoadmaps() {
               <RotateCcw className="h-3.5 w-3.5" /> New Roadmap
             </button>
           )}
+        </div>
+
+        <div className="mb-6">
+          <CTOGuideBanner
+            title="Learning Roadmaps & Target Role Guide"
+            subtitle="Generate structured, milestone-based learning plans tailored to your current skill level and target career track."
+            steps={[
+              { title: "Choose Role", desc: "Select a quick preset (e.g. Frontend Developer, Backend Engineer) or type any custom role." },
+              { title: "Select Duration", desc: "Choose a 30-day intensive sprint or a 90-day comprehensive mastery plan." },
+              { title: "Generate Path", desc: "Click 'Generate Roadmap' to build a 4-stage learning path with curated course resources." },
+              { title: "Check Milestones", desc: "Expand milestone stages and check off completed tasks as you build projects." },
+            ]}
+            ctoTip="Generated roadmaps automatically highlight missing skills detected from your resume!"
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">

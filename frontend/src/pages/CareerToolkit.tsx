@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { api } from "../services/api";
 import { useToast } from "../hooks/useToast";
 import { JsonResult } from "../components/ui/JsonResult";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 type FieldType = "text" | "textarea" | "select";
 
@@ -213,6 +214,20 @@ export default function CareerToolkit() {
         <p className="ml-11 mt-1.5 text-sm text-muted-foreground">
           Focused single-shot AI tools for the specific things you need done right now.
         </p>
+      </div>
+
+      <div className="mx-auto mb-6 max-w-6xl">
+        <CTOGuideBanner
+          title="Career Toolkit & STAR Rewriter Guide"
+          subtitle="Single-shot AI utilities for resume bullet polishing, cold outreach, keyword optimization, and salary benchmarks."
+          steps={[
+            { title: "Select Tool", desc: "Choose a utility (STAR Bullets, Cold Outreach, Keyword Optimizer, Salary Benchmark) in the left menu." },
+            { title: "Input Context", desc: "Paste your raw resume bullet, company name, or target job title." },
+            { title: "Run Utility", desc: "Click the action button to let AI transform raw text into metrics-driven content." },
+            { title: "Copy & Use", desc: "Use the 'Copy' button to paste polished bullets directly into your resume." },
+          ]}
+          ctoTip="Quantifying your STAR bullets with percentages and latency metrics makes your resume stand out to engineering managers!"
+        />
       </div>
 
       <div className="mx-auto max-w-6xl md:flex md:gap-6">

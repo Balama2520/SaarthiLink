@@ -6,6 +6,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
 import { useToast } from "../hooks/useToast";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface Workspace {
   id: string;
@@ -267,7 +268,20 @@ export default function Workspaces() {
         </div>
 
         {!active ? (
-          <div className="flex flex-1 items-center justify-center px-6 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+            <div className="w-full max-w-xl text-left mb-6">
+              <CTOGuideBanner
+                title="AI Workspaces & Project Context Guide"
+                subtitle="Group notes, resume versions, target jobs, and goals into focused, AI-aware project drawers."
+                steps={[
+                  { title: "New Workspace", desc: "Type a workspace name (e.g. 'Google SWE Application') in the left panel and click 'New Workspace'." },
+                  { title: "Link Items", desc: "Click 'Link Item' at the top right to attach resume versions or notes into this workspace." },
+                  { title: "Ask Workspace AI", desc: "Chat with the AI assistant below — it reads all linked items as its memory context." },
+                  { title: "Switch Contexts", desc: "Switch between different company or role workspaces anytime from the left rail." },
+                ]}
+                ctoTip="Use a dedicated workspace for each major company application to keep interview prep organized!"
+              />
+            </div>
             <p className="max-w-sm text-sm text-muted-foreground">
               Workspaces group related career items — resume versions, goals, notes — behind one focused AI chat.
               Pick one from the list or create a new one to get started.

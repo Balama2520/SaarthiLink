@@ -59,9 +59,21 @@ _worker_task: asyncio.Task = None
 async def lifespan(fastapi_app: FastAPI):
     global _worker_task
     logger.info("Starting Saarthi Production API Services...")
-    await cache.connect()
     _worker_task = asyncio.create_task(_outbox_worker.start())
     logger.info("Outbox Worker Task initialized.")
+
+    # Auto-seed database if empty
+    try:
+        db = SessionLocal()
+        from app.models.models import Job
+        if db.query(Job).count() == 0:
+            logger.info("0 jobs found in database. Seeding initial job catalog...")
+            from scripts.seed_jobs import run_seed
+            run_seed()
+        db.close()
+    except Exception as seed_exc:
+        logger.warning("Auto-seeding initial jobs skipped: %s", seed_exc)
+
     yield
     logger.info("Initiating Saarthi API Shutdown Sequence...")
     _outbox_worker.stop()

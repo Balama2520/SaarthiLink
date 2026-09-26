@@ -40,7 +40,8 @@ class Settings(BaseSettings):
 
     # CORS Configuration
     ALLOWED_ORIGINS: str = os.getenv(
-        "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000"
+        "ALLOWED_ORIGINS",
+        "http://localhost:5173,http://localhost:3000,http://localhost:2520,https://saarthi-link.netlify.app,https://saarthilink.onrender.com",
     )
 
     # Rate limiting
@@ -96,7 +97,7 @@ class Settings(BaseSettings):
 
     # Gemini API fallback
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
     SYSTEM_PROMPT: str = (
         "You are Saarthi AI, an advanced career intelligence system for students, job seekers, and employers. "

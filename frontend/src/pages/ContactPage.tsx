@@ -73,9 +73,9 @@ export default function ContactPage() {
   };
 
   const contactEmail = contactInfo?.contact_email || "saarthi.ai.team@gmail.com";
-  const teamLabel = contactInfo?.lead_architect || "Saarthi AI team";
-  const githubUser = contactInfo?.github || "Balamaneesh2520";
-  const hfSpace = contactInfo?.huggingface_space || "Balamaneesh2520/saarthi-ai-brain";
+  const teamLabel = contactInfo?.lead_architect || "Bala Maneesh Ayanala (Founder & Chief Architect)";
+  const githubRepo = contactInfo?.github || "https://github.com/Balama2520/SaarthiLink";
+  const hfSpace = contactInfo?.huggingface_space || "Saarthi AI Brain";
 
   if (submitted) {
     return (
@@ -337,13 +337,13 @@ export default function ContactPage() {
               <div>
                 <div className="font-semibold text-muted-foreground">GitHub Organization / Repo</div>
                 <a
-                  href={`https://github.com/${githubUser}`}
+                  href={githubRepo.startsWith("http") ? githubRepo : `https://github.com/${githubRepo}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1 inline-flex items-center gap-1.5 font-mono text-xs text-foreground hover:text-primary transition-colors"
                 >
                   <Code2 className="h-3.5 w-3.5 text-primary" />
-                  <span>github.com/{githubUser}</span>
+                  <span>github.com/Balama2520/SaarthiLink</span>
                   <ExternalLink className="h-3 w-3 text-muted-foreground" />
                 </a>
               </div>

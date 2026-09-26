@@ -6,6 +6,7 @@ import {
   Zap, Compass, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface Goal {
   id: string;
@@ -230,6 +231,20 @@ export default function Goals() {
         >
           <Plus className={`w-4 h-4 transition-transform ${isAdding ? "rotate-45" : ""}`} /> {isAdding ? "Cancel" : "New Goal"}
         </button>
+      </div>
+
+      <div className="max-w-6xl mx-auto mb-8 relative z-10">
+        <CTOGuideBanner
+          title="Goal Engine & Execution Guide"
+          subtitle="Define target career outcomes, generate automated AI sub-task breakdowns, and track milestone progress."
+          steps={[
+            { title: "New Goal", desc: "Click '+ New Goal' to enter a target objective (e.g. 'Backend Engineer in 90 Days')." },
+            { title: "AI Milestones", desc: "Use the AI generator button to break your goal into 4 weekly action steps." },
+            { title: "Set Priority", desc: "Assign High, Medium, or Low priority and a target completion deadline date." },
+            { title: "Track Progress", desc: "Check off sub-tasks as you complete them to boost your overall completion score." },
+          ]}
+          ctoTip="Align your goals directly with your Learning Roadmaps for maximum focus!"
+        />
       </div>
 
       {error && (

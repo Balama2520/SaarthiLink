@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 MAX_RETRIES = 1
-DEFAULT_TIMEOUT = 20.0  # Keep browser requests bounded even when a Space is cold.
+DEFAULT_TIMEOUT = 12.0  # Keep browser requests bounded even when a Space is cold.
 
 
 class HuggingFaceSaarthiBrain(BaseProvider):
@@ -228,31 +228,28 @@ class HuggingFaceSaarthiBrain(BaseProvider):
         """
         # Build a single prompt from the message list (exclude system messages)
         prompt_parts: list[str] = []
+        user_msgs = [m for m in messages if m.get("role") != "system"]
         for m in messages:
             role = m.get("role", "")
             content = m.get("content", "")
             if role == "system":
-                # The Space has its own system behavior. Sending this wrapper
-                # again makes short chat prompts return the Space fallback.
                 continue
             elif role == "user":
-                prompt_parts.append(f"User: {content}")
+                prompt_parts.append(content if len(user_msgs) == 1 else f"User: {content}")
             elif role == "assistant":
                 prompt_parts.append(f"Saarthi: {content}")
 
         prompt = "\n".join(prompt_parts)
         file_path = kwargs.get("file_path", None)
-        fallback_text = "AI is temporarily unavailable. Please try again."
-        for attempt in range(1, 4):
+        try:
             response = await self.generate(prompt, file_path=file_path)
             logger.info(
-                "HF provider response received: attempt=%d prompt_chars=%d response_chars=%d response_preview=%r",
-                attempt,
+                "HF provider response received: prompt_chars=%d response_chars=%d response_preview=%r",
                 len(prompt),
                 len(response),
                 response[:160],
             )
-            if response.strip() != fallback_text or attempt == 3:
-                yield response
-                return
-            await asyncio.sleep(0.5)
+            yield response
+        except Exception as e:
+            logger.warning("HF provider generate failed: %s", e)
+            raise

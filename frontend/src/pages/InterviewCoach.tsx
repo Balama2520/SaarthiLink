@@ -4,6 +4,7 @@ import { api } from "../services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "../hooks/useToast";
 import { getToken } from "../lib/auth";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface SpeechRecognitionEventLike {
   results: { [index: number]: { [index: number]: { transcript: string } }; length: number };
@@ -682,7 +683,21 @@ export default function InterviewCoach() {
 
           {/* Empty / Ready state */}
           {!simActive && !feedback && !loading && (
-            <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full min-h-[500px] flex-col items-center justify-center text-center p-8">
+            <motion.div key="ready" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full min-h-[500px] flex-col items-center justify-center text-center p-6 md:p-8">
+              <div className="mb-6 w-full max-w-xl text-left">
+                <CTOGuideBanner
+                  title="Interview Coach & Mock Practice Guide"
+                  subtitle="Simulate real-world technical, behavioral (STAR method), and HR interviews with real-time feedback."
+                  steps={[
+                    { title: "Select Role", desc: "Choose target role & round type (HR, Technical, Behavioral, Stress) in the left panel." },
+                    { title: "Start Session", desc: "Click 'Start Simulation' to load realistic interview questions." },
+                    { title: "Record / Type", desc: "Click the mic button to record your voice answer or type your response manually." },
+                    { title: "Review Feedback", desc: "Get instant scores on confidence, speaking speed (WPM), clarity, and technical accuracy." },
+                  ]}
+                  ctoTip="Use the STAR method (Situation, Task, Action, Result) for behavioral questions to score 90+!"
+                />
+              </div>
+
               <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10">
                 <UserCheck className="h-8 w-8 text-emerald-400" />
               </div>

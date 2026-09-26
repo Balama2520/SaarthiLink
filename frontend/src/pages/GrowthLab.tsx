@@ -9,6 +9,7 @@ import { localDB } from "../services/localDB";
 import { useToast } from "../hooks/useToast";
 import { JsonResult } from "../components/ui/JsonResult";
 import { GearRecommendCard } from "../components/GearRecommendCard";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 type LabTab = "forge" | "research" | "notes";
 
@@ -134,6 +135,20 @@ export default function GrowthLab() {
         <p className="ml-11 mt-1.5 text-sm text-muted-foreground">
           Build project pipelines, break down research papers, and generate study notes.
         </p>
+      </div>
+
+      <div className="mx-auto mb-6 max-w-6xl">
+        <CTOGuideBanner
+          title="Growth Lab & Skill Forge Guide"
+          subtitle="Turn technical skill gaps into production build plans, summarize research papers, and generate AI study notes."
+          steps={[
+            { title: "Skill Forge", desc: "Enter your target role & current skills to generate a 3-project portfolio build plan." },
+            { title: "Research Hub", desc: "Enter an arXiv ID or technical topic to get instant key takeaway summaries." },
+            { title: "Study Notes", desc: "Generate structured study notes on any complex computer science or system design topic." },
+            { title: "Build Projects", desc: "Use generated project specs as resume highlights to demonstrate practical experience." },
+          ]}
+          ctoTip="Building 1 complete portfolio project from Skill Forge boosts recruiter response rates by 40%!"
+        />
       </div>
 
       <div className="mx-auto mb-6 max-w-6xl">

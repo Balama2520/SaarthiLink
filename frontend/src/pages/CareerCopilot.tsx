@@ -4,6 +4,7 @@ import { Compass, FileUp, GraduationCap, ListChecks, Send, Sparkles, Target } fr
 import { api } from "../services/api";
 import { useProfile } from "../hooks/useProfile";
 import { useAppStore } from "../store/useAppStore";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface SkillGap {
   target_role: string;
@@ -77,6 +78,18 @@ export default function CareerCopilot() {
           <h1 className="font-display text-3xl font-semibold text-foreground">Career Copilot</h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{intro}</p>
         </header>
+
+        <CTOGuideBanner
+          title="Career Copilot & Skill Gap Intelligence Guide"
+          subtitle="AI assistant that evaluates your resume skills against target roles to generate custom gap briefs and 4-week execution plans."
+          steps={[
+            { title: "Target Role", desc: "Select or type your desired target role (e.g. Backend Engineer, Product Manager)." },
+            { title: "Analyze Gaps", desc: "Click 'Analyze Skill Gaps' to calculate missing technical keywords." },
+            { title: "Review Brief", desc: "Read your Intelligence Brief detailing core strengths and critical missing skills." },
+            { title: "Build Action Plan", desc: "Use the 4-week learning plan to systematically close every skill gap." },
+          ]}
+          ctoTip="Uploading your resume first ensures Copilot grounds its recommendations on your actual experience rather than generic defaults!"
+        />
 
         <section className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3">
           {[

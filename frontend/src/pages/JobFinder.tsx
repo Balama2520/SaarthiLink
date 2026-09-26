@@ -10,6 +10,7 @@ import { api } from "../services/api";
 import { getToken } from "../lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "../hooks/useToast";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface JobMatch {
   match_percentage: number;
@@ -725,6 +726,20 @@ export default function JobFinder() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-border border border-border rounded-xl px-3 py-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Curated job intelligence
           </div>
+        </div>
+
+        <div className="mt-6">
+          <CTOGuideBanner
+            title="Job Radar & Match IQ Guide"
+            subtitle="Search verified job listings, evaluate your fit against any job description, and generate 1-click Prep Kits."
+            steps={[
+              { title: "Browse Radar", desc: "Filter active openings by keywords, location, remote work, or experience level." },
+              { title: "Check Fit Score", desc: "Click 'Check My Match' or paste any job description to calculate your Match IQ score." },
+              { title: "Generate Prep Kit", desc: "Click 'Generate Prep Kit' on any role card for a tailored cover letter and interview questions." },
+              { title: "Save & Apply", desc: "Bookmark top choices to your Saved tab and track application progress." },
+            ]}
+            ctoTip="Make sure to upload your resume on the Resume ATS page first so Job Match IQ auto-populates your technical skills!"
+          />
         </div>
       </div>
 

@@ -72,8 +72,8 @@ def get_contact_info():
     return {
         "platform_name": "Saarthi AI",
         "contact_email": settings.SAARTHI_CONTACT_EMAIL,
-        "lead_architect": "Saarthi AI team",
-        "github": "Balamaneesh2520",
-        "huggingface_space": "Balamaneesh2520/saarthi-ai-brain",
+        "lead_architect": "Bala Maneesh Ayanala (Founder & Chief Architect)",
+        "github": "https://github.com/Balama2520/SaarthiLink",
+        "huggingface_space": "Saarthi AI Brain",
         "support_status": "active",
     }

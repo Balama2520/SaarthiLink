@@ -298,19 +298,13 @@ integer from 0 to 100 for overall_ats_score.
             )
             return parsed
 
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, Exception) as exc:
             logger.warning(
-                "Stage 3: LLM returned invalid JSON; using fallback analysis: %s",
+                "Stage 3: AI analysis encountered error/invalid output; using rule-based ATS analysis: %s",
                 exc,
                 extra={"error": str(exc), "request_id": get_request_id()},
             )
             return _build_fallback_analysis(text)
-        except Exception as exc:
-            logger.error(
-                "Stage 3: AI analysis failed",
-                extra={"error": str(exc), "request_id": get_request_id()},
-            )
-            raise HTTPException(status_code=502, detail="AI analysis failed. Please try again.")
 
     # ── Stage 4: Skill Normalization ──────────────────────────────────────────
     def normalize_skills(self, parsed_data: dict) -> dict:

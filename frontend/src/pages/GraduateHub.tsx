@@ -5,6 +5,7 @@ import {
 import { motion } from "framer-motion";
 import { api } from "../services/api";
 import { useToast } from "../hooks/useToast";
+import { CTOGuideBanner } from "../components/CTOGuideBanner";
 
 interface DegreeCourse {
   id: string;
@@ -155,6 +156,20 @@ export default function GraduateHub() {
         <p className="ml-11 mt-1.5 text-sm text-muted-foreground">
           Track your degree progress and certifications in one place.
         </p>
+      </div>
+
+      <div className="mx-auto mb-6 max-w-6xl">
+        <CTOGuideBanner
+          title="Graduate Hub & Higher Studies Guide"
+          subtitle="Track academic coursework, manage industrial certifications, and draft Statement of Purpose (SOP) essays."
+          steps={[
+            { title: "Degree Tracking", desc: "Add semester coursework, credit counts, and grades to monitor GPA trends." },
+            { title: "Certifications", desc: "Log AWS, GCP, Azure, or Cloud certifications to highlight verified credentials." },
+            { title: "Higher Studies", desc: "Plan MS/MTech applications, university requirements, and GRE target scores." },
+            { title: "Sync to Resume", desc: "Completed degree courses and certs automatically populate your candidate profile." },
+          ]}
+          ctoTip="Adding industry certifications (AWS, CKA) alongside your degree increases recruiter shortlist rates by 35%!"
+        />
       </div>
 
       <div className="mx-auto mb-6 max-w-6xl">

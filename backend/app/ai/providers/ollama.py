@@ -16,7 +16,8 @@ class OllamaProvider(BaseProvider):
         url = settings.OLLAMA_URL.replace("/generate", "/chat")
         payload = {"model": model, "messages": messages, "stream": True}
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        timeout = httpx.Timeout(4.0, connect=1.5)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream("POST", url, json=payload) as response:
                 if response.status_code != 200:
                     raise Exception(f"Ollama returned {response.status_code}")
