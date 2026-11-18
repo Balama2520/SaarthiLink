@@ -20,6 +20,7 @@ from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from app.ai.gateway import AIProviderUnavailable
 
 # Slowapi Rate Limiting Imports
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -27,6 +28,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from app.api import api_router
+from app.ai.metrics import metrics_tracker
 from app.core.cache import cache
 from app.core.config import get_settings
 from app.core.logging import set_request_context
@@ -97,6 +99,21 @@ app = FastAPI(
 # Register Slowapi Exception Handler
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+@app.exception_handler(AIProviderUnavailable)
+async def ai_provider_unavailable_handler(
+    request: Request, error: AIProviderUnavailable
+):
+    logger.warning(
+        "AI provider unavailable for %s %s",
+        request.method,
+        request.url.path,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "AI service is temporarily unavailable. Please try again shortly."},
+    )
 
 
 # ── Requirement 1: Strict CORS Isolation Limits ───────────────────────────────
@@ -251,7 +268,13 @@ async def health_check():
             "api": {"status": "ok"},
             "database": {"status": db_status},
             "redis": {"status": redis_status},
-            "ai_gateway": {"status": "ok"},
+            "ai_gateway": {
+                "status": metrics_tracker.last_status,
+                "last_provider": metrics_tracker.last_provider,
+                "last_checked_at": metrics_tracker.last_checked_at,
+                "calls": metrics_tracker.calls,
+                "failures": metrics_tracker.failures,
+            },
         },
         "cors_locked_origins": EXPLICIT_LOCKED_ORIGINS,
     }

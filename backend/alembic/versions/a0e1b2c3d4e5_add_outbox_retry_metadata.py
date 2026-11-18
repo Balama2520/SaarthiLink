@@ -18,9 +18,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("event_outbox") as batch_op:
-        batch_op.add_column(sa.Column("retry_count", sa.Integer(), nullable=False, server_default="0"))
-        batch_op.add_column(sa.Column("last_error", sa.Text(), nullable=True))
+    columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("event_outbox")}
+    missing = {"retry_count", "last_error"} - columns
+    if missing:
+        with op.batch_alter_table("event_outbox") as batch_op:
+            if "retry_count" in missing:
+                batch_op.add_column(
+                    sa.Column("retry_count", sa.Integer(), nullable=False, server_default="0")
+                )
+            if "last_error" in missing:
+                batch_op.add_column(sa.Column("last_error", sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
