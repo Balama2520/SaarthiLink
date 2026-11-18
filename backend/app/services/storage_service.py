@@ -181,6 +181,25 @@ class SupabaseStorageService:
             )
             return None
 
+    async def delete_resume(self, *, storage_reference: str) -> bool:
+        """
+        Delete a previously-uploaded resume from storage.
+        Returns True on successful deletion, False otherwise.
+        """
+        if not self.is_configured or not storage_reference.startswith("supabase://"):
+            return False
+
+        try:
+            without_scheme = storage_reference[len("supabase://") :]
+            bucket, _, key = without_scheme.partition("/")
+            client = self._client.storage.from_(bucket)
+            client.remove([key])
+            logger.info("Deleted resume from Supabase Storage: ref=%s", storage_reference)
+            return True
+        except Exception as exc:
+            logger.warning("Failed to delete resume from storage: ref=%s err=%s", storage_reference, exc)
+            return False
+
 
 # ── Singleton with lazy import ─────────────────────────────────────────────────
 _storage_service: Optional[SupabaseStorageService] = None

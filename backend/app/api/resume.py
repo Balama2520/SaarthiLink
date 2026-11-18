@@ -69,7 +69,18 @@ async def upload_resume(
         },
     )
 
-    file_bytes = await file.read()
+    # Enforce streaming size limit before reading unbounded file into memory
+    MAX_SIZE = ResumeIntelligencePipeline.MAX_SIZE_BYTES
+    file_bytes = await file.read(MAX_SIZE + 1)
+    if len(file_bytes) > MAX_SIZE:
+        logger.warning(
+            "Resume upload rejected: file exceeded maximum streaming limit",
+            extra={"user_id": current_user.id, "resume_filename": file.filename},
+        )
+        raise HTTPException(
+            status_code=400, detail="File too large. Maximum allowed size is 5 MB."
+        )
+
     pipeline = ResumeIntelligencePipeline()
 
     # Stage 1: Validate
@@ -169,10 +180,15 @@ async def upload_resume(
         )
 
         return {
-            "message": "Resume parsed successfully.",
+            "message": (
+                "Resume analyzed successfully."
+                if storage_ref
+                else "Resume analyzed, but the original file could not be saved. Only extracted resume text and analysis are available."
+            ),
             "resume_id": db_resume.id,
             "version": version,
             "parsing_status": "completed",
+            "original_file_stored": bool(storage_ref),
             "parsed_data": parsed_data,
         }
 
@@ -207,10 +223,15 @@ async def upload_resume(
             pass
 
         return {
-            "message": "Resume parsed and analyzed successfully.",
+            "message": (
+                "Resume analyzed successfully using a rule-based estimate."
+                if storage_ref
+                else "Resume analyzed using a rule-based estimate, but the original file could not be saved. Only extracted resume text and analysis are available."
+            ),
             "resume_id": db_resume.id,
             "version": version,
             "parsing_status": "completed",
+            "original_file_stored": bool(storage_ref),
             "parsed_data": parsed_data,
         }
 
@@ -269,6 +290,40 @@ async def reanalyze_resume(
         "parsing_status": "completed",
         "parsed_data": parsed_data,
     }
+
+
+@router.delete("/{resume_id}")
+async def delete_resume(
+    resume_id: str,
+    current_user: User = Depends(require_authenticated_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Permanently delete a resume record, its stored file in object storage,
+    extracted text, and associated cache.
+    """
+    resume = (
+        db.query(Resume).filter(Resume.id == resume_id, Resume.user_id == current_user.id).first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+
+    if resume.file_path:
+        try:
+            storage_svc = get_storage_service()
+            await storage_svc.delete_resume(storage_reference=resume.file_path)
+        except Exception as exc:
+            logger.warning("Error deleting resume storage file: %s", exc)
+
+    try:
+        CareerCopilotService(db).invalidate_cache(current_user.id)
+    except Exception:
+        pass
+
+    db.delete(resume)
+    db.commit()
+
+    return {"message": "Resume deleted successfully.", "resume_id": resume_id}
 
 
 @router.post("/{resume_id}/sync")
@@ -335,6 +390,7 @@ async def get_resume_history(
             "ats_score": r.ats_score,
             "parsing_status": r.parsing_status,
             "file_size": r.file_size,
+            "original_file_stored": bool(r.file_path),
             "created_at": r.created_at,
         }
         for r in resumes
@@ -380,6 +436,7 @@ async def get_latest_resume(
         "version": resume.version,
         "ats_score": resume.ats_score,
         "parsing_status": resume.parsing_status,
+        "original_file_stored": bool(resume.file_path),
         "tech_skills": tech_skills,
         "has_raw_text": bool(resume.raw_text),
         "raw_text": resume.raw_text or "",

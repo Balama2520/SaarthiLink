@@ -166,6 +166,35 @@ class ResumeIntelligencePipeline:
                 status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT."
             )
 
+        # Stage 1b: Verify magic bytes to prevent spoofed file extensions
+        if ext == "pdf":
+            if not file_bytes.startswith(b"%PDF-"):
+                logger.warning(
+                    "Resume upload rejected: invalid PDF header signature",
+                    extra={"resume_filename": filename},
+                )
+                raise HTTPException(
+                    status_code=400, detail="Invalid PDF file. Header signature does not match PDF specification."
+                )
+        elif ext == "docx":
+            if not file_bytes.startswith(b"PK\x03\x04"):
+                logger.warning(
+                    "Resume upload rejected: invalid DOCX header signature",
+                    extra={"resume_filename": filename},
+                )
+                raise HTTPException(
+                    status_code=400, detail="Invalid DOCX file. Header signature does not match ZIP/DOCX specification."
+                )
+        elif ext == "txt":
+            if b"\x00" in file_bytes[:1024]:
+                logger.warning(
+                    "Resume upload rejected: binary null bytes detected in TXT file",
+                    extra={"resume_filename": filename},
+                )
+                raise HTTPException(
+                    status_code=400, detail="Invalid text file. Binary content detected."
+                )
+
     # ── Stage 2: Extract Text ─────────────────────────────────────────────────
     def extract_text(self, file_bytes: bytes, filename: str) -> str:
         """Returns plain text from PDF/DOCX/TXT. Raises HTTPException on failure."""
