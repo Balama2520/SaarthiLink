@@ -52,7 +52,8 @@ class TestRefreshFlow:
         assert refresh_res.status_code == 200, f"Refresh failed: {refresh_res.json()}"
         new_tokens = refresh_res.json()
         assert "access_token" in new_tokens
-        assert new_tokens["refresh_token"] == refresh  # same refresh token reused
+        assert "refresh_token" in new_tokens
+        assert new_tokens["refresh_token"] != refresh  # refresh token is securely rotated
 
         # New access token must work on a protected endpoint
         new_headers = {"Authorization": f"Bearer {new_tokens['access_token']}"}
@@ -288,39 +289,49 @@ class TestAdminAuthMatrix:
         res = client.get("/api/admin/stats", headers=auth["headers"])
         assert res.status_code == 403, f"Expected 403, got {res.status_code}"
 
-    @patch("app.core.dependencies.auth.get_settings")
-    def test_admin_user_to_admin_returns_200_with_full_details(self, mock_settings, client):
-        """Admin-whitelisted user -> GET /api/admin/stats = 200 + full JSON body."""
-        from app.core.config import Settings
-
-        s = Settings()
-        s.ADMIN_USERNAMES = "the_admin"
-        mock_settings.return_value = s
-
-        # Register the admin user
-        client.post(
+    def test_public_registration_cannot_claim_admin_role(self, client):
+        """A public username never grants admin access."""
+        registration = client.post(
             "/api/auth/register",
             json={"username": "the_admin", "password": "Pass123!"},
         )
-        login = client.post(
-            "/api/auth/login",
-            data={"username": "the_admin", "password": "Pass123!"},
-        )
-        admin_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        admin_headers = {
+            "Authorization": f"Bearer {registration.json()['access_token']}"
+        }
 
-        res = client.get("/api/admin/stats", headers=admin_headers)
-        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
-        data = res.json()
-        assert data.get("is_admin") is True
-        assert data.get("summary_mode") is False
-        for field in (
-            "total_users",
-            "total_sessions",
-            "total_projects",
-            "total_applications",
-            "recent_users",
-        ):
-            assert field in data, f"Missing admin field: {field}"
+        response = client.get("/api/admin/stats", headers=admin_headers)
+        assert registration.json()["role"] == "user"
+        assert response.status_code == 403
+
+    def test_operator_provisioned_role_grants_admin_access(self, client, db_session):
+        """Only a persisted operator-assigned role grants admin access."""
+        registration = client.post(
+            "/api/auth/register",
+            json={"username": "provisioned-admin", "password": "Pass123!"},
+        )
+        assert registration.status_code == 200
+
+        user = db_session.query(User).filter_by(username="provisioned-admin").one()
+        user.role = "admin"
+        db_session.commit()
+
+        admin_headers = {
+            "Authorization": f"Bearer {registration.json()['access_token']}"
+        }
+        response = client.get("/api/admin/stats", headers=admin_headers)
+        assert response.status_code == 200, response.text
+        assert response.json()["is_admin"] is True
+
+
+def test_legacy_external_auth_fails_closed_without_jwt_secret(monkeypatch):
+    from fastapi import HTTPException
+    from app.auth.security import decode_supabase_jwt
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "SUPABASE_JWT_SECRET", "")
+    with pytest.raises(HTTPException) as error:
+        decode_supabase_jwt("not-a-valid-token")
+    assert error.value.status_code == 503
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
