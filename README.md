@@ -203,13 +203,13 @@ The backend webhook validates payloads, authenticates with `X-Saarthi-Ingest-Tok
 - SlowAPI rate limiting, request IDs, CORS controls, security headers
 - ChromaDB and sentence-transformers for retrieval features
 - PDF, DOCX, and TXT extraction for resume workflows
-- LangGraph-based agent workflow (`backend/app/agents`) for multi-step AI reasoning
-- Celery for background/async job processing (`backend/app/core/celery_app.py`, `backend/app/engine/outbox_worker.py`)
+- State-graph intent router (`backend/app/agents`) for structured workflow dispatch
+- In-process transactional OutboxWorker (`backend/app/engine/outbox_worker.py`) for guaranteed event delivery, retries, and dead-letter handling (Celery architecture documented as future scaling option)
 
 ### Data & Infrastructure
 - Supabase PostgreSQL (primary database)
 - Supabase Storage (private resume/document storage)
-- Optional Redis-compatible cache, also used as the Celery broker/result backend
+- Optional Redis-compatible cache for session and response caching
 - Render (backend hosting), Netlify (frontend hosting)
 
 ### AI
@@ -332,7 +332,6 @@ Canonical template: [`backend/.env.example`](backend/.env.example)
 | `SUPABASE_URL` | Supabase project URL | Storage/DB integration |
 | `SUPABASE_SERVICE_ROLE_KEY` | Private backend storage access | Storage integration |
 | `REDIS_URL` | Optional Redis connection | Optional |
-| `ADMIN_USERNAMES` | Comma-separated admin allowlist | Admin workflows |
 | `INGEST_WEBHOOK_TOKEN` | Job ingestion webhook credential | Job ingestion |
 
 Store real values in Render, GitHub Actions, Netlify, Supabase, or Hugging Face Space secrets — never in source code, frontend bundles, screenshots, issues, or this README.

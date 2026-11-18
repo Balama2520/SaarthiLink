@@ -5,7 +5,6 @@ Provides Supabase GoTrue JWT HS256 validation & strict anti-IDOR resource owners
 """
 
 import logging
-import os
 from typing import Any, Dict, Optional
 
 from fastapi import Depends, HTTPException, status
@@ -15,18 +14,8 @@ from jose import JWTError, jwt
 from app.core.config import get_settings
 
 logger = logging.getLogger("saarthi.security")
-settings = get_settings()
 
 security_bearer = HTTPBearer(auto_error=False)
-
-# Retrieve secret keys with robust fallback
-SUPABASE_JWT_SECRET = (
-    getattr(settings, "SUPABASE_JWT_SECRET", None)
-    or getattr(settings, "JWT_SECRET", None)
-    or os.getenv("SUPABASE_JWT_SECRET")
-    or os.getenv("JWT_SECRET")
-    or "saarthi-production-jwt-secret-key-2026"
-)
 
 ALGORITHM = "HS256"
 
@@ -55,11 +44,18 @@ def decode_supabase_jwt(token: str) -> Dict[str, Any]:
     Decodes and validates a Supabase GoTrue Bearer JWT token locally using HS256.
     Raises HTTPException(401) on expiration or invalid signature.
     """
+    signing_secret = get_settings().SUPABASE_JWT_SECRET.strip()
+    if not signing_secret:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="External authentication is not configured",
+        )
+
     try:
         # Supabase GoTrue issues tokens signed with HS256 and verified using SUPABASE_JWT_SECRET
         payload = jwt.decode(
             token,
-            SUPABASE_JWT_SECRET,
+            signing_secret,
             algorithms=[ALGORITHM],
             options={"verify_aud": False},
         )

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.core.dependencies.auth import require_authenticated_user
+from app.ai.gateway import AIProviderUnavailable, first_response_chunk
 from app.models.models import User
 from app.database.connection import get_db
 from app.repositories.workspace_repository import WorkspaceRepository
@@ -107,4 +108,18 @@ async def workspace_chat(
     stream_gen = svc.chat_workspace(
         workspace_id, current_user.id, body.message, body.model or "phi3"
     )
-    return StreamingResponse(stream_gen(), media_type="text/plain")
+    response_stream = stream_gen()
+    try:
+        first_chunk = await first_response_chunk(response_stream)
+    except AIProviderUnavailable as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Workspace AI is temporarily unavailable. Please try again shortly.",
+        ) from error
+
+    async def stream():
+        yield first_chunk.encode("utf-8")
+        async for chunk in response_stream:
+            yield chunk.encode("utf-8")
+
+    return StreamingResponse(stream(), media_type="text/plain")

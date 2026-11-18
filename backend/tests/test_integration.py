@@ -165,6 +165,41 @@ class TestResumeFlow:
         r = client.post("/api/resume/upload", files=files, headers=auth_headers)
         assert r.status_code == 400
 
+    def test_resume_upload_spoofed_pdf_magic_bytes(self, client, auth_headers):
+        """File claiming to be PDF but missing %PDF- header must be rejected with 400."""
+        fake_pdf = b"NOT_A_REAL_PDF_HEADER_JUST_RANDOM_TEXT"
+        files = {"file": ("fake.pdf", io.BytesIO(fake_pdf), "application/pdf")}
+        r = client.post("/api/resume/upload", files=files, headers=auth_headers)
+        assert r.status_code == 400
+        assert "Invalid PDF" in r.json().get("detail", "")
+
+    @patch(
+        "app.engine.resume_pipeline.ResumeIntelligencePipeline.analyze_with_ai",
+        new_callable=AsyncMock,
+    )
+    def test_resume_delete_workflow(self, mock_analyze, client, auth_headers):
+        """Upload a resume, then permanently delete it and verify 404 on subsequent access."""
+        mock_analyze.return_value = _fake_ai_pipeline_result()
+        pdf_bytes = b"%PDF-1.4 sample content for delete test"
+        files = {"file": ("to_delete.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
+        upload_res = client.post("/api/resume/upload", files=files, headers=auth_headers)
+        assert upload_res.status_code == 200
+        resume_id = upload_res.json()["resume_id"]
+
+        # Delete the resume
+        del_res = client.delete(f"/api/resume/{resume_id}", headers=auth_headers)
+        assert del_res.status_code == 200
+        assert del_res.json()["resume_id"] == resume_id
+
+        # Verify second deletion returns 404
+        del_again = client.delete(f"/api/resume/{resume_id}", headers=auth_headers)
+        assert del_again.status_code == 404
+
+    def test_resume_delete_not_found(self, client, auth_headers):
+        """Deleting a non-existent resume ID returns 404."""
+        r = client.delete("/api/resume/non-existent-uuid-1234", headers=auth_headers)
+        assert r.status_code == 404
+
     def test_resume_history(self, client, auth_headers):
         """History endpoint must return a list."""
         r = client.get("/api/resume/history", headers=auth_headers)

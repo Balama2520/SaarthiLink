@@ -36,6 +36,7 @@ export default function CareerCopilot() {
   const [role, setRole] = useState(() => sessionStorage.getItem("saarthi_copilot_role") || "");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+  const [copilotError, setCopilotError] = useState<string | null>(null);
   const [copilotLoading, setCopilotLoading] = useState(false);
   const [copilotSessionId, setCopilotSessionId] = useState<string | null>(null);
   const targetRole = role.trim() || profileRole || "Software Engineer";
@@ -68,6 +69,26 @@ export default function CareerCopilot() {
     if (!hasResume) return;
     gapMutation.mutate();
     planMutation.mutate();
+  };
+
+  const sendCopilotMessage = async () => {
+    if (!question.trim() || copilotLoading) return;
+    setAnswer("");
+    setCopilotError(null);
+    setCopilotLoading(true);
+    try {
+      const sessionId = await api.streamCopilot(question, copilotSessionId, (chunk) => {
+        setAnswer((previous) => previous + chunk);
+      });
+      setCopilotSessionId(sessionId);
+      setQuestion("");
+    } catch (error) {
+      setCopilotError(
+        error instanceof Error ? error.message : "Career Copilot could not complete the request.",
+      );
+    } finally {
+      setCopilotLoading(false);
+    }
   };
 
   return (
@@ -176,9 +197,26 @@ export default function CareerCopilot() {
           <section className="rounded-xl border border-border bg-card p-6">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><Sparkles className="h-4 w-4 text-primary" /> Ask your Copilot</h2>
             <div className="flex gap-2">
-              <input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void (async () => { if (!question.trim()) return; setAnswer(""); setCopilotLoading(true); try { const id = await api.streamCopilot(question, copilotSessionId, (chunk) => setAnswer((previous) => previous + chunk)); setCopilotSessionId(id); } finally { setCopilotLoading(false); } })(); }} placeholder="What should I focus on this week?" className="flex-1 rounded-lg border border-border bg-input px-3 py-2 text-sm" />
-              <button type="button" disabled={copilotLoading || !question.trim()} onClick={() => void (async () => { setAnswer(""); setCopilotLoading(true); try { const id = await api.streamCopilot(question, copilotSessionId, (chunk) => setAnswer((previous) => previous + chunk)); setCopilotSessionId(id); } finally { setCopilotLoading(false); } })()} className="rounded-lg bg-primary px-3 text-primary-foreground"><Send className="h-4 w-4" /></button>
+              <input
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void sendCopilotMessage();
+                }}
+                placeholder="What should I focus on this week?"
+                className="flex-1 rounded-lg border border-border bg-input px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                disabled={copilotLoading || !question.trim()}
+                onClick={() => void sendCopilotMessage()}
+                aria-label="Send message to Career Copilot"
+                className="rounded-lg bg-primary px-3 text-primary-foreground disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+              </button>
             </div>
+            {copilotError && <p role="alert" className="mt-3 text-sm text-destructive">{copilotError}</p>}
             {(copilotLoading || answer) && <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm whitespace-pre-wrap text-foreground">{answer || "Thinking…"}</div>}
             {answer && <button type="button" onClick={() => void api.saveCopilotInsight("Career Copilot insight", answer)} className="mt-3 text-xs font-semibold text-primary hover:underline">Save insight to Notes</button>}
           </section>

@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models.models import User, RefreshToken
 from typing import Optional, List
@@ -9,7 +10,8 @@ class UserRepository:
         self.db = db
 
     def get_user_by_username(self, username: str) -> Optional[User]:
-        return self.db.query(User).filter(User.username == username).first()
+        normalized_username = username.strip().lower()
+        return self.db.query(User).filter(func.lower(User.username) == normalized_username).first()
 
     def create_user(self, user: User) -> User:
         self.db.add(user)

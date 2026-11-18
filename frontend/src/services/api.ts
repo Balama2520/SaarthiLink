@@ -12,6 +12,21 @@ function resolveApiBase(): string {
 }
 const API_BASE = resolveApiBase();
 
+export interface AuthTokenResponse {
+  user_id: number;
+  access_token: string;
+  refresh_token: string | null;
+  token_type: "bearer";
+  role: "admin" | "user";
+}
+
+export interface CurrentAccount {
+  id: number;
+  username: string;
+  role: "admin" | "user";
+  target_role: string | null;
+}
+
 function getHeaders(extraHeaders: Record<string, string> = {}) {
   return { ...extraHeaders, ...authHeader() };
 }
@@ -119,7 +134,13 @@ export const api = {
   },
 
   // Authentication
-  async register(username: string, password: string) {
+  async getCurrentUser(): Promise<CurrentAccount> {
+    const res = await fetch(`${API_BASE}/auth/me`, { headers: getHeaders() });
+    if (!res.ok) throw new Error("Failed to load current account");
+    return parseJsonSafe(res);
+  },
+
+  async register(username: string, password: string): Promise<AuthTokenResponse> {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -132,7 +153,7 @@ export const api = {
     return parseJsonSafe(res);
   },
 
-  async login(username: string, password: string) {
+  async login(username: string, password: string): Promise<AuthTokenResponse> {
     const formData = new URLSearchParams();
     formData.append("username", username);
     formData.append("password", password);
@@ -948,7 +969,18 @@ export const api = {
 
   async streamCopilot(message: string, sessionId: string | null, onChunk: (chunk: string) => void): Promise<string | null> {
     const res = await fetch(`${API_BASE}/career/copilot/stream`, { method: "POST", headers: getHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ message, session_id: sessionId }) });
-    if (!res.ok || !res.body) throw new Error("Copilot is unavailable");
+    if (!res.ok) {
+      const responseText = await res.text();
+      let message = responseText || `Copilot request failed (HTTP ${res.status})`;
+      try {
+        const responseBody = JSON.parse(responseText) as { detail?: string };
+        message = responseBody.detail || message;
+      } catch {
+        // Keep the plain-text response when the API did not return JSON.
+      }
+      throw new Error(message);
+    }
+    if (!res.body) throw new Error("Copilot returned an empty response stream.");
     const reader = res.body.getReader(); const decoder = new TextDecoder();
     while (true) { const { done, value } = await reader.read(); if (done) break; onChunk(decoder.decode(value, { stream: true })); }
     return res.headers.get("X-Copilot-Session");

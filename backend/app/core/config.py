@@ -32,11 +32,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 1 week
-    # Admin access is opt-in.  Generic account names must not become admins
-    # merely because a deployment omitted this setting.
-    ADMIN_USERNAMES: str = os.getenv("ADMIN_USERNAMES", "")
     INGEST_API_KEY: str = os.getenv("INGEST_API_KEY", "")
     INGEST_WEBHOOK_TOKEN: str = os.getenv("INGEST_WEBHOOK_TOKEN", "")
+    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
     # CORS Configuration
     ALLOWED_ORIGINS: str = os.getenv(
@@ -92,10 +90,13 @@ class Settings(BaseSettings):
                     "ALLOWED_ORIGINS must list explicit frontend origins in production"
                 )
 
-    # AI Engine — Ollama (primary) with Gemini fallback
+    # AI Engine Provider Configuration
+    DEFAULT_AI_PROVIDER: str = os.getenv(
+        "DEFAULT_AI_PROVIDER", "gemini" if os.getenv("GEMINI_API_KEY") else "huggingface"
+    )
     OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
     DEFAULT_MODEL: str = "phi3"
-    OLLAMA_TIMEOUT: int = 30  # seconds before timeout and Gemini fallback kicks in
+    OLLAMA_TIMEOUT: int = int(os.getenv("OLLAMA_TIMEOUT", "5"))  # seconds before fallback kicks in
 
     # Gemini API fallback
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")

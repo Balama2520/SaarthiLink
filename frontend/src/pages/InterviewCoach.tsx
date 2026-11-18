@@ -328,30 +328,35 @@ export default function InterviewCoach() {
     const prepRole = sessionStorage.getItem("saarthi_prep_role");
     const prepQuestions = sessionStorage.getItem("saarthi_prep_questions");
 
-    if (prepRole) {
-      setRole(prepRole);
-      sessionStorage.removeItem("saarthi_prep_role");
-    }
-    if (prepCompany) {
-      setCompany(prepCompany);
-      sessionStorage.removeItem("saarthi_prep_company");
-    }
-    if (prepQuestions) {
-      try {
-        const parsed = JSON.parse(prepQuestions);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setQuestions(parsed);
-          setAnswers(Array(parsed.length).fill(""));
-          setQuestionIdx(0);
-          setSimStartedAt(Date.now());
-          setSimActive(true);
-          toast(`Loaded prep kit questions for ${prepRole || "Role"}!`, "success");
-        }
-      } catch (e) {
-        console.error("Failed to parse prep questions", e);
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      if (prepRole) {
+        setRole(prepRole);
+        sessionStorage.removeItem("saarthi_prep_role");
       }
-      sessionStorage.removeItem("saarthi_prep_questions");
-    }
+      if (prepCompany) {
+        setCompany(prepCompany);
+        sessionStorage.removeItem("saarthi_prep_company");
+      }
+      if (prepQuestions) {
+        try {
+          const parsed = JSON.parse(prepQuestions);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setQuestions(parsed);
+            setAnswers(Array(parsed.length).fill(""));
+            setQuestionIdx(0);
+            setSimStartedAt(Date.now());
+            setSimActive(true);
+            toast(`Loaded prep kit questions for ${prepRole || "Role"}!`, "success");
+          }
+        } catch (e) {
+          console.error("Failed to parse prep questions", e);
+        }
+        sessionStorage.removeItem("saarthi_prep_questions");
+      }
+    });
+    return () => { active = false; };
   }, [toast]);
 
   useEffect(() => {

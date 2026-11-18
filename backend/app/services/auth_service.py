@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 from app.models.models import User, RefreshToken
 from app.repositories.user_repository import UserRepository
@@ -15,12 +16,6 @@ settings = get_settings()
 class AuthService:
     def __init__(self, user_repo: UserRepository):
         self.user_repo = user_repo
-
-    def _role_for_user(self, username: str) -> str:
-        configured_admins = {
-            admin.strip().lower() for admin in settings.ADMIN_USERNAMES.split(",") if admin.strip()
-        }
-        return "admin" if username.strip().lower() in configured_admins else "user"
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         try:
@@ -58,23 +53,37 @@ class AuthService:
         return token
 
     def register_user(self, username: str, password: str) -> dict:
+        username = username.strip().lower()
+        if not username:
+            raise HTTPException(status_code=422, detail="Username is required")
+
         db_user = self.user_repo.get_user_by_username(username)
         if db_user:
             raise HTTPException(status_code=400, detail="Username already registered")
 
-        new_user = User(username=username, hashed_password=self.get_password_hash(password))
-        new_user = self.user_repo.create_user(new_user)
+        new_user = User(
+            username=username,
+            hashed_password=self.get_password_hash(password),
+            role="user",
+        )
+        try:
+            new_user = self.user_repo.create_user(new_user)
+        except IntegrityError as error:
+            self.user_repo.db.rollback()
+            raise HTTPException(status_code=409, detail="Username already registered") from error
 
         access_token = self.create_access_token(data={"sub": new_user.username})
         refresh_token = self.create_refresh_token_for_user(new_user.id)
         return {
+            "user_id": new_user.id,
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "role": self._role_for_user(new_user.username),
+            "role": new_user.role,
         }
 
     def authenticate_user(self, username: str, password: str) -> dict:
+        username = username.strip().lower()
         user = self.user_repo.get_user_by_username(username)
         if not user or not self.verify_password(password, user.hashed_password):
             # An authentication failure is not a malformed request. Returning
@@ -84,10 +93,11 @@ class AuthService:
         access_token = self.create_access_token(data={"sub": user.username})
         refresh_token = self.create_refresh_token_for_user(user.id)
         return {
+            "user_id": user.id,
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "role": self._role_for_user(user.username),
+            "role": user.role,
         }
 
     def refresh_access_token(self, token: str) -> dict:
@@ -104,14 +114,19 @@ class AuthService:
             self.user_repo.delete_refresh_token(token)
             raise HTTPException(status_code=401, detail="Refresh token expired")
 
-        # generate new access token
+        # Invalidate the consumed refresh token immediately (rotation & replay protection)
         user = db_token.owner
+        self.user_repo.delete_refresh_token(token)
+
+        # Issue newly rotated token pair
         access_token = self.create_access_token(data={"sub": user.username})
+        new_refresh_token = self.create_refresh_token_for_user(user.id)
         return {
+            "user_id": user.id,
             "access_token": access_token,
-            "refresh_token": token,
+            "refresh_token": new_refresh_token,
             "token_type": "bearer",
-            "role": self._role_for_user(user.username),
+            "role": user.role,
         }
 
     def logout(self, token: str) -> None:

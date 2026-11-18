@@ -10,6 +10,7 @@ from sqlalchemy import (
     Boolean,
     Float,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import relationship, backref
 from datetime import datetime, timezone
@@ -22,7 +23,9 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
+    __table_args__ = (Index("uq_users_username_lower", func.lower(username), unique=True),)
     hashed_password = Column(String)
+    role = Column(String(20), nullable=False, default="user", server_default="user")
     full_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
     target_role = Column(String, nullable=True)

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies.auth import require_admin_user
 from app.core.config import get_settings
+from app.ai.metrics import metrics_tracker
 from app.models.models import (
     User,
     Job,
@@ -43,6 +44,8 @@ def get_stats(
             else ("gemini" if settings.GEMINI_API_KEY else "none")
         ),
         "secondary_provider": "gemini" if settings.GEMINI_API_KEY else "none",
+        "health": metrics_tracker.last_status,
+        "last_checked_at": metrics_tracker.last_checked_at,
     }
 
     total_jobs = db.query(Job).count() if db.query(Job) else 0
