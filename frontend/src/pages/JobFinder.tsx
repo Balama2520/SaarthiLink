@@ -228,6 +228,7 @@ export default function JobFinder() {
 
   useEffect(() => {
     async function loadCrm() {
+      if (!getToken()) return;
       try {
         const apps = await api.getPlacements();
         setCrmList(mapPlacementsToCrm(apps));
@@ -473,7 +474,7 @@ export default function JobFinder() {
     }
     if (!latestResumeId) {
       toast("Upload a resume first to generate a Prep Kit.", "error");
-      window.location.hash = "#/resume";
+      window.location.assign("/resume-analyzer");
       return;
     }
     setPrepKitJob(job);

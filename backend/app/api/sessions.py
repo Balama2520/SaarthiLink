@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies.auth import require_authenticated_user
 from app.models.models import User, ChatSession, ChatMessage, Resume, UserProfile, UserSkill
 from app.database.connection import get_db
-from app.ai.gateway import AIGateway
+from app.ai.gateway import AIGateway, AIProviderUnavailable, first_response_chunk
 from app.ai.prompt_manager import PromptManager
 
 logger = logging.getLogger(__name__)
@@ -184,11 +184,21 @@ async def chat(
         },
     )
 
+    response_stream = AIGateway().generate_response_stream(
+        messages, body.model or "phi3", personality=body.personality or "default"
+    )
+    try:
+        first_chunk = await first_response_chunk(response_stream)
+    except AIProviderUnavailable as error:
+        raise HTTPException(
+            status_code=503,
+            detail="AI Coach is temporarily unavailable. Please try again shortly.",
+        ) from error
+
     async def stream_gen():
-        accumulated = ""
-        async for chunk in AIGateway().generate_response_stream(
-            messages, body.model or "phi3", personality=body.personality or "default"
-        ):
+        accumulated = first_chunk
+        yield first_chunk.encode("utf-8")
+        async for chunk in response_stream:
             accumulated += chunk
             yield chunk.encode("utf-8")
         # Save assistant response
@@ -231,10 +241,20 @@ async def chat_local(body: LocalChatBody):
         messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
     messages.append({"role": "user", "content": body.message})
 
+    response_stream = AIGateway().generate_response_stream(
+        messages, body.model or "phi3", personality=body.personality or "default"
+    )
+    try:
+        first_chunk = await first_response_chunk(response_stream)
+    except AIProviderUnavailable as error:
+        raise HTTPException(
+            status_code=503,
+            detail="AI Coach is temporarily unavailable. Please try again shortly.",
+        ) from error
+
     async def stream_gen():
-        async for chunk in AIGateway().generate_response_stream(
-            messages, body.model or "phi3", personality=body.personality or "default"
-        ):
+        yield first_chunk.encode("utf-8")
+        async for chunk in response_stream:
             yield chunk.encode("utf-8")
 
     return StreamingResponse(stream_gen(), media_type="text/plain")

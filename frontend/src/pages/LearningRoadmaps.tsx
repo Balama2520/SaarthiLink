@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useEffect } from "react";
+import { useCallback } from "react";
 import {
   Route, Loader2, CheckCircle2, Circle, ChevronDown, ChevronUp,
   Sparkles, Target, Clock, Zap, RotateCcw, BookOpen, Code, Globe
@@ -165,21 +166,10 @@ export default function LearningRoadmaps() {
     void api.getSavedRoadmaps().then(setSavedRoadmaps).catch(() => setSavedRoadmaps([]));
   }, []);
 
-  useEffect(() => {
-    const prepRole = sessionStorage.getItem("saarthi_roadmap_role") || sessionStorage.getItem("saarthi_prep_role");
-    if (prepRole) {
-      setTargetRole(prepRole);
-      sessionStorage.removeItem("saarthi_roadmap_role");
-      void handleGenerate(prepRole);
-      return;
-    }
-    const profileRole = (profile?.target_role as string | undefined)?.trim();
-    if (profileRole && !targetRole) setTargetRole(profileRole);
-  }, [profile]);
-
-  const handleGenerate = async (role?: string) => {
+  const handleGenerate = useCallback(async (role?: string) => {
     const finalRole = role ?? targetRole;
     if (!finalRole.trim()) return;
+    if (role) setTargetRole(role);
     setLoading(true);
     setError(null);
     setRoadmap(null);
@@ -189,14 +179,32 @@ export default function LearningRoadmaps() {
       if (data.roadmap_id) {
         setSavedRoadmaps((previous) => [data, ...previous.filter((item) => item.roadmap_id !== data.roadmap_id)]);
       }
-      if (role) setTargetRole(role);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message || "Failed to generate roadmap. Is the AI server online?");
     } finally {
       setLoading(false);
     }
-  };
+  }, [duration, targetRole]);
+
+  useEffect(() => {
+    const prepRole = sessionStorage.getItem("saarthi_roadmap_role") || sessionStorage.getItem("saarthi_prep_role");
+    const profileRole = (profile?.target_role as string | undefined)?.trim();
+    if (!prepRole && (!profileRole || targetRole)) return;
+
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      if (prepRole) {
+        sessionStorage.removeItem("saarthi_roadmap_role");
+        sessionStorage.removeItem("saarthi_prep_role");
+        void handleGenerate(prepRole);
+      } else if (profileRole) {
+        setTargetRole(profileRole);
+      }
+    });
+    return () => { active = false; };
+  }, [handleGenerate, profile, targetRole]);
 
   return (
     <div className="relative flex-1 overflow-hidden bg-background text-foreground font-sans">

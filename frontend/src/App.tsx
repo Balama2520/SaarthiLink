@@ -277,10 +277,11 @@ export default function App() {
   useEffect(() => {
     const syncFromAddress = () => setActiveTab(tabFromHash());
     syncFromAddress();
-    setRouteReady(true);
+    const frame = window.requestAnimationFrame(() => setRouteReady(true));
     window.addEventListener("hashchange", syncFromAddress);
     window.addEventListener("popstate", syncFromAddress);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("hashchange", syncFromAddress);
       window.removeEventListener("popstate", syncFromAddress);
     };
@@ -413,15 +414,9 @@ export default function App() {
 
           {/* Desktop Top Navbar Header */}
           <header className="hidden md:flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-card/60 px-6 backdrop-blur-xl">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1 text-xs font-medium text-primary shadow-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="font-semibold">Saarthi Career Intelligence Engine</span>
-                <span className="text-[10px] text-muted-foreground font-mono">v2.1</span>
-              </div>
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+              <span>Your career workspace</span>
             </div>
 
             <div className="flex items-center gap-4">
@@ -442,7 +437,7 @@ export default function App() {
                       {username ? username[0].toUpperCase() : "U"}
                     </div>
                     <span className="font-semibold text-foreground">{username}</span>
-                    <span className="text-[10px] text-emerald-400 font-mono font-medium">● Online</span>
+                    <span className="text-[10px] text-muted-foreground font-mono font-medium">Signed in</span>
                   </div>
                   <button
                     onClick={handleLogout}

@@ -104,16 +104,16 @@ export default function AuthPage({ onSuccess, onGuestAccess }: AuthPageProps) {
 
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="auth-username" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Email or username
+                  Username
                 </label>
                 <input
                   id="auth-username"
                   name="username"
-                  aria-label="Email or username"
+                  aria-label="Username"
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  placeholder="you@domain.com"
+                  placeholder="Enter your username"
                   autoComplete="username"
                   aria-required="true"
                   className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/20"
@@ -170,14 +170,13 @@ export default function AuthPage({ onSuccess, onGuestAccess }: AuthPageProps) {
                   />
                   Keep me signed in
                 </label>
-                <button
+                <a
                   id="auth-forgot-btn"
-                  type="button"
-                  onClick={() => setError("Password reset isn't available yet — please contact support to regain access.")}
+                  href="mailto:saarthi.ai.team@gmail.com?subject=Saarthi%20account%20recovery"
                   className="font-medium text-primary hover:underline"
                 >
-                  Forgot?
-                </button>
+                  Need help signing in?
+                </a>
               </div>
             </form>
 

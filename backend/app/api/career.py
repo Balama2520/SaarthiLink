@@ -11,7 +11,7 @@ from app.core.dependencies.services import get_career_service
 from app.models.models import ChatMessage, ChatSession, Note, User
 from app.services.career_service import CareerService
 from app.services.career_copilot_service import CareerCopilotService
-from app.ai.gateway import AIGateway
+from app.ai.gateway import AIGateway, AIProviderUnavailable, first_response_chunk
 from app.database.connection import get_db
 from sqlalchemy.orm import Session
 
@@ -214,9 +214,19 @@ async def copilot_stream(
     db.add(ChatMessage(session_id=session.id, role="user", content=body.message))
     db.commit()
 
+    response_stream = AIGateway().generate_response_stream(messages, personality="career")
+    try:
+        first_chunk = await first_response_chunk(response_stream)
+    except AIProviderUnavailable as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Career Copilot is temporarily unavailable. Please try again shortly.",
+        ) from error
+
     async def stream():
-        answer = ""
-        async for chunk in AIGateway().generate_response_stream(messages, personality="career"):
+        answer = first_chunk
+        yield first_chunk.encode("utf-8")
+        async for chunk in response_stream:
             answer += chunk
             yield chunk.encode("utf-8")
         db.add(ChatMessage(session_id=session.id, role="assistant", content=answer))
