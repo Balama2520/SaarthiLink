@@ -4,8 +4,28 @@ from pydantic import BaseModel
 from app.schemas.auth import UserCreate, Token
 from app.services.auth_service import AuthService
 from app.core.dependencies.services import get_auth_service
+from app.core.dependencies.auth import require_authenticated_user
+from app.models.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+class CurrentAccount(BaseModel):
+    id: int
+    username: str
+    role: str
+    target_role: str | None = None
+
+
+@router.get("/me")
+def current_account(
+    current_user: User = Depends(require_authenticated_user),
+) -> CurrentAccount:
+    return CurrentAccount(
+        id=current_user.id,
+        username=current_user.username,
+        role=current_user.role,
+        target_role=current_user.target_role,
+    )
 
 
 @router.post("/register", response_model=Token)
