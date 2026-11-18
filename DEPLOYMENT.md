@@ -32,6 +32,21 @@ docker-compose up -d --build
 ## Database Migrations
 Migrations run automatically on backend container startup via Alembic (`alembic upgrade head`).
 
+## Provisioning an administrator
+Public registration always creates a standard user. Admin access is granted only
+by an operator changing the persisted role from a trusted backend shell. After
+creating the intended account and applying migrations, run this from the backend
+directory:
+
+```bash
+python scripts/manage_user_role.py <username> admin
+```
+
+To revoke admin access, run the same command with `user`. Verify the account
+through the authenticated `/api/auth/me` endpoint. Do not grant admin access by
+choosing a special username or adding an account to a public-registration
+allowlist.
+
 ## Monitoring & Operations
 - **Metrics**: Prometheus metrics are available at `/metrics` on the backend API.
 - **Logs**: Logs are JSON-formatted for ingestion into Logstash or Datadog. Check logs via:
