@@ -52,16 +52,16 @@ def test_intelligence_service_career_guidance():
 
 
 @pytest.fixture
-def admin_headers(client, db_session, monkeypatch):
+def admin_headers(client, db_session):
     from app.repositories.user_repository import UserRepository
     from app.services.auth_service import AuthService
-    from app.core.config import get_settings
-
-    monkeypatch.setattr(get_settings(), "ADMIN_USERNAMES", "saarthiadmin")
 
     repo = UserRepository(db_session)
     auth_svc = AuthService(repo)
     auth_svc.register_user("saarthiadmin", "AdminPass123!")
+    user = repo.get_user_by_username("saarthiadmin")
+    user.role = "admin"
+    db_session.commit()
 
     response = client.post(
         "/api/auth/login",

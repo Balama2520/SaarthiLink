@@ -8,6 +8,18 @@ from app.ai.prompt_manager import PromptManager
 logger = logging.getLogger(__name__)
 
 
+class AIProviderUnavailable(RuntimeError):
+    """Raised when no configured AI provider can produce a response."""
+
+
+async def first_response_chunk(stream: AsyncGenerator[str, None]) -> str:
+    """Prime a provider stream so setup failures can become an HTTP error."""
+    try:
+        return await anext(stream)
+    except StopAsyncIteration as error:
+        raise AIProviderUnavailable("AI provider returned an empty response") from error
+
+
 class AIGateway:
     def __init__(self):
         self.router = AIRouter()
@@ -53,13 +65,20 @@ class AIGateway:
         metrics_tracker.record_call()
         for provider_name, provider_model in providers:
             provider = self.router.get_provider(provider_name)
+            received_content = False
             try:
                 async for chunk in provider.generate_stream(processed_messages, provider_model):
+                    if chunk and chunk.strip():
+                        received_content = True
                     yield chunk
+                if not received_content:
+                    raise RuntimeError("AI provider returned an empty response")
+                metrics_tracker.record_success(provider_name)
                 return
             except Exception as error:
                 logger.warning("AI provider (%s) failed: %s", provider_name, error)
-                metrics_tracker.record_failure()
+                metrics_tracker.record_failure(provider_name)
 
         logger.error("All configured AI providers failed")
-        yield "AI is temporarily unavailable. Please check the provider configuration and try again."
+        metrics_tracker.record_unavailable()
+        raise AIProviderUnavailable("All configured AI providers failed")
